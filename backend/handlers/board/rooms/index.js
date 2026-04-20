@@ -3,6 +3,11 @@ const { query } = require("../../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../../lib/http");
 const { BOARD_GAME_KEYS, getGameMeta } = require("../../../../lib/games/catalog");
 const { getBoardRoomManager } = require("../../../../lib/board/manager");
+const {
+  AUTH_SCOPES,
+  API_ROUTE_PATTERNS,
+  createHandlerContract
+} = require("../../../../lib/shared/network-contract");
 
 async function handler(req, res) {
   const roomManager = getBoardRoomManager();
@@ -48,5 +53,16 @@ async function handler(req, res) {
   });
 }
 
+handler.contract = createHandlerContract(
+  "boardRooms.collection",
+  API_ROUTE_PATTERNS.boardRooms.list,
+  ["GET", "POST"],
+  {
+    GET: AUTH_SCOPES.PUBLIC,
+    POST: AUTH_SCOPES.USER
+  }
+);
+
 module.exports = handler;
 module.exports.default = handler;
+module.exports.contract = handler.contract;

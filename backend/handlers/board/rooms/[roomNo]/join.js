@@ -1,6 +1,11 @@
 const { requireUser } = require("../../../../../lib/auth");
 const { methodNotAllowed } = require("../../../../../lib/http");
 const { getBoardRoomManager } = require("../../../../../lib/board/manager");
+const {
+  AUTH_SCOPES,
+  API_ROUTE_PATTERNS,
+  createHandlerContract
+} = require("../../../../../lib/shared/network-contract");
 
 async function handler(req, res) {
   if (req.method !== "POST") {
@@ -23,5 +28,13 @@ async function handler(req, res) {
   }
 }
 
+handler.contract = createHandlerContract(
+  "boardRooms.join",
+  API_ROUTE_PATTERNS.boardRooms.join,
+  ["POST"],
+  AUTH_SCOPES.USER
+);
+
 module.exports = handler;
 module.exports.default = handler;
+module.exports.contract = handler.contract;

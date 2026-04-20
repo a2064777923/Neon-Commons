@@ -2,6 +2,11 @@ const { requireUser } = require("../../../lib/auth");
 const { query } = require("../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../lib/http");
 const { getRoomManager } = require("../../../lib/game/room-manager");
+const {
+  AUTH_SCOPES,
+  API_ROUTE_PATTERNS,
+  createHandlerContract
+} = require("../../../lib/shared/network-contract");
 
 async function handler(req, res) {
   const roomManager = getRoomManager();
@@ -70,5 +75,16 @@ async function handler(req, res) {
   });
 }
 
+handler.contract = createHandlerContract(
+  "cardRooms.collection",
+  API_ROUTE_PATTERNS.cardRooms.list,
+  ["GET", "POST"],
+  {
+    GET: AUTH_SCOPES.PUBLIC,
+    POST: AUTH_SCOPES.USER
+  }
+);
+
 module.exports = handler;
 module.exports.default = handler;
+module.exports.contract = handler.contract;

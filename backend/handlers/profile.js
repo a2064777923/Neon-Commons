@@ -1,6 +1,11 @@
 const { requireUser, sanitizeUser } = require("../../lib/auth");
 const { query } = require("../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../lib/http");
+const {
+  AUTH_SCOPES,
+  API_ROUTE_PATTERNS,
+  createHandlerContract
+} = require("../../lib/shared/network-contract");
 
 const AVATAR_PATTERN = /^data:image\/(png|jpeg|jpg|webp);base64,[a-z0-9+/=]+$/i;
 const MAX_AVATAR_LENGTH = 380000;
@@ -67,5 +72,13 @@ function normalizeAvatar(value) {
   return AVATAR_PATTERN.test(avatar) ? avatar : false;
 }
 
+handler.contract = createHandlerContract(
+  "profile.read-write",
+  API_ROUTE_PATTERNS.profile,
+  ["GET", "PATCH"],
+  AUTH_SCOPES.USER
+);
+
 module.exports = handler;
 module.exports.default = handler;
+module.exports.contract = handler.contract;

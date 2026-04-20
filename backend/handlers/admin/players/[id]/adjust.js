@@ -1,6 +1,11 @@
 const { requireAdmin } = require("../../../../../lib/auth");
 const { query } = require("../../../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../../../lib/http");
+const {
+  AUTH_SCOPES,
+  API_ROUTE_PATTERNS,
+  createHandlerContract
+} = require("../../../../../lib/shared/network-contract");
 
 async function handler(req, res) {
   if (req.method !== "POST") {
@@ -66,5 +71,13 @@ async function handler(req, res) {
   return res.status(200).json({ item: result.rows[0] });
 }
 
+handler.contract = createHandlerContract(
+  "admin.players.adjust",
+  API_ROUTE_PATTERNS.admin.playerAdjust,
+  ["POST"],
+  AUTH_SCOPES.ADMIN
+);
+
 module.exports = handler;
 module.exports.default = handler;
+module.exports.contract = handler.contract;

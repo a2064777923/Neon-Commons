@@ -1,6 +1,11 @@
 const { requireAdmin } = require("../../../../lib/auth");
 const { query } = require("../../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../../lib/http");
+const {
+  AUTH_SCOPES,
+  API_ROUTE_PATTERNS,
+  createHandlerContract
+} = require("../../../../lib/shared/network-contract");
 
 async function handler(req, res) {
   const admin = await requireAdmin(req, res);
@@ -98,5 +103,13 @@ async function handler(req, res) {
   return methodNotAllowed(res, ["GET", "POST", "PATCH"]);
 }
 
+handler.contract = createHandlerContract(
+  "admin.templates",
+  API_ROUTE_PATTERNS.admin.templates,
+  ["GET", "POST", "PATCH"],
+  AUTH_SCOPES.ADMIN
+);
+
 module.exports = handler;
 module.exports.default = handler;
+module.exports.contract = handler.contract;
