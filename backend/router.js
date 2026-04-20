@@ -62,13 +62,15 @@ function loadRoutes(handlersDir) {
       const { regex, params } = compileRoute(routePath);
       const loaded = require(filePath);
       const handler = loaded.default || loaded;
+      const contract = loaded.contract || handler.contract || null;
 
       return {
         filePath,
         routePath,
         regex,
         params,
-        handler
+        handler,
+        contract
       };
     })
     .sort((left, right) => compareRoutes(left.routePath, right.routePath));
