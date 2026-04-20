@@ -1,0 +1,282 @@
+.shell {
+  display: grid;
+  gap: 24px;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(300px, 0.94fr);
+  gap: 18px;
+  padding: 28px;
+  border-radius: 36px;
+  border: 1px solid rgba(36, 64, 51, 0.1);
+  background:
+    radial-gradient(circle at 16% 18%, rgba(212, 164, 75, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 18%, rgba(179, 73, 39, 0.14), transparent 20%),
+    linear-gradient(135deg, rgba(255, 251, 242, 0.98), rgba(242, 232, 213, 0.84));
+  box-shadow: 0 28px 64px rgba(57, 42, 18, 0.12);
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  pointer-events: none;
+}
+
+.heroCopy,
+.heroSide {
+  position: relative;
+  z-index: 1;
+}
+
+.heroCopy {
+  display: grid;
+  gap: 16px;
+}
+
+.heroBadge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(36, 64, 51, 0.08);
+  color: #335240;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroCopy h1 {
+  margin: 0;
+  max-width: 760px;
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: clamp(38px, 5vw, 72px);
+  line-height: 0.94;
+  color: #22392f;
+}
+
+.heroCopy p {
+  margin: 0;
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.heroStats > div,
+.heroSide,
+.panel,
+.noteCard,
+.tableCard {
+  border-radius: 24px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(251, 244, 232, 0.6));
+  box-shadow: 0 18px 40px rgba(57, 42, 18, 0.08);
+}
+
+.heroStats > div {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+}
+
+.heroStats strong {
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: 30px;
+  color: #234033;
+}
+
+.heroStats span,
+.heroSide p,
+.noteCard span,
+.panel p,
+.panelHead span {
+  color: var(--muted);
+}
+
+.heroSide {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 20px;
+}
+
+.heroSide strong,
+.panelHead strong {
+  color: #233f32;
+}
+
+.heroList,
+.noteList,
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.heroList span,
+.noteList span {
+  display: block;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.authGrid,
+.adminGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.96fr) minmax(300px, 1.04fr);
+  gap: 18px;
+}
+
+.adminGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.authCard,
+.noteCard,
+.panel,
+.tableCard {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 30px;
+}
+
+.authCard::before,
+.noteCard::before,
+.panel::before,
+.tableCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.38), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(36, 64, 51, 0.06), transparent 24%);
+  pointer-events: none;
+}
+
+.authCard > *,
+.noteCard > *,
+.panel > *,
+.tableCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.authCard {
+  background:
+    radial-gradient(circle at top right, rgba(212, 164, 75, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(246, 236, 218, 0.88));
+}
+
+.noteCard,
+.panel,
+.tableCard {
+  background:
+    radial-gradient(circle at top right, rgba(36, 64, 51, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(245, 236, 219, 0.88));
+}
+
+.authCard h2,
+.tableHead h2,
+.panelHead h2 {
+  margin: 0;
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: clamp(26px, 3vw, 38px);
+  color: #22392f;
+}
+
+.authMeta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.authMeta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(36, 64, 51, 0.06);
+  color: #335240;
+}
+
+.tableCard {
+  gap: 18px;
+}
+
+.tableHead,
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.metricStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metricStrip > div {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(36, 64, 51, 0.08);
+}
+
+.metricStrip strong {
+  font-size: 24px;
+  color: #244033;
+}
+
+.ctaRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1080px) {
+  .hero,
+  .authGrid,
+  .adminGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .authCard,
+  .noteCard,
+  .panel,
+  .tableCard {
+    padding: 18px;
+  }
+
+  .heroStats,
+  .metricStrip {
+    grid-template-columns: 1fr;
+  }
+}

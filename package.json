@@ -1,0 +1,32 @@
+{
+  "name": "doudezhu-platform",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/run-stack.js dev",
+    "dev:frontend": "node node_modules/next/dist/bin/next dev -p 3100",
+    "dev:backend": "node backend/server.js",
+    "build": "next build",
+    "start": "node scripts/run-stack.js start",
+    "start:frontend": "node node_modules/next/dist/bin/next start -p 3100",
+    "start:backend": "node backend/server.js",
+    "lint": "next lint",
+    "check": "node scripts/check.js",
+    "test:logic": "node --test test-logic/ddz-logic.test.js",
+    "test:ui": "playwright test tests --workers=1"
+  },
+  "dependencies": {
+    "bcryptjs": "2.4.3",
+    "cookie": "0.7.2",
+    "jsonwebtoken": "9.0.2",
+    "next": "15.5.15",
+    "pg": "8.16.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "socket.io": "4.8.1",
+    "socket.io-client": "4.8.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.59.1"
+  }
+}

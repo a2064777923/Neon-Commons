@@ -1,0 +1,1687 @@
+.gameShell {
+  padding: 0;
+}
+
+.scene {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #f6f0e3;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(84, 181, 116, 0.2), transparent 28%),
+    radial-gradient(circle at 15% 18%, rgba(245, 185, 72, 0.16), transparent 18%),
+    radial-gradient(circle at 82% 20%, rgba(176, 54, 54, 0.14), transparent 16%),
+    linear-gradient(180deg, #081610 0%, #0f2418 40%, #09110d 100%);
+}
+
+.sceneGlow,
+.sceneNoise,
+.sceneSweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sceneGlow {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(91, 222, 132, 0.12), transparent 26%),
+    radial-gradient(circle at center, rgba(255, 222, 145, 0.06), transparent 42%);
+}
+
+.sceneNoise {
+  opacity: 0.12;
+  background-image:
+    linear-gradient(transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mix-blend-mode: overlay;
+}
+
+.sceneSweep {
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.06) 48%, transparent 100%);
+  transform: translateX(-120%);
+  opacity: 0.34;
+  animation: sceneSweep 10s ease-in-out infinite;
+}
+
+.hud {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px 8px;
+}
+
+.hudBlock,
+.hudActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.roomTag,
+.statusPill,
+.multiplierPill,
+.bidBadge,
+.bidPlaceholder,
+.toast,
+.rotateHint,
+.turnLamp {
+  border: 1px solid rgba(255, 230, 179, 0.18);
+  backdrop-filter: blur(12px);
+  background: rgba(8, 22, 15, 0.58);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.22);
+}
+
+.roomTag {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #f6d794;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+}
+
+.roomTitle {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1;
+  font-family: "Rajdhani", "Noto Sans TC", sans-serif;
+  letter-spacing: 0.03em;
+}
+
+.roomMeta {
+  margin: 4px 0 0;
+  color: rgba(246, 240, 227, 0.74);
+}
+
+.hudButton {
+  border: 1px solid rgba(255, 235, 194, 0.18);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8e7bd;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+}
+
+.hudButton:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.18);
+}
+
+.rotateHint {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 4px;
+  margin: 0 24px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  color: #f7e6b7;
+}
+
+.tableFrame {
+  position: relative;
+  z-index: 1;
+  padding: 8px 24px 20px;
+}
+
+.tableSurface {
+  position: relative;
+  min-height: calc(100vh - 150px);
+  border-radius: 38px;
+  border: 1px solid rgba(255, 234, 179, 0.12);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(56, 132, 78, 0.92), rgba(17, 55, 30, 0.98) 54%, #0a1a12 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 226, 162, 0.06),
+    inset 0 0 150px rgba(7, 18, 12, 0.86),
+    0 28px 80px rgba(0, 0, 0, 0.42);
+  overflow: hidden;
+}
+
+.tableSurface::before {
+  content: "";
+  position: absolute;
+  inset: 22px;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 230, 179, 0.08);
+  pointer-events: none;
+}
+
+.centerStage {
+  position: absolute;
+  inset: 72px 220px 276px;
+  display: grid;
+  grid-template-rows: auto auto minmax(180px, 1fr) auto auto;
+  align-items: start;
+  justify-items: center;
+  gap: 10px;
+}
+
+.centerTopRow {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.multiplierPill,
+.statusPill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: #f8eac3;
+}
+
+.multiplierPill strong {
+  font-size: 24px;
+  color: #ffd76a;
+}
+
+.bottomCardsArea {
+  display: flex;
+  gap: 10px;
+  min-height: 116px;
+}
+
+.bottomCard,
+.bottomCardBack {
+  width: 78px;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.28));
+}
+
+.bottomCard:nth-child(2),
+.bottomCardBack:nth-child(2) {
+  transform: translateY(8px);
+}
+
+.playZone {
+  position: relative;
+  width: min(640px, 100%);
+  min-height: 236px;
+  isolation: isolate;
+}
+
+.specialEffect {
+  position: absolute;
+  inset: 38px auto auto 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  animation: specialPop 1.15s ease both;
+}
+
+.specialEffectText {
+  border-radius: 999px;
+  padding: 14px 28px;
+  font-size: clamp(34px, 6vw, 72px);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.specialBomb .specialEffectText {
+  color: #ffe4b0;
+  background: radial-gradient(circle at center, rgba(199, 75, 37, 0.94), rgba(85, 19, 16, 0.84));
+  box-shadow: 0 0 40px rgba(240, 102, 61, 0.38);
+}
+
+.specialRocket .specialEffectText {
+  color: #fff2c5;
+  background: radial-gradient(circle at center, rgba(122, 38, 215, 0.94), rgba(34, 8, 80, 0.84));
+  box-shadow: 0 0 40px rgba(172, 111, 255, 0.42);
+}
+
+.playZoneEmpty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 30px;
+  border: 1px dashed rgba(252, 231, 184, 0.18);
+  color: rgba(250, 236, 207, 0.42);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.playedStack,
+.playedBurst,
+.outgoingBurst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.playedStackCard,
+.playedCard,
+.outgoingCard {
+  position: absolute;
+  left: 50%;
+  top: 36px;
+  width: 102px;
+  transform-origin: center 88%;
+  transform: translateX(-50%) translateY(var(--table-y, 0px)) rotate(var(--table-rotate, 0deg));
+  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.4));
+  will-change: transform, opacity;
+}
+
+.playedStackCard {
+  animation: settleCard 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+.playedCard {
+  animation: playBurstIn 420ms cubic-bezier(0.19, 1, 0.22, 1) both;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+.outgoingCard {
+  animation: launchFromBottom 480ms cubic-bezier(0.19, 1, 0.22, 1) both;
+  animation-delay: var(--card-delay, 0ms);
+}
+
+.originLeft .playedCard {
+  --burst-origin-x: -230px;
+  --burst-origin-y: -54px;
+  --burst-origin-rotate: -14deg;
+}
+
+.originRight .playedCard {
+  --burst-origin-x: 230px;
+  --burst-origin-y: -54px;
+  --burst-origin-rotate: 14deg;
+}
+
+.originBottom .playedCard {
+  --burst-origin-x: 0px;
+  --burst-origin-y: 176px;
+  --burst-origin-rotate: 0deg;
+}
+
+.bidTrack {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 52px;
+}
+
+.bidBadge,
+.bidPlaceholder {
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #f7e6b3;
+}
+
+.bidBadge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resultPanel {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 24px;
+  background: rgba(9, 24, 16, 0.72);
+  border: 1px solid rgba(255, 231, 179, 0.18);
+}
+
+.resultHeadline {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffd76a;
+  text-align: center;
+}
+
+.resultMeta {
+  text-align: center;
+  color: rgba(255, 243, 213, 0.72);
+}
+
+.resultList {
+  display: grid;
+  gap: 8px;
+}
+
+.resultItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.deltaUp {
+  color: #ffd66a;
+}
+
+.deltaDown {
+  color: #ff8686;
+}
+
+.seatPanel {
+  position: absolute;
+  width: 208px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 26px;
+  background: rgba(7, 20, 13, 0.42);
+  border: 1px solid rgba(255, 232, 179, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.seatPanel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
+}
+
+.seatLeft {
+  left: 26px;
+  top: 84px;
+}
+
+.seatRight {
+  right: 26px;
+  top: 84px;
+}
+
+.seatBottom {
+  left: 50%;
+  bottom: 196px;
+  transform: translateX(-50%);
+}
+
+.seatEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  color: rgba(247, 231, 194, 0.48);
+}
+
+.opponentHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opponentMeta {
+  display: grid;
+  gap: 3px;
+  max-width: 118px;
+  min-width: 0;
+  align-items: start;
+  font-size: 13px;
+  color: rgba(250, 240, 214, 0.76);
+}
+
+.opponentMeta strong,
+.opponentMeta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identityBadges {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.roleBadge,
+.modeBadge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.roleBadge {
+  border: 1px solid rgba(255, 230, 179, 0.18);
+}
+
+.roleLandlord {
+  background: linear-gradient(135deg, rgba(255, 223, 118, 0.28), rgba(224, 160, 44, 0.14));
+  color: #ffdf83;
+}
+
+.roleFarmer {
+  background: linear-gradient(135deg, rgba(136, 206, 120, 0.24), rgba(55, 137, 83, 0.14));
+  color: #b7f1a0;
+}
+
+.modeBadge {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(252, 240, 213, 0.76);
+}
+
+.avatarRing {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 235, 194, 0.16);
+  background: radial-gradient(circle at 30% 30%, #ffe6a4, #b7831f);
+  color: #412405;
+  font-weight: 800;
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.22);
+}
+
+.avatarLandlord {
+  background: radial-gradient(circle at 30% 30%, #fff4c9, #e1a927);
+}
+
+.turnLamp {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: #fbe18f;
+}
+
+.opponentFan {
+  position: relative;
+  min-height: 102px;
+}
+
+.opponentBack {
+  position: absolute;
+  width: 64px;
+  top: 0;
+  left: 58px;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.3));
+}
+
+.opponentStats {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: rgba(245, 236, 212, 0.72);
+  font-size: 13px;
+}
+
+.bottomSeatArea {
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  bottom: 18px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(236px, 268px) minmax(0, 1fr) 248px;
+  grid-template-areas: "self hand control";
+  align-items: end;
+}
+
+.selfPanel {
+  grid-area: self;
+  width: 100%;
+  max-width: 268px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "identity timer"
+    "meta timer";
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(8, 21, 15, 0.74), rgba(8, 19, 14, 0.58));
+  border: 1px solid rgba(255, 230, 179, 0.1);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.2);
+}
+
+.selfIdentity,
+.selfMeta {
+  width: 100%;
+}
+
+.selfIdentity {
+  grid-area: identity;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.selfMeta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.selfIdentity strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.selfIdentity > div:last-child {
+  min-width: 0;
+}
+
+.selfIdentity span,
+.selfMeta {
+  color: rgba(252, 240, 213, 0.72);
+}
+
+.selfMeta span {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 230, 179, 0.08);
+  font-size: 12px;
+}
+
+.selfPanel .turnTimerCompact {
+  grid-area: timer;
+  justify-self: end;
+  align-self: center;
+}
+
+.selfPanel .avatarRing {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+
+.handSection {
+  grid-area: hand;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.handRail {
+  position: relative;
+  height: 236px;
+  padding-top: 18px;
+  min-width: 0;
+  overflow: visible;
+  touch-action: none;
+}
+
+.handCardButton {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 118px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transform-origin: center 92%;
+  transform:
+    translateX(-50%)
+    translateY(var(--hand-y, 0px))
+    rotate(var(--hand-rotate, 0deg))
+    scale(var(--hand-scale, 1));
+  transition: transform 180ms ease, filter 180ms ease, opacity 180ms ease;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.35));
+  will-change: transform;
+}
+
+.handCardButton:hover {
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.42));
+}
+
+.handCardDealing {
+  animation: handDeal 760ms cubic-bezier(0.18, 1, 0.3, 1) both;
+  animation-delay: var(--deal-delay, 0ms);
+}
+
+.handCardSelected {
+  filter:
+    drop-shadow(0 22px 28px rgba(0, 0, 0, 0.42))
+    drop-shadow(0 0 18px rgba(255, 220, 118, 0.3));
+}
+
+.emptyHand {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  border-radius: 26px;
+  border: 1px dashed rgba(255, 230, 179, 0.12);
+  color: rgba(250, 236, 207, 0.48);
+}
+
+.handAssistShelf {
+  display: grid;
+  gap: 8px;
+}
+
+.handAssistTrack {
+  position: relative;
+  min-height: 58px;
+}
+
+.playAssistBar {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  width: max-content;
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 230, 179, 0.12);
+  background: rgba(8, 21, 15, 0.72);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+}
+
+.controlDock {
+  grid-area: control;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 248px;
+  align-self: stretch;
+  justify-self: end;
+}
+
+.chatDock {
+  display: grid;
+  gap: 10px;
+}
+
+.chatSection {
+  display: grid;
+  gap: 8px;
+}
+
+.chatLabel {
+  color: #ffd76a;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.chatButtons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chatButton {
+  border: 1px solid rgba(255, 230, 179, 0.12);
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f7e6bd;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.chatEmojiButton {
+  min-width: 48px;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.chatBubble {
+  position: absolute;
+  z-index: 5;
+  max-width: 180px;
+  border-radius: 18px;
+  padding: 10px 12px;
+  background: rgba(255, 248, 228, 0.94);
+  color: #1f241d;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
+  animation: chatBubbleIn 2.6s ease both;
+}
+
+.chatBubble::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+@keyframes sceneSweep {
+  0%,
+  100% {
+    transform: translateX(-120%);
+  }
+
+  55% {
+    transform: translateX(120%);
+  }
+}
+
+.chatBubbleLeft {
+  left: 56px;
+  top: -18px;
+}
+
+.chatBubbleLeft::after {
+  left: 20px;
+  bottom: -5px;
+}
+
+.chatBubbleRight {
+  right: 56px;
+  top: -18px;
+}
+
+.chatBubbleRight::after {
+  right: 20px;
+  bottom: -5px;
+}
+
+.chatBubbleBottom {
+  left: 84px;
+  bottom: 236px;
+}
+
+.chatBubbleBottom::after {
+  left: 26px;
+  bottom: -5px;
+}
+
+.chatEmoji {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.turnTimer {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  padding: 4px;
+  border-radius: 50%;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+.turnTimerCompact {
+  width: 68px;
+  height: 68px;
+}
+
+.turnTimerInner {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(10, 22, 15, 0.88);
+  color: #f8eac3;
+  text-align: center;
+}
+
+.turnTimerInner strong {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.turnTimerInner span {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.selectionBar {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 230, 179, 0.1);
+}
+
+.selectionHint {
+  border-color: rgba(121, 186, 255, 0.16);
+  background: linear-gradient(180deg, rgba(18, 31, 52, 0.52), rgba(9, 18, 15, 0.72));
+}
+
+.selectionSuccess {
+  border-color: rgba(111, 215, 148, 0.18);
+  background: linear-gradient(180deg, rgba(17, 54, 34, 0.48), rgba(9, 18, 15, 0.72));
+}
+
+.selectionError {
+  border-color: rgba(255, 122, 106, 0.18);
+  background: linear-gradient(180deg, rgba(58, 23, 20, 0.54), rgba(9, 18, 15, 0.72));
+}
+
+.selectionTitle {
+  color: #ffd76a;
+  font-weight: 700;
+}
+
+.selectionCards {
+  color: rgba(250, 239, 212, 0.76);
+  min-height: 22px;
+  line-height: 1.4;
+  font-size: 13px;
+}
+
+.selectionPicked {
+  color: rgba(250, 239, 212, 0.58);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.actionsRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.primaryAction,
+.secondaryAction,
+.bidAction {
+  min-width: 96px;
+  border-radius: 999px;
+  padding: 12px 14px;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
+}
+
+.primaryAction {
+  background: linear-gradient(135deg, #ffd86f, #e09d25);
+  color: #331f02;
+  font-weight: 800;
+  box-shadow: 0 14px 26px rgba(224, 157, 37, 0.28);
+}
+
+.secondaryAction {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7e6bd;
+  border: 1px solid rgba(255, 230, 179, 0.16);
+}
+
+.bidAction {
+  background: linear-gradient(135deg, rgba(210, 79, 58, 0.95), rgba(123, 25, 25, 0.95));
+  color: #fff4d2;
+  box-shadow: 0 14px 24px rgba(130, 24, 24, 0.28);
+}
+
+.primaryAction:hover,
+.secondaryAction:hover,
+.bidAction:hover {
+  transform: translateY(-2px);
+}
+
+.secondaryAction:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 8;
+  border-radius: 999px;
+  padding: 12px 18px;
+  color: #f7e6b7;
+  animation: toastUp 220ms ease;
+}
+
+.loadingScreen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  text-align: center;
+  color: #f5ebce;
+  background:
+    radial-gradient(circle at center, rgba(54, 125, 74, 0.5), transparent 32%),
+    linear-gradient(180deg, #07170f 0%, #0d2416 45%, #08140f 100%);
+}
+
+.loadingScreen h1,
+.loadingScreen p {
+  margin: 0;
+}
+
+.loadingOrb {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 230, 179, 0.16);
+  border-top-color: #ffd76a;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes toastUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes specialPop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.65);
+  }
+  15% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.06);
+  }
+  80% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.92);
+  }
+}
+
+@keyframes chatBubbleIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+  12%,
+  84% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+}
+
+@keyframes settleCard {
+  from {
+    opacity: 0;
+    transform:
+      translateX(-50%)
+      translateY(calc(var(--table-y, 0px) - 14px))
+      rotate(var(--table-rotate, 0deg))
+      scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform:
+      translateX(-50%)
+      translateY(var(--table-y, 0px))
+      rotate(var(--table-rotate, 0deg))
+      scale(1);
+  }
+}
+
+@keyframes playBurstIn {
+  from {
+    opacity: 0;
+    transform:
+      translateX(calc(-50% + var(--burst-origin-x, 0px)))
+      translateY(calc(var(--table-y, 0px) + var(--burst-origin-y, 0px)))
+      rotate(calc(var(--table-rotate, 0deg) + var(--burst-origin-rotate, 0deg)))
+      scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform:
+      translateX(-50%)
+      translateY(var(--table-y, 0px))
+      rotate(var(--table-rotate, 0deg))
+      scale(1);
+  }
+}
+
+@keyframes launchFromBottom {
+  from {
+    opacity: 0.14;
+    transform:
+      translateX(-50%)
+      translateY(calc(var(--table-y, 0px) + 172px))
+      rotate(var(--table-rotate, 0deg))
+      scale(0.8);
+  }
+  52% {
+    opacity: 1;
+    transform:
+      translateX(-50%)
+      translateY(calc(var(--table-y, 0px) - 6px))
+      rotate(var(--table-rotate, 0deg))
+      scale(1.03);
+  }
+  to {
+    opacity: 0;
+    transform:
+      translateX(-50%)
+      translateY(calc(var(--table-y, 0px) - 18px))
+      rotate(var(--table-rotate, 0deg))
+      scale(1.05);
+  }
+}
+
+@keyframes handDeal {
+  from {
+    opacity: 0;
+    transform:
+      translateX(calc(-50% + var(--deal-origin-x, 0px)))
+      translateY(var(--deal-origin-y, -196px))
+      rotate(var(--deal-origin-rotate, 0deg))
+      scale(0.74);
+  }
+  58% {
+    opacity: 1;
+  }
+  74% {
+    transform:
+      translateX(-50%)
+      translateY(calc(var(--hand-y, 0px) - 6px))
+      rotate(var(--hand-rotate, 0deg))
+      scale(1.02);
+  }
+  to {
+    opacity: 1;
+    transform:
+      translateX(-50%)
+      translateY(var(--hand-y, 0px))
+      rotate(var(--hand-rotate, 0deg))
+      scale(var(--hand-scale, 1));
+  }
+}
+
+@media (max-width: 1180px) {
+  .centerStage {
+    inset: 72px 170px 286px;
+  }
+
+  .seatPanel {
+    width: 190px;
+  }
+
+  .opponentBack {
+    width: 62px;
+    left: 56px;
+  }
+
+  .bottomSeatArea {
+    grid-template-columns: minmax(216px, 244px) minmax(0, 1fr) 228px;
+  }
+
+  .selfPanel {
+    max-width: 244px;
+  }
+
+  .controlDock {
+    max-width: 228px;
+  }
+}
+
+@media (max-width: 960px) {
+  .hud {
+    padding: 16px 16px 8px;
+  }
+
+  .tableFrame {
+    padding: 8px 16px 18px;
+  }
+
+  .tableSurface {
+    min-height: calc(100vh - 132px);
+  }
+
+  .centerStage {
+    inset: 62px 24px 284px;
+  }
+
+  .bottomSeatArea {
+    left: 16px;
+    right: 16px;
+    bottom: 14px;
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) 188px;
+    grid-template-areas:
+      "self control"
+      "hand hand";
+  }
+
+  .seatPanel {
+    top: 90px;
+    width: 160px;
+    padding: 12px;
+  }
+
+  .seatLeft {
+    left: 12px;
+  }
+
+  .seatRight {
+    right: 12px;
+  }
+
+  .opponentBack {
+    width: 52px;
+    left: 44px;
+  }
+
+  .playedStackCard,
+  .playedCard,
+  .outgoingCard {
+    width: 82px;
+    top: 28px;
+  }
+
+  .chatBubbleBottom {
+    left: 20px;
+    bottom: 196px;
+  }
+
+  .handRail {
+    height: 188px;
+    padding-top: 4px;
+  }
+
+  .handSection {
+    gap: 8px;
+  }
+
+  .handAssistTrack {
+    min-height: 52px;
+  }
+
+  .playAssistBar {
+    position: static;
+    transform: none;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .handCardButton {
+    width: 100px;
+  }
+
+  .selfPanel {
+    max-width: none;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .selectionBar {
+    gap: 4px;
+    padding: 8px 10px;
+  }
+
+  .selectionPicked {
+    font-size: 11px;
+  }
+
+  .controlDock {
+    gap: 8px;
+    max-width: 188px;
+  }
+
+  .chatDock {
+    gap: 6px;
+  }
+
+  .chatSection {
+    gap: 6px;
+  }
+
+  .chatButtons {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .chatButtons::-webkit-scrollbar {
+    display: none;
+  }
+
+  .primaryAction,
+  .secondaryAction,
+  .bidAction {
+    min-width: 80px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 960px) and (orientation: landscape) {
+  .hud {
+    align-items: flex-start;
+    padding: 10px 14px 6px;
+  }
+
+  .roomTitle {
+    font-size: 22px;
+  }
+
+  .roomMeta {
+    font-size: 13px;
+  }
+
+  .roomTag,
+  .hudButton {
+    padding: 8px 12px;
+  }
+
+  .seatPanel {
+    top: 56px;
+    width: 138px;
+    gap: 6px;
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .avatarRing {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+  }
+
+  .centerStage {
+    inset: 54px 150px 206px;
+    gap: 6px;
+    grid-template-rows: auto auto minmax(96px, 1fr) auto auto;
+  }
+
+  .centerTopRow {
+    gap: 8px;
+  }
+
+  .multiplierPill,
+  .statusPill,
+  .bidBadge,
+  .bidPlaceholder {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .multiplierPill strong {
+    font-size: 20px;
+  }
+
+  .bottomCardsArea {
+    min-height: 72px;
+  }
+
+  .bottomCard,
+  .bottomCardBack {
+    width: 54px;
+  }
+
+  .playZone {
+    min-height: 112px;
+  }
+
+  .playedStackCard,
+  .playedCard,
+  .outgoingCard {
+    width: 64px;
+    top: 8px;
+  }
+
+  .bottomSeatArea {
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+    gap: 8px;
+    grid-template-columns: 126px minmax(0, 1fr) 144px 190px;
+    grid-template-areas: ". hand self control";
+    align-items: end;
+  }
+
+  .selfPanel {
+    position: relative;
+    max-width: 144px;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "identity"
+      "meta";
+    padding: 8px 12px;
+    border-radius: 18px;
+    gap: 8px;
+  }
+
+  .selfIdentity {
+    gap: 8px;
+    padding-right: 42px;
+  }
+
+  .selfMeta {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .selfMeta span {
+    font-size: 11px;
+  }
+
+  .selfMeta span:last-child,
+  .selfIdentity .modeBadge {
+    display: none;
+  }
+
+  .selfIdentity strong {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .selfPanel .turnTimerCompact {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+
+  .handRail {
+    height: 124px;
+    padding-top: 0;
+  }
+
+  .handSection {
+    gap: 6px;
+  }
+
+  .handAssistTrack {
+    min-height: 48px;
+  }
+
+  .playAssistBar {
+    padding: 6px;
+    border-radius: 18px;
+  }
+
+  .handCardButton {
+    width: 72px;
+  }
+
+  .selectionBar {
+    gap: 4px;
+    padding: 7px 9px;
+  }
+
+  .selectionPicked {
+    font-size: 10px;
+  }
+
+  .controlDock {
+    gap: 6px;
+    max-width: 206px;
+  }
+
+  .chatDock {
+    gap: 4px;
+  }
+
+  .chatSection {
+    gap: 4px;
+  }
+
+  .chatLabel {
+    display: none;
+  }
+
+  .chatButtons {
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .chatButtons::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chatButton {
+    padding: 6px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .chatEmojiButton {
+    min-width: 36px;
+    font-size: 16px;
+  }
+
+  .primaryAction,
+  .secondaryAction,
+  .bidAction {
+    padding: 9px 11px;
+    min-width: 72px;
+    font-size: 12px;
+  }
+
+  .opponentHead {
+    gap: 8px;
+  }
+
+  .opponentMeta {
+    max-width: 78px;
+    gap: 2px;
+    font-size: 11px;
+  }
+
+  .roleBadge,
+  .modeBadge {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+
+  .turnLamp {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .turnTimer {
+    width: 48px;
+    height: 48px;
+    padding: 3px;
+  }
+
+  .turnTimerCompact {
+    width: 54px;
+    height: 54px;
+  }
+
+  .turnTimerInner strong {
+    font-size: 14px;
+  }
+
+  .turnTimerInner span {
+    font-size: 9px;
+  }
+
+  .opponentFan {
+    min-height: 68px;
+  }
+
+  .opponentBack {
+    width: 44px;
+    left: 30px;
+  }
+
+  .opponentStats {
+    font-size: 11px;
+  }
+
+  .chatBubble {
+    max-width: 124px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .chatBubbleBottom {
+    left: auto;
+    right: 202px;
+    bottom: 128px;
+  }
+
+  .chatBubbleBottom::after {
+    left: auto;
+    right: 26px;
+  }
+}
+
+@media (max-width: 960px) and (max-height: 430px) and (orientation: landscape) {
+  .centerStage {
+    inset: 48px 140px 188px;
+  }
+
+  .seatPanel {
+    width: 128px;
+    top: 50px;
+  }
+
+  .opponentMeta {
+    max-width: 70px;
+  }
+
+  .bottomSeatArea {
+    grid-template-columns: 118px minmax(0, 1fr) 132px 176px;
+    grid-template-areas: ". hand self control";
+  }
+
+  .selfPanel {
+    max-width: 132px;
+    padding: 7px 10px;
+  }
+
+  .handRail {
+    height: 112px;
+  }
+
+  .playAssistBar {
+    gap: 6px;
+    padding: 5px;
+  }
+
+  .handCardButton {
+    width: 68px;
+  }
+
+  .controlDock {
+    max-width: 190px;
+  }
+
+  .chatBubbleBottom {
+    right: 188px;
+  }
+}
+
+@media (max-width: 760px) {
+  .hudActions {
+    width: 100%;
+  }
+
+  .tableSurface {
+    border-radius: 24px;
+  }
+
+  .seatPanel {
+    width: 138px;
+  }
+
+  .centerStage {
+    inset: 122px 16px 286px;
+  }
+
+  .opponentMeta {
+    max-width: 90px;
+  }
+
+  .seatLeft,
+  .seatRight {
+    top: 24px;
+  }
+
+  .roomTag {
+    font-size: 12px;
+  }
+
+  .bottomSeatArea {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "self"
+      "control"
+      "hand";
+  }
+
+  .selfPanel,
+  .controlDock {
+    max-width: none;
+  }
+
+  .handRail {
+    height: 176px;
+  }
+
+  .playAssistBar {
+    width: 100%;
+  }
+
+  .chatBubbleBottom {
+    left: 18px;
+    bottom: 184px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .handCardButton,
+  .playedStackCard,
+  .playedCard,
+  .outgoingCard,
+  .specialEffect,
+  .chatBubble {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

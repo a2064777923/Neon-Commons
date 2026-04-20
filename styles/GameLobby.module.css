@@ -1,0 +1,383 @@
+.page {
+  position: relative;
+  display: grid;
+  gap: 24px;
+}
+
+.page::before,
+.page::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.page::before {
+  inset: -28px 0 auto;
+  height: 300px;
+  background: radial-gradient(circle at center, rgba(255, 236, 180, 0.16), transparent 62%);
+  filter: blur(14px);
+}
+
+.page::after {
+  inset: auto 6% -80px auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 70%);
+  filter: blur(10px);
+}
+
+.themeWerewolf {
+  --theme-button-start: #de728b;
+  --theme-button-end: #8d2036;
+  --theme-button-text: #ffffff;
+  color: #f7eef1;
+}
+
+.themeAvalon {
+  --theme-button-start: #ffe08b;
+  --theme-button-end: #c9881e;
+  --theme-button-text: #2d2005;
+  color: #eef4ff;
+}
+
+.themeGomoku {
+  --theme-button-start: #8ee2b4;
+  --theme-button-end: #2f8c5d;
+  --theme-button-text: #062113;
+  color: #edf8f2;
+}
+
+.themeChinesecheckers {
+  --theme-button-start: #a8c9ff;
+  --theme-button-end: #517fd8;
+  --theme-button-text: #071c42;
+  color: #eef7ff;
+}
+
+.hero,
+.createPanel,
+.roomPanel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 34px;
+  border: 1px solid rgba(255, 229, 172, 0.08);
+  box-shadow: 0 28px 68px rgba(10, 16, 20, 0.18);
+}
+
+.hero::before,
+.createPanel::before,
+.roomPanel::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.themeWerewolf .hero,
+.themeWerewolf .createPanel,
+.themeWerewolf .roomPanel {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(181, 49, 73, 0.18), transparent 24%),
+    radial-gradient(circle at 14% 16%, rgba(147, 191, 255, 0.12), transparent 20%),
+    linear-gradient(180deg, rgba(20, 16, 29, 0.98), rgba(36, 22, 34, 0.94));
+}
+
+.themeAvalon .hero,
+.themeAvalon .createPanel,
+.themeAvalon .roomPanel {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(248, 208, 112, 0.16), transparent 24%),
+    radial-gradient(circle at 14% 16%, rgba(122, 176, 255, 0.14), transparent 22%),
+    linear-gradient(180deg, rgba(11, 25, 49, 0.98), rgba(16, 37, 65, 0.95));
+}
+
+.themeGomoku .hero,
+.themeGomoku .createPanel,
+.themeGomoku .roomPanel {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(96, 209, 161, 0.18), transparent 24%),
+    radial-gradient(circle at 14% 16%, rgba(244, 228, 152, 0.12), transparent 20%),
+    linear-gradient(180deg, rgba(10, 33, 24, 0.98), rgba(18, 46, 31, 0.95));
+}
+
+.themeChinesecheckers .hero,
+.themeChinesecheckers .createPanel,
+.themeChinesecheckers .roomPanel {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(95, 171, 255, 0.18), transparent 24%),
+    radial-gradient(circle at 14% 16%, rgba(255, 164, 128, 0.15), transparent 20%),
+    linear-gradient(180deg, rgba(16, 31, 58, 0.98), rgba(24, 43, 82, 0.95));
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  gap: 20px;
+  padding: 28px;
+}
+
+.heroMain,
+.quickPanel {
+  position: relative;
+  z-index: 1;
+}
+
+.heroMain {
+  display: grid;
+  gap: 18px;
+}
+
+.heroBadge {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffeab1;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroHeading {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.heroIcon {
+  width: 112px;
+  flex: 0 0 112px;
+}
+
+.heroHeading h1 {
+  margin: 0 0 10px;
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: clamp(40px, 5vw, 70px);
+  line-height: 0.92;
+}
+
+.heroHeading p,
+.quickPanel p,
+.panelHead span,
+.field span,
+.roomCard span,
+.meTag span,
+.emptyState {
+  color: rgba(245, 238, 221, 0.72);
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.statGrid > div,
+.meTag,
+.roomCard,
+.emptyState,
+.quickPanel,
+.field {
+  border-radius: 22px;
+  background: rgba(255, 250, 239, 0.06);
+  border: 1px solid rgba(255, 229, 172, 0.08);
+}
+
+.statGrid > div,
+.field {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.statGrid strong,
+.meTag strong,
+.roomCard strong {
+  color: #fff1c7;
+}
+
+.quickPanel {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 20px;
+}
+
+.quickPanel h2,
+.panelHead h2 {
+  margin: 0;
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+}
+
+.quickJoin {
+  display: flex;
+  gap: 10px;
+}
+
+.quickJoin button,
+.refreshButton,
+.launchButton,
+.roomCard button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.quickJoin button,
+.launchButton {
+  background: linear-gradient(135deg, var(--theme-button-start), var(--theme-button-end));
+  color: var(--theme-button-text);
+}
+
+.refreshButton,
+.roomCard button {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff2c8;
+  border: 1px solid rgba(255, 229, 172, 0.12);
+}
+
+.quickJoin button:hover,
+.refreshButton:hover,
+.launchButton:hover,
+.roomCard button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.2);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(340px, 0.96fr);
+  gap: 18px;
+}
+
+.createPanel,
+.roomPanel {
+  padding: 24px;
+}
+
+.createPanel {
+  display: grid;
+  gap: 16px;
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.meTag {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  align-content: start;
+}
+
+.field select,
+.field input {
+  background: rgba(6, 14, 14, 0.26);
+  border-color: rgba(255, 229, 172, 0.12);
+  color: #fff2cc;
+}
+
+.featureRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.featureRow span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 229, 172, 0.08);
+}
+
+.launchButton {
+  width: 100%;
+  min-height: 52px;
+  font-weight: 800;
+}
+
+.roomList {
+  display: grid;
+  gap: 12px;
+}
+
+.roomCard {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.roomCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 229, 172, 0.16);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.18);
+}
+
+.roomCard > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.emptyState {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+}
+
+.invalidState {
+  padding: 52px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 42px rgba(56, 43, 22, 0.08);
+}
+
+@media (max-width: 1080px) {
+  .hero,
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .statGrid,
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quickJoin,
+  .panelHead {
+    flex-direction: column;
+  }
+
+  .heroHeading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -1,0 +1,11 @@
+node_modules
+.next
+.codex
+.planning
+.env
+.env.local
+dist
+npm-debug.log*
+docker-data
+playwright-report
+test-results

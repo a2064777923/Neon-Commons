@@ -1,0 +1,281 @@
+.shell {
+  display: grid;
+  gap: 20px;
+}
+
+.hero,
+.editor,
+.preview {
+  position: relative;
+  overflow: hidden;
+  clip-path: var(--clip-xl);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(9, 19, 34, 0.94), rgba(6, 13, 24, 0.88)),
+    rgba(7, 15, 28, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero::before,
+.editor::before,
+.preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(103, 235, 255, 0.08), transparent 34%, transparent 68%, rgba(255, 82, 212, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 20%);
+}
+
+.hero > *,
+.editor > *,
+.preview > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  padding: 26px;
+}
+
+.badge,
+.sectionEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  width: fit-content;
+  padding: 0 12px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.18);
+  color: #b9f7ff;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.hero h1,
+.sectionHead h2,
+.avatarCard strong,
+.heroStats strong,
+.accountItem strong,
+.statStack strong {
+  font-family: "Orbitron", "Chakra Petch", "Noto Sans TC", sans-serif;
+}
+
+.hero h1 {
+  margin: 12px 0 8px;
+  max-width: 760px;
+  font-size: clamp(34px, 4vw, 60px);
+  line-height: 0.96;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.heroStats > div,
+.accountItem,
+.statStack > div {
+  padding: 16px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.14);
+  background: rgba(8, 18, 33, 0.74);
+}
+
+.heroStats span,
+.accountItem span,
+.statStack span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroStats strong,
+.accountItem strong,
+.statStack strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(320px, 0.94fr);
+  gap: 18px;
+}
+
+.editor,
+.preview {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.sectionHead h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field em {
+  justify-self: end;
+  color: var(--muted);
+  font-style: normal;
+  font-size: 12px;
+}
+
+.accountGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.avatarActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.uploadButton {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 16px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.38);
+  background: linear-gradient(135deg, rgba(103, 235, 255, 0.94), rgba(17, 185, 245, 0.86));
+  color: #04101c;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.uploadButton input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.success {
+  margin: 0;
+  color: var(--success);
+  font-weight: 700;
+}
+
+.preview {
+  align-content: start;
+}
+
+.avatarCard {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.18);
+  background:
+    radial-gradient(circle at top, rgba(103, 235, 255, 0.14), transparent 32%),
+    rgba(8, 18, 33, 0.78);
+  text-align: center;
+}
+
+.avatarFrame {
+  display: grid;
+  place-items: center;
+  width: 168px;
+  height: 168px;
+  clip-path: polygon(14% 0, 86% 0, 100% 14%, 100% 86%, 86% 100%, 14% 100%, 0 86%, 0 14%);
+  border: 1px solid rgba(103, 235, 255, 0.36);
+  background: linear-gradient(135deg, rgba(103, 235, 255, 0.2), rgba(255, 82, 212, 0.18));
+  box-shadow: 0 0 30px rgba(103, 235, 255, 0.16);
+  overflow: hidden;
+}
+
+.avatarFrame span {
+  font-family: "Orbitron", "Chakra Petch", sans-serif;
+  font-size: 54px;
+  font-weight: 700;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarCard strong {
+  font-size: 24px;
+}
+
+.avatarCard span,
+.avatarCard p {
+  color: var(--muted);
+}
+
+.avatarCard p {
+  margin: 0;
+}
+
+.statStack {
+  display: grid;
+  gap: 12px;
+}
+
+.loading {
+  display: grid;
+  place-items: center;
+  min-height: 56vh;
+  clip-path: var(--clip-xl);
+  border: 1px solid var(--line);
+  background: rgba(8, 18, 33, 0.84);
+  color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+  .hero,
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .editor,
+  .preview,
+  .loading {
+    clip-path: none;
+    border-radius: 24px;
+  }
+
+  .heroStats,
+  .accountGrid {
+    grid-template-columns: 1fr;
+  }
+}

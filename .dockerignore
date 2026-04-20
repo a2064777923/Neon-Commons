@@ -1,0 +1,5 @@
+node_modules
+.next
+docker-data
+.env
+npm-debug.log*

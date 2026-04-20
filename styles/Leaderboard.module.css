@@ -1,0 +1,253 @@
+.shell {
+  display: grid;
+  gap: 20px;
+}
+
+.hero,
+.podiumCard,
+.tableCard {
+  position: relative;
+  overflow: hidden;
+  clip-path: var(--clip-xl);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(9, 19, 34, 0.94), rgba(6, 13, 24, 0.88)),
+    rgba(7, 15, 28, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.hero::before,
+.podiumCard::before,
+.tableCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(103, 235, 255, 0.08), transparent 34%, transparent 66%, rgba(255, 82, 212, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 20%);
+}
+
+.hero > *,
+.podiumCard > *,
+.tableCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
+  gap: 18px;
+  padding: 26px;
+}
+
+.badge,
+.sectionEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  width: fit-content;
+  padding: 0 12px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.18);
+  color: #b9f7ff;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.hero h1,
+.podiumCard strong,
+.heroStats strong,
+.tableHead h2,
+.podiumMetric strong {
+  font-family: "Orbitron", "Chakra Petch", "Noto Sans TC", sans-serif;
+}
+
+.hero h1 {
+  margin: 12px 0 8px;
+  max-width: 760px;
+  font-size: clamp(34px, 4vw, 60px);
+  line-height: 0.96;
+}
+
+.hero p,
+.tableHint {
+  margin: 0;
+  color: var(--muted);
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.heroStats > div,
+.podiumMetric,
+.tableHint {
+  padding: 16px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.14);
+  background: rgba(8, 18, 33, 0.74);
+}
+
+.heroStats span,
+.podiumMetric span,
+.podiumMeta span,
+.podiumCard p {
+  color: var(--muted);
+}
+
+.heroStats strong,
+.podiumMetric strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+}
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.podiumCard {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 22px;
+  text-align: center;
+}
+
+.podiumCard[data-rank="1"] {
+  background:
+    linear-gradient(180deg, rgba(17, 27, 40, 0.94), rgba(8, 16, 28, 0.9)),
+    rgba(7, 15, 28, 0.92);
+  box-shadow: 0 0 0 1px rgba(255, 180, 84, 0.2), 0 26px 50px rgba(0, 0, 0, 0.36);
+}
+
+.avatarFrame,
+.cellAvatar {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(103, 235, 255, 0.3);
+  background: linear-gradient(135deg, rgba(103, 235, 255, 0.2), rgba(255, 82, 212, 0.18));
+}
+
+.avatarFrame {
+  width: 92px;
+  height: 92px;
+  clip-path: polygon(14% 0, 86% 0, 100% 14%, 100% 86%, 86% 100%, 14% 100%, 0 86%, 0 14%);
+}
+
+.avatarImage,
+.cellAvatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFrame span,
+.cellAvatar {
+  font-family: "Orbitron", "Chakra Petch", sans-serif;
+  font-weight: 700;
+}
+
+.rankLabel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(255, 180, 84, 0.24);
+  color: #ffd898;
+  background: rgba(255, 180, 84, 0.08);
+}
+
+.podiumCard strong {
+  font-size: 24px;
+}
+
+.podiumCard p {
+  margin: 0;
+}
+
+.podiumMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.tableCard {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.tableHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.tableHead h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+}
+
+.playerCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cellAvatar {
+  width: 38px;
+  height: 38px;
+  clip-path: polygon(16% 0, 84% 0, 100% 16%, 100% 84%, 84% 100%, 16% 100%, 0 84%, 0 16%);
+  font-size: 14px;
+}
+
+.playerCell span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.playerCell strong {
+  font-size: 14px;
+}
+
+.playerCell em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 12px;
+}
+
+.meRow td {
+  background: rgba(103, 235, 255, 0.05);
+}
+
+@media (max-width: 1100px) {
+  .hero,
+  .podium {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .podiumCard,
+  .tableCard {
+    clip-path: none;
+    border-radius: 24px;
+  }
+
+  .heroStats {
+    grid-template-columns: 1fr;
+  }
+}

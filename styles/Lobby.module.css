@@ -1,0 +1,401 @@
+.lobby {
+  display: grid;
+  gap: 20px;
+}
+
+.banner,
+.quickJoinCard,
+.walletCard,
+.pulseCard,
+.rankPanel,
+.launchPanel,
+.roomPanel,
+.templateCard,
+.roomCard {
+  position: relative;
+  overflow: hidden;
+  clip-path: var(--clip-xl);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(9, 19, 34, 0.94), rgba(6, 13, 24, 0.88)),
+    rgba(7, 15, 28, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.banner::before,
+.quickJoinCard::before,
+.walletCard::before,
+.pulseCard::before,
+.rankPanel::before,
+.launchPanel::before,
+.roomPanel::before,
+.templateCard::before,
+.roomCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(103, 235, 255, 0.08), transparent 34%, transparent 66%, rgba(255, 82, 212, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 18%);
+}
+
+.banner > *,
+.quickJoinCard > *,
+.walletCard > *,
+.pulseCard > *,
+.rankPanel > *,
+.launchPanel > *,
+.roomPanel > *,
+.templateCard > *,
+.roomCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.badge,
+.panelEyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  width: fit-content;
+  padding: 0 12px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.18);
+  color: #b9f7ff;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.banner,
+.quickJoinCard,
+.walletCard,
+.pulseCard,
+.rankPanel,
+.launchPanel,
+.roomPanel {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.banner {
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+  gap: 18px;
+}
+
+.banner h1,
+.bannerStats strong,
+.panelHead h2,
+.templateCard strong,
+.roomHead strong,
+.metricStack strong,
+.rankItem strong {
+  font-family: "Orbitron", "Chakra Petch", "Noto Sans TC", sans-serif;
+}
+
+.banner h1 {
+  margin: 12px 0 8px;
+  max-width: 720px;
+  font-size: clamp(36px, 4vw, 60px);
+  line-height: 0.96;
+}
+
+.banner p,
+.quickJoinCard p,
+.walletCard p,
+.pulseCard p,
+.roomHead span,
+.templateCard span,
+.emptyState {
+  margin: 0;
+  color: var(--muted);
+}
+
+.bannerStats,
+.metricStack,
+.templateGrid,
+.controlGrid,
+.roomList,
+.rankList {
+  display: grid;
+  gap: 12px;
+}
+
+.bannerStats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bannerStats > div,
+.metricStack > div,
+.previewGrid > div,
+.rankItem,
+.roomMeta span,
+.templateMeta em,
+.chipButton,
+.switchButton {
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.14);
+  background: rgba(8, 18, 33, 0.74);
+}
+
+.bannerStats > div,
+.metricStack > div,
+.previewGrid > div,
+.rankItem {
+  padding: 16px;
+}
+
+.bannerStats span,
+.metricStack span,
+.previewGrid span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bannerStats strong,
+.metricStack strong,
+.previewGrid strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+}
+
+.floor {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.68fr) minmax(0, 1.7fr) minmax(280px, 0.82fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.rail,
+.centerStage {
+  display: grid;
+  gap: 18px;
+}
+
+.inlineJoin {
+  display: flex;
+  gap: 10px;
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.panelHead h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+}
+
+.launchButton {
+  border: 0;
+  min-height: 52px;
+  padding: 0 22px;
+  clip-path: var(--clip-lg);
+  background: linear-gradient(135deg, rgba(103, 235, 255, 0.94), rgba(17, 185, 245, 0.86));
+  color: #04101c;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 18px 38px rgba(17, 185, 245, 0.22);
+}
+
+.templateGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.templateCard {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.templateCard:hover {
+  transform: translateY(-2px);
+}
+
+.templateActive {
+  border-color: rgba(103, 235, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(103, 235, 255, 0.14), 0 18px 40px rgba(0, 0, 0, 0.34);
+}
+
+.templateCard strong {
+  font-size: 20px;
+}
+
+.templateMeta,
+.chipRail,
+.visibilityRow,
+.roomMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.templateMeta em,
+.roomMeta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  color: #b9f7ff;
+  font-style: normal;
+  font-size: 12px;
+}
+
+.controlGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  color: #ffd898;
+}
+
+.chipButton,
+.switchButton,
+.roomFoot button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  color: #dff7ff;
+  cursor: pointer;
+  border: 1px solid rgba(103, 235, 255, 0.14);
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.chipButton:hover,
+.switchButton:hover,
+.roomFoot button:hover {
+  transform: translateY(-1px);
+}
+
+.chipActive,
+.switchActive {
+  background: linear-gradient(135deg, rgba(103, 235, 255, 0.94), rgba(17, 185, 245, 0.86));
+  color: #04101c;
+  border-color: rgba(103, 235, 255, 0.44);
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.roomHead,
+.roomFoot,
+.rankItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.roomCard {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.stateBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(255, 180, 84, 0.24);
+  background: rgba(255, 180, 84, 0.08);
+  color: #ffd898;
+}
+
+.occupancyTrack {
+  position: relative;
+  overflow: hidden;
+  height: 10px;
+  clip-path: var(--clip-lg);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.occupancyTrack span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(103, 235, 255, 0.94), rgba(255, 82, 212, 0.9));
+  box-shadow: 0 0 20px rgba(103, 235, 255, 0.28);
+}
+
+.roomFoot span,
+.rankItem span {
+  color: var(--muted);
+}
+
+.rankItem em {
+  color: #ffd898;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.emptyState {
+  display: grid;
+  place-items: center;
+  min-height: 170px;
+  clip-path: var(--clip-lg);
+  border: 1px dashed rgba(103, 235, 255, 0.16);
+}
+
+@media (max-width: 1280px) {
+  .floor {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1040px) {
+  .banner,
+  .templateGrid,
+  .controlGrid,
+  .previewGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .banner,
+  .quickJoinCard,
+  .walletCard,
+  .pulseCard,
+  .rankPanel,
+  .launchPanel,
+  .roomPanel,
+  .templateCard,
+  .roomCard {
+    clip-path: none;
+    border-radius: 24px;
+  }
+
+  .bannerStats {
+    grid-template-columns: 1fr;
+  }
+
+  .inlineJoin {
+    flex-direction: column;
+  }
+}

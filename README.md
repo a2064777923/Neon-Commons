@@ -1,4 +1,4 @@
-# Party Arcade
+# Hong's Neon-Commons
 
 可在線開房的派對遊戲網站，現已集成：
 
@@ -14,6 +14,15 @@
 - 排行榜
 - 管理後台玩家調整、模板配置、系統配置
 - Docker Compose 部署
+
+## 技術棧與架構
+
+- 前端：`Next.js 15 + React 18`
+- 後端：`Node.js HTTP server + Socket.IO`
+- 持久化：`PostgreSQL`
+- 形態：同倉前後端分離
+- 前端默認端口：`3100`
+- 後端默認端口：`3101`
 
 ## 快速開始
 
@@ -39,6 +48,12 @@ npm run dev
 
 ```text
 http://127.0.0.1:3100
+```
+
+後端 API / Socket 默認跑在：
+
+```text
+http://127.0.0.1:3101
 ```
 
 首頁現在是多遊戲入口頁；斗地主房間頁支持桌面與手機橫屏沉浸式牌桌；狼人殺與阿瓦隆房間帶階段倒計時、擴展身份、AI 補位與語音席位；五子棋與跳棋帶獨立棋盤房間、房號加入與單人補 AI。
@@ -81,5 +96,3 @@ npm run test:ui
 - [運維手冊](/home/choinong/doudezhu/docs/ops/deployment.md)
 - [後台操作](/home/choinong/doudezhu/docs/admin/admin-guide.md)
 - [變更記錄 2026-04-18 棋類擴展](/home/choinong/doudezhu/docs/changelog/2026-04-18-board-games.md)
-
-# Neon-Commons
