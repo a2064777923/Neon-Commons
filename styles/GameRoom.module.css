@@ -415,6 +415,18 @@
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.2);
 }
 
+.seatPanel[data-presence-state="reconnecting"],
+.selfPanel[data-presence-state="reconnecting"] {
+  border-color: rgba(255, 207, 111, 0.34);
+  box-shadow: 0 0 0 1px rgba(255, 207, 111, 0.16), 0 16px 28px rgba(0, 0, 0, 0.2);
+}
+
+.seatPanel[data-presence-state="disconnected"],
+.selfPanel[data-presence-state="disconnected"] {
+  border-color: rgba(235, 111, 111, 0.28);
+  box-shadow: 0 0 0 1px rgba(235, 111, 111, 0.14), 0 16px 28px rgba(0, 0, 0, 0.2);
+}
+
 .seatLeft {
   left: 26px;
   top: 84px;
@@ -501,6 +513,21 @@
 .modeBadge {
   background: rgba(255, 255, 255, 0.08);
   color: rgba(252, 240, 213, 0.76);
+}
+
+.modeBadge[data-presence-state="connected"] {
+  background: rgba(91, 222, 132, 0.16);
+  color: #d6f8c9;
+}
+
+.modeBadge[data-presence-state="reconnecting"] {
+  background: rgba(255, 207, 111, 0.18);
+  color: #ffe6ab;
+}
+
+.modeBadge[data-presence-state="disconnected"] {
+  background: rgba(235, 111, 111, 0.16);
+  color: #ffd1d1;
 }
 
 .avatarRing {
@@ -979,6 +1006,26 @@
   padding: 12px 18px;
   color: #f7e6b7;
   animation: toastUp 220ms ease;
+}
+
+.recoveryBanner {
+  position: fixed;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  z-index: 8;
+  border-radius: 999px;
+  padding: 11px 18px;
+  color: #f7e6b7;
+  border: 1px solid rgba(255, 230, 179, 0.18);
+  background: rgba(8, 22, 15, 0.72);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.22);
+}
+
+.recoveryBanner[data-recovery-state="reconnecting"] {
+  border-color: rgba(255, 207, 111, 0.34);
+  color: #ffe6ab;
 }
 
 .loadingScreen {

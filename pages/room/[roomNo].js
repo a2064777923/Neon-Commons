@@ -4,6 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import CardArtwork from "../../components/game/CardArtwork";
 import MatchResultOverlay from "../../components/MatchResultOverlay";
 import SiteLayout from "../../components/SiteLayout";
+import {
+  getPresenceLabel,
+  getPresenceState,
+  getRecoveryBannerMessage
+} from "../../lib/client/room-entry";
 import { createGameAudio } from "../../lib/game-ui/audio";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import styles from "../../styles/GameRoom.module.css";
@@ -44,15 +49,19 @@ export default function RoomPage() {
   const [pendingAction, setPendingAction] = useState(null);
   const [hintCursor, setHintCursor] = useState(0);
   const [dismissedResultKey, setDismissedResultKey] = useState("");
+  const [socketConnected, setSocketConnected] = useState(null);
+  const [recoveryRestoreNotice, setRecoveryRestoreNotice] = useState("");
   const audioRef = useRef(null);
   const roomRef = useRef(null);
   const handRef = useRef(null);
   const playZoneRef = useRef(null);
   const sceneRef = useRef(null);
   const messageTimerRef = useRef(null);
+  const recoveryTimerRef = useRef(null);
   const dealTimerRef = useRef(null);
   const lastChatIdRef = useRef(null);
   const chatBubbleTimersRef = useRef({});
+  const previousSocketConnectedRef = useRef(null);
   const dragRef = useRef({
     active: false,
     anchorIndex: null,
@@ -188,15 +197,45 @@ export default function RoomPage() {
       ].join("|")
     : "";
   const resultOpen = Boolean(room?.lastResult) && dismissedResultKey !== resultKey;
+  const recoveryBanner = getRecoveryBannerMessage(mySeat, socketConnected, nowMs);
+  const recoveryNotice = recoveryBanner || recoveryRestoreNotice;
 
   useEffect(() => {
     audioRef.current = createGameAudio();
     return () => {
       clearTimeout(messageTimerRef.current);
+      clearTimeout(recoveryTimerRef.current);
       clearTimeout(dealTimerRef.current);
       Object.values(chatBubbleTimersRef.current).forEach((timer) => clearTimeout(timer));
     };
   }, []);
+
+  useEffect(() => {
+    clearTimeout(recoveryTimerRef.current);
+
+    if (!mySeat) {
+      setRecoveryRestoreNotice("");
+      previousSocketConnectedRef.current = socketConnected;
+      return undefined;
+    }
+
+    if (
+      previousSocketConnectedRef.current === false &&
+      socketConnected === true &&
+      getPresenceState(mySeat) === "connected"
+    ) {
+      setRecoveryRestoreNotice("已恢復到當前房間。");
+      recoveryTimerRef.current = setTimeout(() => {
+        setRecoveryRestoreNotice("");
+      }, 2200);
+    } else if (recoveryBanner) {
+      setRecoveryRestoreNotice("");
+    }
+
+    previousSocketConnectedRef.current = socketConnected;
+
+    return () => clearTimeout(recoveryTimerRef.current);
+  }, [mySeat, recoveryBanner, socketConnected]);
 
   useEffect(() => {
     if (!room?.round?.turnEndsAt) {
@@ -357,7 +396,18 @@ export default function RoomPage() {
       });
     }
 
-    socket.emit(ROOM_EVENTS.subscribe, { roomNo });
+    function subscribe() {
+      socket.emit(ROOM_EVENTS.subscribe, { roomNo });
+    }
+
+    function onConnect() {
+      setSocketConnected(true);
+      subscribe();
+    }
+
+    function onDisconnect() {
+      setSocketConnected(false);
+    }
 
     function onRoomUpdate({ room: nextRoom, notification }) {
       handleIncomingRoom(nextRoom, notification);
@@ -368,10 +418,21 @@ export default function RoomPage() {
       showMessage(error || "房間操作失敗");
     }
 
+    if (socket.connected) {
+      setSocketConnected(true);
+      subscribe();
+    } else {
+      setSocketConnected(null);
+    }
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
     socket.on(ROOM_EVENTS.update, onRoomUpdate);
     socket.on(ROOM_EVENTS.error, onRoomError);
 
     return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       socket.off(ROOM_EVENTS.update, onRoomUpdate);
       socket.off(ROOM_EVENTS.error, onRoomError);
     };
@@ -950,7 +1011,11 @@ export default function RoomPage() {
             </div>
 
             <div className={styles.bottomSeatArea} data-room-dock="bottom">
-              <div className={styles.selfPanel} data-seat-slot="self">
+              <div
+                className={styles.selfPanel}
+                data-seat-slot="self"
+                data-presence-state={mySeat?.presenceState || "disconnected"}
+              >
                 <div className={styles.selfIdentity}>
                   <div className={styles.avatarRing}>{mySeat?.displayName?.slice(0, 1) || "?"}</div>
                   <div>
@@ -966,6 +1031,18 @@ export default function RoomPage() {
                       <span className={styles.modeBadge}>
                         {mySeat?.trustee ? "托管中" : "手動操控"}
                       </span>
+                      {mySeat ? (
+                        <span
+                          className={styles.modeBadge}
+                          data-presence-state={mySeat.presenceState || "disconnected"}
+                        >
+                          {getPresenceLabel(mySeat, {
+                            connected: "在線",
+                            reconnecting: "重連中",
+                            disconnected: "離線"
+                          })}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -1226,6 +1303,15 @@ export default function RoomPage() {
           }
         />
 
+        {recoveryNotice ? (
+          <div
+            className={styles.recoveryBanner}
+            data-recovery-banner="true"
+            data-recovery-state={mySeat?.presenceState || (socketConnected === false ? "reconnecting" : "connected")}
+          >
+            {recoveryNotice}
+          </div>
+        ) : null}
         {message ? <div className={styles.toast}>{message}</div> : null}
       </section>
     </SiteLayout>
@@ -1261,6 +1347,7 @@ function SeatPanel({
     <div
       className={`${styles.seatPanel} ${styles[`seat${capitalize(slot)}`]}`}
       data-seat-slot={slot}
+      data-presence-state={player.presenceState || "disconnected"}
     >
       <div className={styles.opponentHead}>
         <div className={`${styles.avatarRing} ${player.isLandlord ? styles.avatarLandlord : ""}`}>
@@ -1269,7 +1356,13 @@ function SeatPanel({
         <div className={styles.opponentMeta}>
           <strong>{player.displayName}</strong>
           <span>
-            {player.isBot ? "AI" : player.connected ? "在線" : "離線"} ·
+            {player.isBot
+              ? "AI"
+              : getPresenceLabel(player, {
+                  connected: "在線",
+                  reconnecting: "重連中",
+                  disconnected: "離線"
+                })} ·
             {player.trustee ? " 托管" : " 正常"}
           </span>
           <div className={styles.identityBadges}>

@@ -107,6 +107,21 @@
   border: 1px solid rgba(255, 232, 180, 0.08);
 }
 
+.playerMeta span[data-presence-state="connected"] {
+  background: rgba(91, 222, 132, 0.16);
+  color: #d6f8c9;
+}
+
+.playerMeta span[data-presence-state="reconnecting"] {
+  background: rgba(255, 207, 111, 0.18);
+  color: #ffe6ab;
+}
+
+.playerMeta span[data-presence-state="disconnected"] {
+  background: rgba(235, 111, 111, 0.16);
+  color: #ffd1d1;
+}
+
 .hudActions {
   display: flex;
   gap: 12px;
@@ -276,6 +291,16 @@
   border: 1px solid rgba(255, 216, 130, 0.26);
 }
 
+.playerCard[data-presence-state="reconnecting"] {
+  border: 1px solid rgba(255, 207, 111, 0.28);
+  box-shadow: 0 0 0 1px rgba(255, 207, 111, 0.12);
+}
+
+.playerCard[data-presence-state="disconnected"] {
+  border: 1px solid rgba(235, 111, 111, 0.24);
+  box-shadow: 0 0 0 1px rgba(235, 111, 111, 0.12);
+}
+
 .playerOut {
   opacity: 0.58;
 }
@@ -290,6 +315,24 @@
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.72);
   color: #fff4d8;
+}
+
+.recoveryBanner {
+  position: fixed;
+  left: 50%;
+  bottom: 76px;
+  z-index: 5;
+  transform: translateX(-50%);
+  padding: 11px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.76);
+  color: #fff4d8;
+  border: 1px solid rgba(255, 232, 180, 0.1);
+}
+
+.recoveryBanner[data-recovery-state="reconnecting"] {
+  border-color: rgba(255, 207, 111, 0.34);
+  color: #ffe6ab;
 }
 
 .timer {

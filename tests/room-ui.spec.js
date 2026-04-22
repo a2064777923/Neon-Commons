@@ -1,16 +1,13 @@
 const { test, expect } = require("playwright/test");
 const { API_ROUTES } = require("../lib/client/network-runtime");
+const { registerFreshUser } = require("./support/auth");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("desktop and landscape room ui smoke", async ({ page }) => {
   page.setDefaultTimeout(30000);
 
-  await page.goto(`${FRONTEND_BASE_URL}/login`);
-  await page.getByLabel("帳號或郵箱").fill("smoke202604171508");
-  await page.getByLabel("密碼").fill("Smoke123456");
-  await page.getByRole("button", { name: "登入" }).click();
-  await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/`);
+  await registerFreshUser(page, FRONTEND_BASE_URL, "cardsmoke");
 
   const createRoomUrl = API_ROUTES.cardRooms.create();
   const roomNo = await page.evaluate(async ({ url }) => {
@@ -67,6 +64,8 @@ test("desktop and landscape room ui smoke", async ({ page }) => {
   const desktopCount = await page.locator('[data-card-id]').count();
   expect([17, 20]).toContain(desktopCount);
   await expect(page.getByText(/正在叫地主|正在出牌/)).toBeVisible();
+  await expect(page.locator('[data-seat-slot="self"]')).toHaveAttribute("data-presence-state", "connected");
+  await expect(page.locator('[data-seat-slot="left"]')).toHaveAttribute("data-presence-state", "connected");
   await expectStableDockLayout(page, 0.34);
   await page.getByRole("button", { name: "要不起" }).click();
   await expect(page.locator('[data-chat-slot="bottom"]')).toContainText("要不起");
@@ -76,9 +75,11 @@ test("desktop and landscape room ui smoke", async ({ page }) => {
 
   await page.setViewportSize({ width: 844, height: 390 });
   await page.reload();
+  await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/room/${roomNo}`);
   await page.waitForSelector('[data-card-id]');
   const landscapeCount = await page.locator('[data-card-id]').count();
   expect([17, 20]).toContain(landscapeCount);
+  await expect(page.locator('[data-seat-slot="self"]')).toHaveAttribute("data-presence-state", "connected");
   await expectStableDockLayout(page, 0.4);
   await page.screenshot({ path: "/tmp/doudezhu-room-landscape.png", fullPage: true });
 });

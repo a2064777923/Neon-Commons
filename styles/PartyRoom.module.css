@@ -115,6 +115,21 @@
   border: 1px solid rgba(255, 232, 180, 0.08);
 }
 
+.rolePill[data-presence-state="connected"] {
+  background: rgba(91, 222, 132, 0.16);
+  color: #d6f8c9;
+}
+
+.rolePill[data-presence-state="reconnecting"] {
+  background: rgba(255, 207, 111, 0.18);
+  color: #ffe6ab;
+}
+
+.rolePill[data-presence-state="disconnected"] {
+  background: rgba(235, 111, 111, 0.16);
+  color: #ffd1d1;
+}
+
 .hud h1 {
   margin: 6px 0;
   font-size: clamp(34px, 5vw, 58px);
@@ -260,6 +275,16 @@
 .seatCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.18);
+}
+
+.seatCard[data-presence-state="reconnecting"] {
+  border-color: rgba(255, 207, 111, 0.34);
+  box-shadow: 0 0 0 1px rgba(255, 207, 111, 0.16), 0 16px 28px rgba(0, 0, 0, 0.18);
+}
+
+.seatCard[data-presence-state="disconnected"] {
+  border-color: rgba(235, 111, 111, 0.28);
+  box-shadow: 0 0 0 1px rgba(235, 111, 111, 0.14), 0 16px 28px rgba(0, 0, 0, 0.18);
 }
 
 .seatDead {
@@ -507,6 +532,24 @@
   background: rgba(9, 18, 15, 0.82);
   border: 1px solid rgba(255, 232, 180, 0.1);
   animation: toastRise 220ms ease-out;
+}
+
+.recoveryBanner {
+  position: fixed;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: rgba(9, 18, 15, 0.82);
+  border: 1px solid rgba(255, 232, 180, 0.1);
+  color: #f8efda;
+}
+
+.recoveryBanner[data-recovery-state="reconnecting"] {
+  border-color: rgba(255, 207, 111, 0.34);
+  color: #ffe6ab;
 }
 
 .loading {

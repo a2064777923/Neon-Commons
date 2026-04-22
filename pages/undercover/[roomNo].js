@@ -7,6 +7,9 @@ import GameIcon from "../../components/game-hub/GameIcon";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import {
   clearPendingGuestMatchClaim,
+  getPresenceLabel,
+  getPresenceState,
+  getRecoveryBannerMessage,
   readPendingGuestMatchClaim,
   writePendingGuestMatchClaim
 } from "../../lib/client/room-entry";
@@ -27,9 +30,13 @@ export default function UndercoverRoomPage() {
   const [clueText, setClueText] = useState("");
   const [dismissedResultKey, setDismissedResultKey] = useState("");
   const [nowMs, setNowMs] = useState(Date.now());
+  const [socketConnected, setSocketConnected] = useState(null);
+  const [recoveryRestoreNotice, setRecoveryRestoreNotice] = useState("");
   const roomRef = useRef(null);
   const messageTimerRef = useRef(null);
+  const recoveryTimerRef = useRef(null);
   const guestClaimSyncRef = useRef("");
+  const previousSocketConnectedRef = useRef(null);
 
   const meta = useMemo(() => getGameMeta("undercover"), []);
   const mySeat = room?.viewer || null;
@@ -51,6 +58,8 @@ export default function UndercoverRoomPage() {
       ].join("|")
     : "";
   const resultOpen = Boolean(room?.lastResult) && dismissedResultKey !== resultKey;
+  const recoveryBanner = getRecoveryBannerMessage(mySeat, socketConnected, nowMs);
+  const recoveryNotice = recoveryBanner || recoveryRestoreNotice;
 
   useEffect(() => {
     if (!roomNo) {
@@ -61,8 +70,36 @@ export default function UndercoverRoomPage() {
 
     return () => {
       clearTimeout(messageTimerRef.current);
+      clearTimeout(recoveryTimerRef.current);
     };
   }, [roomNo]);
+
+  useEffect(() => {
+    clearTimeout(recoveryTimerRef.current);
+
+    if (!mySeat) {
+      setRecoveryRestoreNotice("");
+      previousSocketConnectedRef.current = socketConnected;
+      return undefined;
+    }
+
+    if (
+      previousSocketConnectedRef.current === false &&
+      socketConnected === true &&
+      getPresenceState(mySeat) === "connected"
+    ) {
+      setRecoveryRestoreNotice("已恢复到当前房间。");
+      recoveryTimerRef.current = setTimeout(() => {
+        setRecoveryRestoreNotice("");
+      }, 2200);
+    } else if (recoveryBanner) {
+      setRecoveryRestoreNotice("");
+    }
+
+    previousSocketConnectedRef.current = socketConnected;
+
+    return () => clearTimeout(recoveryTimerRef.current);
+  }, [mySeat, recoveryBanner, socketConnected]);
 
   useEffect(() => {
     if (!roomNo || !me) {
@@ -80,7 +117,12 @@ export default function UndercoverRoomPage() {
     }
 
     function onConnect() {
+      setSocketConnected(true);
       subscribeIfSeated();
+    }
+
+    function onDisconnect() {
+      setSocketConnected(false);
     }
 
     function onRoomUpdate({ room: nextRoom }) {
@@ -93,7 +135,14 @@ export default function UndercoverRoomPage() {
       showMessage(error || "房間操作失敗");
     }
 
+    if (socket.connected) {
+      setSocketConnected(true);
+    } else {
+      setSocketConnected(null);
+    }
+
     socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
     socket.on(PARTY_EVENTS.update, onRoomUpdate);
     socket.on(PARTY_EVENTS.error, onRoomError);
 
@@ -101,6 +150,7 @@ export default function UndercoverRoomPage() {
 
     return () => {
       socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       socket.off(PARTY_EVENTS.update, onRoomUpdate);
       socket.off(PARTY_EVENTS.error, onRoomError);
     };
@@ -453,11 +503,16 @@ export default function UndercoverRoomPage() {
                     className={`${styles.playerCard} ${
                       mySeat?.seatIndex === player.seatIndex ? styles.playerSelf : ""
                     } ${player.alive === false ? styles.playerOut : ""}`}
+                    data-presence-state={player.presenceState || "disconnected"}
                   >
                     <div>
                       <strong>{player.displayName}</strong>
                       <span>
-                        #{player.seatIndex + 1} · {player.connected ? "在線" : "離線"}
+                        #{player.seatIndex + 1} · {getPresenceLabel(player, {
+                          connected: "在線",
+                          reconnecting: "重連中",
+                          disconnected: "離線"
+                        })}
                       </span>
                     </div>
                     <div className={styles.playerMeta}>
@@ -522,6 +577,16 @@ export default function UndercoverRoomPage() {
             onClick: () => setDismissedResultKey("")
           }}
         />
+
+        {recoveryNotice ? (
+          <div
+            className={styles.recoveryBanner}
+            data-recovery-banner="true"
+            data-recovery-state={mySeat?.presenceState || (socketConnected === false ? "reconnecting" : "connected")}
+          >
+            {recoveryNotice}
+          </div>
+        ) : null}
       </section>
     </SiteLayout>
   );

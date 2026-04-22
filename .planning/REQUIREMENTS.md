@@ -7,9 +7,9 @@
 
 ### Session Recovery
 
-- [ ] **ROOM-01**: Player can refresh or reconnect to an eligible active room and recover their seat/session without manual admin help.
-- [ ] **ROOM-02**: Guest player can rejoin an eligible party or board room with their scoped guest identity intact until the room closes.
-- [ ] **ROOM-03**: Room host can see whether an occupant is connected, reconnecting, or disconnected before removing them.
+- [x] **ROOM-01**: Player can refresh or reconnect to an eligible active room and recover their seat/session without manual admin help.
+- [x] **ROOM-02**: Guest player can rejoin an eligible party or board room with their scoped guest identity intact until the room closes.
+- [x] **ROOM-03**: Room host can see whether an occupant is connected, reconnecting, or disconnected before removing them.
 
 ### Live Operations
 
@@ -55,9 +55,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ROOM-01 | Phase 7 | Pending |
-| ROOM-02 | Phase 7 | Pending |
-| ROOM-03 | Phase 7 | Pending |
+| ROOM-01 | Phase 7 | Complete |
+| ROOM-02 | Phase 7 | Complete |
+| ROOM-03 | Phase 7 | Complete |
 | OPS-01 | Phase 8 | Pending |
 | OPS-02 | Phase 8 | Pending |
 | OPS-03 | Phase 8 | Pending |

@@ -7,6 +7,9 @@ import GameIcon from "../../components/game-hub/GameIcon";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import {
   clearPendingGuestMatchClaim,
+  getPresenceLabel,
+  getPresenceState,
+  getRecoveryBannerMessage,
   readPendingGuestMatchClaim,
   writePendingGuestMatchClaim
 } from "../../lib/client/room-entry";
@@ -46,18 +49,22 @@ export default function PartyRoomPage() {
   const [remoteStreams, setRemoteStreams] = useState({});
   const [noteText, setNoteText] = useState("");
   const [dismissedResultKey, setDismissedResultKey] = useState("");
+  const [socketConnected, setSocketConnected] = useState(null);
+  const [recoveryRestoreNotice, setRecoveryRestoreNotice] = useState("");
   const [witchPlan, setWitchPlan] = useState({
     saveTarget: false,
     poisonSeat: null
   });
   const roomRef = useRef(null);
   const messageTimerRef = useRef(null);
+  const recoveryTimerRef = useRef(null);
   const localStreamRef = useRef(null);
   const peerConnectionsRef = useRef({});
   const remoteAudioRefs = useRef({});
   const joinedVoiceRef = useRef(false);
   const voiceMutedRef = useRef(false);
   const guestClaimSyncRef = useRef("");
+  const previousSocketConnectedRef = useRef(null);
 
   const meta = useMemo(() => getGameMeta(room?.gameKey), [room?.gameKey]);
   const mySeat = room?.viewer || null;
@@ -85,6 +92,8 @@ export default function PartyRoomPage() {
       ].join("|")
     : "";
   const resultOpen = Boolean(room?.lastResult) && dismissedResultKey !== resultKey;
+  const recoveryBanner = getRecoveryBannerMessage(mySeat, socketConnected, nowMs);
+  const recoveryNotice = recoveryBanner || recoveryRestoreNotice;
 
   useEffect(() => {
     if (!roomNo) {
@@ -95,9 +104,37 @@ export default function PartyRoomPage() {
 
     return () => {
       clearTimeout(messageTimerRef.current);
+      clearTimeout(recoveryTimerRef.current);
       cleanupVoice(true, false);
     };
   }, [roomNo]);
+
+  useEffect(() => {
+    clearTimeout(recoveryTimerRef.current);
+
+    if (!mySeat) {
+      setRecoveryRestoreNotice("");
+      previousSocketConnectedRef.current = socketConnected;
+      return undefined;
+    }
+
+    if (
+      previousSocketConnectedRef.current === false &&
+      socketConnected === true &&
+      getPresenceState(mySeat) === "connected"
+    ) {
+      setRecoveryRestoreNotice("已恢复到当前房间。");
+      recoveryTimerRef.current = setTimeout(() => {
+        setRecoveryRestoreNotice("");
+      }, 2200);
+    } else if (recoveryBanner) {
+      setRecoveryRestoreNotice("");
+    }
+
+    previousSocketConnectedRef.current = socketConnected;
+
+    return () => clearTimeout(recoveryTimerRef.current);
+  }, [mySeat, recoveryBanner, socketConnected]);
 
   useEffect(() => {
     if (!roomNo || !me) {
@@ -115,7 +152,12 @@ export default function PartyRoomPage() {
     }
 
     function onConnect() {
+      setSocketConnected(true);
       subscribeIfSeated();
+    }
+
+    function onDisconnect() {
+      setSocketConnected(false);
     }
 
     function onRoomUpdate({ room: nextRoom }) {
@@ -152,7 +194,14 @@ export default function PartyRoomPage() {
       });
     }
 
+    if (socket.connected) {
+      setSocketConnected(true);
+    } else {
+      setSocketConnected(null);
+    }
+
     socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
     socket.on(PARTY_EVENTS.update, onRoomUpdate);
     socket.on(PARTY_EVENTS.error, onRoomError);
     socket.on(PARTY_EVENTS.voicePeers, onVoicePeers);
@@ -163,6 +212,7 @@ export default function PartyRoomPage() {
 
     return () => {
       socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       socket.off(PARTY_EVENTS.update, onRoomUpdate);
       socket.off(PARTY_EVENTS.error, onRoomError);
       socket.off(PARTY_EVENTS.voicePeers, onVoicePeers);
@@ -713,14 +763,25 @@ export default function PartyRoomPage() {
 
           <aside className={styles.sidePanel}>
             <section className={styles.viewerCard}>
-              <div className={styles.viewerHead}>
+              <div
+                className={styles.viewerHead}
+                data-presence-state={mySeat?.presenceState || "disconnected"}
+              >
                 <div>
                   <span>你的席位</span>
                   <strong>{mySeat ? `#${mySeat.seatIndex + 1} ${mySeat.displayName}` : "尚未入座"}</strong>
                 </div>
-                {mySeat?.roleLabel ? (
-                  <span className={styles.rolePill}>{mySeat.roleLabel}</span>
-                ) : null}
+                <div className={styles.stageBadges}>
+                  {mySeat?.roleLabel ? <span className={styles.rolePill}>{mySeat.roleLabel}</span> : null}
+                  {mySeat ? (
+                    <span
+                      className={styles.rolePill}
+                      data-presence-state={mySeat.presenceState || "disconnected"}
+                    >
+                      {getPresenceLabel(mySeat)}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className={styles.noteList}>
                 {(mySeat?.notes || ["加入房间后即可看到你的身份信息。"]).map((item) => (
@@ -842,6 +903,15 @@ export default function PartyRoomPage() {
           }
         />
 
+        {recoveryNotice ? (
+          <div
+            className={styles.recoveryBanner}
+            data-recovery-banner="true"
+            data-recovery-state={mySeat?.presenceState || (socketConnected === false ? "reconnecting" : "connected")}
+          >
+            {recoveryNotice}
+          </div>
+        ) : null}
         {message ? <div className={styles.toast}>{message}</div> : null}
       </section>
     </SiteLayout>
@@ -874,6 +944,7 @@ function WerewolfBoard({ room, mySeat }) {
             className={`${styles.seatCard} ${player.alive ? "" : styles.seatDead} ${
               mySeat?.seatIndex === player.seatIndex ? styles.seatSelf : ""
             }`}
+            data-presence-state={player.presenceState || "disconnected"}
           >
             <div className={styles.seatHead}>
               <strong>{player.displayName}</strong>
@@ -882,7 +953,7 @@ function WerewolfBoard({ room, mySeat }) {
             <div className={styles.seatMeta}>
               {player.isBot ? <span className={styles.botChip}>AI</span> : null}
               <span>{player.alive ? "存活" : "出局"}</span>
-              <span>{player.connected ? "在线" : "离线"}</span>
+              <span>{getPresenceLabel(player)}</span>
               {player.voiceConnected ? <span>{player.voiceMuted ? "静音" : "语音中"}</span> : null}
             </div>
             {player.roleLabel ? <span className={styles.roleChip}>{player.roleLabel}</span> : null}
@@ -936,6 +1007,7 @@ function AvalonBoard({ room, mySeat }) {
             } ${room.round?.selectedTeam?.includes(player.seatIndex) ? styles.seatSelected : ""} ${
               mySeat?.seatIndex === player.seatIndex ? styles.seatSelf : ""
             }`}
+            data-presence-state={player.presenceState || "disconnected"}
           >
             <div className={styles.seatHead}>
               <strong>{player.displayName}</strong>
@@ -945,6 +1017,7 @@ function AvalonBoard({ room, mySeat }) {
               {player.isBot ? <span className={styles.botChip}>AI</span> : null}
               {room.round?.leaderSeat === player.seatIndex ? <span>队长</span> : null}
               {room.round?.selectedTeam?.includes(player.seatIndex) ? <span>入队</span> : null}
+              <span>{getPresenceLabel(player)}</span>
               {player.voiceConnected ? <span>{player.voiceMuted ? "静音" : "语音中"}</span> : null}
             </div>
             {player.roleLabel ? <span className={styles.roleChip}>{player.roleLabel}</span> : null}

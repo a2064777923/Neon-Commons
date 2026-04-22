@@ -7,6 +7,9 @@ import MatchResultOverlay from "../../components/MatchResultOverlay";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import {
   clearPendingGuestMatchClaim,
+  getPresenceLabel,
+  getPresenceState,
+  getRecoveryBannerMessage,
   readPendingGuestMatchClaim,
   writePendingGuestMatchClaim
 } from "../../lib/client/room-entry";
@@ -26,16 +29,19 @@ export default function BoardRoomPage() {
   const { roomNo } = router.query;
   const [me, setMe] = useState(null);
   const [room, setRoom] = useState(null);
-  const [socketReady, setSocketReady] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(null);
   const [message, setMessage] = useState("");
   const [joining, setJoining] = useState(false);
   const [nowMs, setNowMs] = useState(Date.now());
   const [selectedPiece, setSelectedPiece] = useState(null);
   const [activePanel, setActivePanel] = useState(null);
   const [dismissedResultKey, setDismissedResultKey] = useState("");
+  const [recoveryRestoreNotice, setRecoveryRestoreNotice] = useState("");
   const messageTimerRef = useRef(null);
+  const recoveryTimerRef = useRef(null);
   const previousViewerCanMoveRef = useRef(false);
   const guestClaimSyncRef = useRef("");
+  const previousSocketConnectedRef = useRef(null);
 
   const meta = useMemo(() => getGameMeta(room?.gameKey), [room?.gameKey]);
   const boardSummary = useMemo(
@@ -54,6 +60,9 @@ export default function BoardRoomPage() {
     () => Object.fromEntries(chineseProgress.map((item) => [item.seatIndex, item])),
     [chineseProgress]
   );
+  const socketReady = socketConnected === true;
+  const recoveryBanner = getRecoveryBannerMessage(mySeat, socketConnected, nowMs);
+  const recoveryNotice = recoveryBanner || recoveryRestoreNotice;
 
   useEffect(() => {
     if (!roomNo) {
@@ -64,12 +73,40 @@ export default function BoardRoomPage() {
 
     return () => {
       clearTimeout(messageTimerRef.current);
+      clearTimeout(recoveryTimerRef.current);
     };
   }, [roomNo]);
 
   useEffect(() => {
+    clearTimeout(recoveryTimerRef.current);
+
+    if (!mySeat) {
+      setRecoveryRestoreNotice("");
+      previousSocketConnectedRef.current = socketConnected;
+      return undefined;
+    }
+
+    if (
+      previousSocketConnectedRef.current === false &&
+      socketConnected === true &&
+      getPresenceState(mySeat) === "connected"
+    ) {
+      setRecoveryRestoreNotice("已恢复到当前房间。");
+      recoveryTimerRef.current = setTimeout(() => {
+        setRecoveryRestoreNotice("");
+      }, 2200);
+    } else if (recoveryBanner) {
+      setRecoveryRestoreNotice("");
+    }
+
+    previousSocketConnectedRef.current = socketConnected;
+
+    return () => clearTimeout(recoveryTimerRef.current);
+  }, [mySeat, recoveryBanner, socketConnected]);
+
+  useEffect(() => {
     if (!roomNo || !me || !mySeat) {
-      setSocketReady(false);
+      setSocketConnected(null);
       return undefined;
     }
 
@@ -82,12 +119,12 @@ export default function BoardRoomPage() {
     }
 
     function onConnect() {
-      setSocketReady(true);
+      setSocketConnected(true);
       subscribe();
     }
 
     function onDisconnect() {
-      setSocketReady(false);
+      setSocketConnected(false);
     }
 
     function onRoomUpdate({ room: nextRoom }) {
@@ -100,10 +137,10 @@ export default function BoardRoomPage() {
     }
 
     if (socket.connected) {
-      setSocketReady(true);
+      setSocketConnected(true);
       subscribe();
     } else {
-      setSocketReady(false);
+      setSocketConnected(null);
     }
 
     socket.on("connect", onConnect);
@@ -116,7 +153,7 @@ export default function BoardRoomPage() {
       socket.off("disconnect", onDisconnect);
       socket.off(BOARD_EVENTS.update, onRoomUpdate);
       socket.off(BOARD_EVENTS.error, onRoomError);
-      setSocketReady(false);
+      setSocketConnected(null);
     };
   }, [roomNo, me, mySeat]);
 
@@ -523,12 +560,25 @@ export default function BoardRoomPage() {
 
             {activePanel === "viewer" ? (
               <section className={styles.viewerCard}>
-                <div className={styles.viewerHead}>
+                <div
+                  className={styles.viewerHead}
+                  data-presence-state={mySeat?.presenceState || "disconnected"}
+                >
                   <div>
                     <span>你的席位</span>
                     <strong>{mySeat ? `#${mySeat.seatIndex + 1} ${mySeat.displayName}` : "尚未入座"}</strong>
                   </div>
-                  {mySeat?.pieceLabel ? <span className={styles.rolePill}>{mySeat.pieceLabel}</span> : null}
+                  <div className={styles.stageBadges}>
+                    {mySeat?.pieceLabel ? <span className={styles.rolePill}>{mySeat.pieceLabel}</span> : null}
+                    {mySeat ? (
+                      <span
+                        className={styles.rolePill}
+                        data-presence-state={mySeat.presenceState || "disconnected"}
+                      >
+                        {getPresenceLabel(mySeat)}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className={styles.noteList}>
                   {(getViewerNotes(room, mySeat) || ["加入房间后即可开始对弈。"]).map((item) => (
@@ -561,6 +611,7 @@ export default function BoardRoomPage() {
                         mySeat?.seatIndex === player.seatIndex ? styles.seatSelf : ""
                       } ${room.match?.turnSeat === player.seatIndex ? styles.seatActive : ""}`}
                       data-accent={player.pieceAccent || "neutral"}
+                      data-presence-state={player.presenceState || "disconnected"}
                     >
                       <div className={styles.seatHead}>
                         <strong>{player.displayName}</strong>
@@ -570,7 +621,7 @@ export default function BoardRoomPage() {
                         {player.isBot ? <span className={styles.botChip}>AI</span> : null}
                         <span>{player.pieceLabel}</span>
                         {player.campLabel ? <span>{player.campLabel}</span> : null}
-                        <span>{player.connected ? "在线" : "离线"}</span>
+                        <span>{getPresenceLabel(player)}</span>
                       </div>
                       {player.targetCampLabel ? (
                         <div className={styles.seatTrail}>目标营地 · {player.targetCampLabel}</div>
@@ -654,6 +705,15 @@ export default function BoardRoomPage() {
         />
 
         {message ? <div className={styles.toast}>{message}</div> : null}
+        {recoveryNotice ? (
+          <div
+            className={styles.recoveryBanner}
+            data-recovery-banner="true"
+            data-recovery-state={mySeat?.presenceState || (socketConnected === false ? "reconnecting" : "connected")}
+          >
+            {recoveryNotice}
+          </div>
+        ) : null}
       </section>
     </SiteLayout>
   );

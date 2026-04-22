@@ -1,15 +1,12 @@
 const { test, expect } = require("playwright/test");
+const { registerFreshUser } = require("./support/auth");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("arcade portal and party room creation smoke", async ({ page }) => {
   page.setDefaultTimeout(30000);
 
-  await page.goto(`${FRONTEND_BASE_URL}/login`);
-  await page.getByLabel("帳號或郵箱").fill("admin");
-  await page.getByLabel("密碼").fill("Admin123456");
-  await page.getByRole("button", { name: "登入" }).click();
-  await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/`);
+  await registerFreshUser(page, FRONTEND_BASE_URL, "partysmoke");
 
   await expect(page.getByRole("heading", { name: "遊戲入口", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "遊戲家族", exact: true })).toBeVisible();
@@ -40,6 +37,11 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
   await expect(
     page.getByText(/夜色已落，神职与狼人开始行动|天亮发言，打开语音互相试探|公开投票阶段|猎人翻枪，局势正在瞬间改写/)
   ).toBeVisible();
+  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/\/party\/\d{6}$/);
+  await expect(page.getByText("对局进行中")).toBeVisible();
+  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
 
   await page.goto(`${FRONTEND_BASE_URL}/games/avalon`);
   await expect(page.getByRole("heading", { name: "在线阿瓦隆", exact: true })).toBeVisible();

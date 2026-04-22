@@ -1,15 +1,12 @@
 const { test, expect } = require("playwright/test");
+const { registerFreshUser } = require("./support/auth");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("undercover dedicated room route supports one clue and vote loop", async ({ page }) => {
   page.setDefaultTimeout(30000);
 
-  await page.goto(`${FRONTEND_BASE_URL}/login`);
-  await page.getByLabel("帳號或郵箱").fill("admin");
-  await page.getByLabel("密碼").fill("Admin123456");
-  await page.getByRole("button", { name: "登入" }).click();
-  await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/`);
+  await registerFreshUser(page, FRONTEND_BASE_URL, "undercoversmoke");
 
   await page.goto(`${FRONTEND_BASE_URL}/games/undercover`);
   await expect(page.getByRole("heading", { name: "誰是臥底", exact: true })).toBeVisible();
@@ -28,7 +25,11 @@ test("undercover dedicated room route supports one clue and vote loop", async ({
 
   await expect(page.getByText("公開投票階段")).toBeVisible({ timeout: 15000 });
   await expect(page.getByRole("button", { name: /^投給 / }).first()).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
   await page.getByRole("button", { name: /^投給 / }).first().click();
   await expect(page).toHaveURL(new RegExp(`/undercover/${roomNo}$`));
   await expect(page.getByText(`房號 ${roomNo}`)).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`/undercover/${roomNo}$`));
+  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
 });

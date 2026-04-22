@@ -1,15 +1,12 @@
 const { test, expect } = require("playwright/test");
+const { registerFreshUser } = require("./support/auth");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
   page.setDefaultTimeout(30000);
 
-  await page.goto(`${FRONTEND_BASE_URL}/login`);
-  await page.getByLabel("帳號或郵箱").fill("admin");
-  await page.getByLabel("密碼").fill("Admin123456");
-  await page.getByRole("button", { name: "登入" }).click();
-  await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/`);
+  await registerFreshUser(page, FRONTEND_BASE_URL, "boardsmoke");
 
   await expect(page.getByRole("heading", { name: "遊戲入口", exact: true })).toBeVisible();
 
@@ -26,10 +23,18 @@ test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
   await expect(page.getByRole("button", { name: "补机器人" })).toBeEnabled();
   await page.getByRole("button", { name: "补机器人" }).click();
   await expect(page.locator('[data-gomoku-cell="7-7"]')).toBeEnabled();
+  await page.getByRole("button", { name: /^席位 \d/ }).click();
+  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
+  await page.getByRole("button", { name: "关闭" }).click();
   await page.locator('[data-gomoku-cell="0-0"]').click();
   await expect(page.locator('[data-gomoku-cell="0-0"][data-gomoku-piece="empty"]')).toBeVisible();
   await page.locator('[data-gomoku-cell="7-7"]').click();
   await expect(page.locator('[data-gomoku-cell="7-7"][data-gomoku-piece="black"]')).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/\/board\/\d{6}$/);
+  await page.getByRole("button", { name: /^席位 \d/ }).click();
+  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
+  await page.getByRole("button", { name: "关闭" }).click();
 
   await page.goto(`${FRONTEND_BASE_URL}/games/chinesecheckers`);
   await expect(page.getByRole("heading", { name: "在线跳棋", exact: true })).toBeVisible();

@@ -164,6 +164,21 @@
   color: #ffe4a1;
 }
 
+.rolePill[data-presence-state="connected"] {
+  background: rgba(91, 222, 132, 0.16);
+  color: #d6f8c9;
+}
+
+.rolePill[data-presence-state="reconnecting"] {
+  background: rgba(255, 207, 111, 0.18);
+  color: #ffe6ab;
+}
+
+.rolePill[data-presence-state="disconnected"] {
+  background: rgba(235, 111, 111, 0.16);
+  color: #ffd1d1;
+}
+
 .botChip {
   background: rgba(112, 215, 255, 0.14);
   color: #a7ebff;
@@ -511,6 +526,16 @@
   display: grid;
   gap: 8px;
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.seatCard[data-presence-state="reconnecting"] {
+  border-color: rgba(255, 207, 111, 0.3);
+  box-shadow: 0 0 0 1px rgba(255, 207, 111, 0.12);
+}
+
+.seatCard[data-presence-state="disconnected"] {
+  border-color: rgba(235, 111, 111, 0.24);
+  box-shadow: 0 0 0 1px rgba(235, 111, 111, 0.12);
 }
 
 .seatMeta {
@@ -1100,6 +1125,24 @@
   background: rgba(9, 18, 15, 0.82);
   border: 1px solid rgba(255, 232, 180, 0.1);
   animation: toastUp 220ms ease-out;
+}
+
+.recoveryBanner {
+  position: fixed;
+  left: 50%;
+  bottom: 222px;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 11px 18px;
+  border-radius: 999px;
+  background: rgba(9, 18, 15, 0.82);
+  border: 1px solid rgba(255, 232, 180, 0.1);
+  color: #f8efda;
+}
+
+.recoveryBanner[data-recovery-state="reconnecting"] {
+  border-color: rgba(255, 207, 111, 0.34);
+  color: #ffe6ab;
 }
 
 .loading {

@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import SiteLayout from "../../../components/SiteLayout";
 import GameIcon from "../../../components/game-hub/GameIcon";
 import { API_ROUTES, apiFetch } from "../../../lib/client/api";
+import { canRecoverRoomSession } from "../../../lib/client/room-entry";
 import styles from "../../../styles/UtilityPages.module.css";
 
 export default function RoomEntryPage() {
@@ -43,19 +44,16 @@ export default function RoomEntryPage() {
       }
 
       setEntry(entryData);
-      setSession(meData.session || meData.user || null);
+      const nextSession = meData.session || meData.user || null;
+      setSession(nextSession);
       setLoading(false);
 
-      if (meData.user) {
+      if (nextSession?.kind === "user") {
         await autoEnter(entryData.joinRoute, entryData.detailRoute);
         return;
       }
 
-      if (
-        meData.session?.kind === "guest" &&
-        meData.session.roomNo === entryData.roomNo &&
-        meData.session.gameKey === entryData.gameKey
-      ) {
+      if (nextSession?.kind === "guest" && canRecoverRoomSession(nextSession, entryData)) {
         router.replace(entryData.detailRoute);
       }
     }
@@ -196,10 +194,10 @@ export default function RoomEntryPage() {
             </div>
 
             {session?.kind === "user" ? (
-              <p className={styles.entryNotice}>已檢測到登入身份，系統會自動替你進房。</p>
+              <p className={styles.entryNotice}>已檢測到可恢復的登入身份，系統會自動帶你回到房內。</p>
             ) : null}
             {session?.kind === "guest" ? (
-              <p className={styles.entryNotice}>你已經持有這個房間的遊客身份，正在帶你回到房內。</p>
+              <p className={styles.entryNotice}>你已經持有這個房間的遊客身份，正在恢復這個席位。</p>
             ) : null}
             {error ? <p className="error-text">{error}</p> : null}
           </article>
