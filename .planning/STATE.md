@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: live-ops-and-reliability
 status: active
-stopped_at: Phase 7 executed and redeployed
-last_updated: "2026-04-22T12:12:24Z"
+stopped_at: Phase 9 executed and redeployed
+last_updated: "2026-04-22T14:07:06Z"
 last_activity: 2026-04-22
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 12
-  completed_plans: 3
-  percent: 25
+  completed_plans: 6
+  percent: 50
 ---
 
 # Project State
@@ -21,25 +21,25 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-22)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** v1.1 Live Ops & Reliability — Phase 7 complete, Phase 8 is the next operations focus
+**Current focus:** v1.1 Live Ops & Reliability — Phase 9 complete, with Phase 8 room-ops work and Phase 10 release verification still pending
 
 ## Current Position
 
-Phase: 7 (session-recovery-and-presence) — COMPLETE
+Phase: 9 (single-node-recovery-guardrails) — COMPLETE
 Plan: 3 of 3
-Status: Phase 7 executed, verified, documented, and redeployed on the canonical 3100/3101 stack
-Last activity: 2026-04-22 — Phase 7 execution completed with node and Playwright coverage
+Status: Phase 9 executed, verified, documented, and redeployed on the canonical 3100/3101 stack
+Last activity: 2026-04-22 — Phase 9 execution completed with node coverage and runtime health checks
 
-Progress: [███░░░░░░░] 25%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Last milestone plans completed: 21
-- Current milestone plans completed: 3
-- Average duration: 17 min
-- Total execution time: ~51 min
+- Current milestone plans completed: 6
+- Average duration: 13 min
+- Total execution time: ~75 min
 
 **By Phase:**
 
@@ -47,13 +47,13 @@ Progress: [███░░░░░░░] 25%
 |-------|-------|-------|----------|
 | 7 | 3/3 | ~51 min | ~17 min |
 | 8 | 0/3 | - | - |
-| 9 | 0/3 | - | - |
+| 9 | 3/3 | ~24 min | ~8 min |
 | 10 | 0/3 | - | - |
 
 **Recent Trend:**
 
-- Last completed plans: 06-02, 06-03, 07-01, 07-02, 07-03
-- Trend: Phase 7 shipped; v1.1 execution underway
+- Last completed plans: 07-02, 07-03, 09-01, 09-02, 09-03
+- Trend: Phase 7 and Phase 9 shipped; Phase 8 and Phase 10 remain for v1.1
 
 ## Accumulated Context
 
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 - [07-01]: Standardize additive recovery metadata across `/api/me` and all room detail payloads before touching reconnect runtime behavior
 - [07-02]: Model human seat continuity as `connected` → `reconnecting` → `disconnected`, while keeping Dou Dizhu trustee behavior intact
 - [07-03]: Reuse shared client recovery helpers and stable `data-presence-state` selectors so shipped room pages and smoke tests cover refresh continuity without a new entry flow
+- [09-01]: Persist shared room-directory snapshots in PostgreSQL and reload them at backend startup without fabricating live room-manager state
+- [09-02]: Use one cached `roomExpiryMinutes` policy for zero-human room cleanup across card, party, and board managers, after reconnect grace completes
+- [09-03]: Expose `live` / `snapshot-only` availability across hub and room-entry flows, and fail closed for snapshot-only guest/direct-entry paths
 
 ### Pending Todos
 
@@ -96,10 +99,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-22T12:12:24Z
-Stopped at: Phase 7 executed and redeployed
+Last session: 2026-04-22T14:07:06Z
+Stopped at: Phase 9 executed and redeployed
 Resume file: None
 
-**Last completed phase:** 7 (Session Recovery & Presence) — 3 plans — 2026-04-22T12:12:24Z
+**Last completed phase:** 9 (Single-Node Recovery Guardrails) — 3 plans — 2026-04-22T14:07:06Z
 
-**Next recommended action:** Run `$gsd-next` or start Phase 8 planning/execution
+**Next recommended action:** Run `$gsd-next` or resume the remaining v1.1 work with Phase 8 or Phase 10 planning/execution
