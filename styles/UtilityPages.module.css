@@ -182,6 +182,50 @@
   line-height: 1.5;
 }
 
+.entrySummary {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.entryIconWrap {
+  flex: 0 0 92px;
+  width: 92px;
+  height: 92px;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(36, 64, 51, 0.08), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(243, 233, 214, 0.92));
+  box-shadow: 0 14px 28px rgba(57, 42, 18, 0.08);
+}
+
+.entryIcon {
+  width: 100%;
+  height: auto;
+}
+
+.entrySummaryCopy {
+  display: grid;
+  gap: 8px;
+}
+
+.entrySummaryCopy h2 {
+  margin: 0;
+}
+
+.entrySummaryCopy p,
+.entryNotice {
+  margin: 0;
+  color: var(--muted);
+}
+
+.entryActionStack {
+  display: grid;
+  gap: 12px;
+}
+
 .heroSide strong,
 .panelHead strong {
   color: #233f32;

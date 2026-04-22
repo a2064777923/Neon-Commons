@@ -2,81 +2,73 @@
 
 ## What This Is
 
-Hong's Neon-Commons is a browser-based party arcade that already ships real-time Dou Dizhu, Werewolf, Avalon, Gomoku, and Chinese Checkers rooms with login, profiles, leaderboard, and admin tooling. It is aimed at friend groups who want fast room-based social play and operators who need lightweight backend control over live game behavior.
+Hong's Neon-Commons is a browser-based real-time party arcade that now ships a separated frontend/backend runtime with live Dou Dizhu, Werewolf, Avalon, Gomoku, Chinese Checkers, Reversi, Undercover, and Sokoban experiences plus admin tooling.
 
-The codebase is brownfield and now runs as a separated frontend/backend stack in one repository: a Next.js frontend on top of a dedicated Node.js API + Socket.IO backend with PostgreSQL persistence.
+The product is brownfield. New work should treat the shipped gameplay, admin, and release-verification surface as the compatibility baseline instead of reopening foundational architecture decisions without a clear reason.
+
+## Current State
+
+### Shipped in v1.0
+
+- Unified hub and room-entry flow across shipped room-based families
+- Dedicated backend contract on `backend/server.js` and `backend/router.js`
+- Shared browser runtime contract for REST and Socket.IO targets
+- Admin control plane for capabilities, runtime controls, templates, logs, and player adjustments
+- Wave 1 shipped titles: Sokoban, Reversi, Undercover
+- Expanded Dou Dizhu, Werewolf, Avalon, Gomoku, and Chinese Checkers behavior
+- Canonical deployed-stack verification on `3100/3101`
+
+### Runtime Shape
+
+- Frontend: Next.js on `3100`
+- Backend: Node.js + Socket.IO on `3101`
+- Persistence: PostgreSQL
+- Active room state: single-node, in-memory
+
+### Release Contract
+
+The canonical pre-ship flow is:
+
+```bash
+npm run deploy:3100
+npm run verify:release
+```
 
 ## Core Value
 
 Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
 
-## Requirements
+## Next Milestone Goals
 
-### Validated
-
-- ✓ Player can register, log in, log out, and keep a session alive across page loads — existing
-- ✓ Player can browse a unified game hub, personal profile, and leaderboard — existing
-- ✓ Player can create and join room-number based Dou Dizhu, Werewolf, Avalon, Gomoku, and Chinese Checkers rooms — existing
-- ✓ Player can play live synchronized matches through Socket.IO-backed room state — existing
-- ✓ Party-room players can use browser voice signaling and WebRTC peer connections — existing
-- ✓ Admin can manage players, room templates, and system configuration from the control surface — existing
-
-### Active
-
-- [ ] Continue expanding game functionality across the existing game families without regressing live play
-- [ ] Continue expanding backend and admin capabilities so new game behavior is configurable and operable
-- [ ] Keep the separated frontend/backend architecture coherent as the product grows
-- [ ] Maintain enough automated coverage and documentation to ship expansions safely
-
-### Out of Scope
-
-- Native mobile apps — current product remains browser-first
-- Multi-node / restart-safe room persistence — current milestone keeps the single-node in-memory room model
-- Payments or real-money economy — not part of the current gameplay/backend expansion focus
-- Dedicated TURN/SFU voice infrastructure — current voice stack remains browser P2P unless scale forces a change
-
-## Context
-
-- The repository already contains live game logic, admin flows, deployment docs, and a codebase map in `.planning/codebase/`.
-- Frontend and backend were recently separated in-repo so future game/backend work no longer depends on `pages/api`.
-- Current backend state is still memory-resident for active rooms, while persistent user/template/config/result data lives in PostgreSQL.
-- The existing product already covers five game experiences, so new work should protect shipped behavior rather than re-platform the stack again.
-- The user’s stated direction for this milestone is to continue expanding game functionality and backend capability, not to pivot products.
+- Define the post-v1.0 requirements and roadmap through `$gsd-new-milestone`
+- Continue gameplay and backend/admin expansion without regressing shipped room flows
+- Decide whether the next milestone prioritizes new content, operational depth, or platform scaling
 
 ## Constraints
 
-- **Tech stack**: Keep `Next.js + React` on the frontend and `Node.js + Socket.IO + PostgreSQL` on the backend — current production code already depends on this stack
-- **Architecture**: Keep the dedicated backend service boundary intact — recent separation should be reinforced, not undone
-- **Runtime model**: Active room state stays single-node and in-memory for now — full distributed state is explicitly deferred
-- **Compatibility**: Preserve room-number join flow, unified hub entry, and current admin console expectations — these are already shipped behaviors
-- **Voice**: Party voice stays browser `getUserMedia + WebRTC` with Socket.IO signaling — current implementation is already live
-- **Quality**: Expansion work must remain verifiable by automated checks and build validation — the codebase is large enough that unguarded changes are risky
+- Preserve the split frontend/backend architecture
+- Keep `/api/*` and `/socket.io/*` owned by the dedicated backend
+- Protect the unified hub, room-number join flow, and live Socket.IO room behavior
+- Treat the current release gate and docs as part of the shipped contract
+
+## Deferred Work
+
+- Distributed room-state recovery beyond one process
+- TURN / SFU voice infrastructure
+- Native mobile clients
+- Richer economy / monetization systems
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Keep the separated frontend/backend runtime in one repository | Preserves the new service boundary without adding multi-repo overhead yet | — Pending |
-| Treat current gameplay/admin flows as the validated baseline | This is a brownfield product and existing shipped capability must anchor planning | — Pending |
-| Prioritize expanding current game families and backend/admin capability over another platform rewrite | This matches the user’s stated goal for the next milestone | — Pending |
-| Defer distributed room-state infrastructure to a later milestone | Current scope is feature/backend growth, not horizontal scaling | — Pending |
+| Keep the separated frontend/backend runtime in one repository | Preserves the new service boundary without adding multi-repo overhead | Validated in v1.0 |
+| Treat shipped gameplay/admin flows as the compatibility baseline | The repo is brownfield and should expand incrementally | Validated in v1.0 |
+| Prioritize game/backend/admin expansion over another platform rewrite | Matches the actual delivered surface and remaining opportunity | Still active |
+| Defer distributed room-state infrastructure until later | Current milestone proved feature and verification depth mattered more than scaling first | Still deferred |
 
-## Evolution
+## Milestone History
 
-This document evolves at phase transitions and milestone boundaries.
+- **v1.0 shipped on 2026-04-22**: backend contract hardening, admin control plane expansion, hub and room-entry unification, Wave 1 new games, gameplay expansion, and release hardening
 
-**After each phase transition** (via `$gsd-transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
-
-**After each milestone** (via `$gsd-complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
-
----
-*Last updated: 2026-04-20 after initialization*
+For detailed archived planning context, see [MILESTONES.md](./MILESTONES.md) and [v1.0 roadmap archive](./milestones/v1.0-ROADMAP.md).

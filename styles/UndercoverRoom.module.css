@@ -1,0 +1,355 @@
+.scene {
+  position: relative;
+  min-height: 100vh;
+  padding: 18px;
+  color: #f8f2e4;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 153, 102, 0.14), transparent 24%),
+    radial-gradient(circle at 88% 16%, rgba(255, 225, 142, 0.12), transparent 22%),
+    linear-gradient(180deg, #1d0e14 0%, #2b1019 56%, #13070d 100%);
+}
+
+.sceneGlow,
+.sceneSweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sceneGlow {
+  background:
+    radial-gradient(circle at center, rgba(255, 222, 145, 0.06), transparent 34%),
+    radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.05), transparent 44%);
+}
+
+.sceneSweep {
+  background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.06) 48%, transparent 100%);
+  transform: translateX(-120%);
+  opacity: 0.4;
+  animation: sceneSweep 10s ease-in-out infinite;
+}
+
+.loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: #f8f2e4;
+  background: linear-gradient(180deg, #160b12 0%, #2a1018 100%);
+}
+
+.hud,
+.stageCard,
+.sidebarCard {
+  position: relative;
+  z-index: 1;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 232, 180, 0.1);
+  background:
+    linear-gradient(180deg, rgba(30, 11, 18, 0.82), rgba(15, 7, 11, 0.72)),
+    rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 52px rgba(0, 0, 0, 0.22);
+}
+
+.hud {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  width: min(1440px, calc(100vw - 36px));
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 12px 18px;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+
+.hudMain {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.hudIcon {
+  width: 72px;
+  flex: 0 0 72px;
+}
+
+.hud h1 {
+  margin: 4px 0;
+  font-size: clamp(28px, 3.4vw, 48px);
+  line-height: 0.96;
+}
+
+.hud p,
+.roomTag,
+.stageBadges span,
+.cardEyebrow,
+.panelHeader span,
+.promptCard p,
+.clueItem span,
+.feedItem,
+.playerCard span,
+.panelHint,
+.timerInner span {
+  color: rgba(248, 242, 228, 0.72);
+}
+
+.roomTag,
+.stageBadges span,
+.playerMeta span {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 232, 180, 0.08);
+}
+
+.hudActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.72fr);
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 124px 0 40px;
+}
+
+.stage,
+.sidebar {
+  min-width: 0;
+}
+
+.stageCard,
+.sidebarCard {
+  padding: 22px;
+}
+
+.stageHead,
+.panelHeader,
+.waitingBar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stageBadges,
+.playerMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.promptCard,
+.actionPanel,
+.clueTimeline,
+.playerCard,
+.feedItem {
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.promptCard {
+  margin-top: 18px;
+  padding: 18px;
+}
+
+.cardEyebrow {
+  display: inline-flex;
+  margin-bottom: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.promptCard strong {
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.primaryButton,
+.hudButton,
+.voteButton {
+  border-radius: 16px;
+  padding: 12px 16px;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.primaryButton {
+  border: 0;
+  background: linear-gradient(135deg, #ffd28a, #d27f42);
+  color: #2d1807;
+  font-weight: 800;
+}
+
+.hudButton,
+.voteButton {
+  border: 1px solid rgba(255, 232, 180, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff0c8;
+}
+
+.primaryButton:hover,
+.hudButton:hover,
+.voteButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.18);
+}
+
+.playArea {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.8fr);
+  margin-top: 20px;
+}
+
+.actionPanel,
+.clueTimeline {
+  padding: 18px;
+}
+
+.clueForm {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.clueForm textarea {
+  width: 100%;
+  border: 1px solid rgba(255, 232, 180, 0.12);
+  border-radius: 18px;
+  padding: 14px 16px;
+  font: inherit;
+  color: #fff6df;
+  resize: vertical;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.voteGrid {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.clueList,
+.playerList,
+.feedList {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.clueItem,
+.playerCard,
+.feedItem {
+  padding: 14px 16px;
+}
+
+.clueItem strong,
+.playerCard strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.sidebar {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.playerSelf {
+  border: 1px solid rgba(255, 216, 130, 0.26);
+}
+
+.playerOut {
+  opacity: 0.58;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  z-index: 5;
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff4d8;
+}
+
+.timer {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  padding: 5px;
+}
+
+.timerInner {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(17, 10, 15, 0.92);
+  text-align: center;
+}
+
+.timerInner strong {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+@media (max-width: 1080px) {
+  .layout,
+  .playArea {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .scene {
+    padding: 14px;
+  }
+
+  .hud {
+    position: static;
+    width: 100%;
+    transform: none;
+    margin-bottom: 16px;
+  }
+
+  .layout {
+    padding-top: 0;
+  }
+}
+
+@keyframes sceneSweep {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  50% {
+    transform: translateX(120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}

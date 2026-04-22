@@ -3,6 +3,9 @@ const { query } = require("../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../lib/http");
 const { getRoomManager } = require("../../../lib/game/room-manager");
 const {
+  normalizeTemplateRecord
+} = require("../../../lib/game/template-settings");
+const {
   getNewRoomBlockedReason,
   getNewRoomControlSnapshot
 } = require("../../../lib/admin/control-plane");
@@ -60,20 +63,19 @@ async function handler(req, res) {
     return res.status(404).json({ error: "規則模板不存在" });
   }
 
-  const template = templateResult.rows[0];
-  if (!template.is_active) {
+  const template = normalizeTemplateRecord(templateResult.rows[0]);
+  if (!template.isActive) {
     return res.status(400).json({ error: "該模板目前未上線" });
+  }
+  if (!template.modeSupported) {
+    return res.status(400).json({
+      error: template.unsupportedReason || "該模板模式目前未支援開房"
+    });
   }
 
   const room = roomManager.createRoom(
     user,
-    {
-      id: template.id,
-      name: template.name,
-      title: template.title,
-      mode: template.mode,
-      settings: template.settings
-    },
+    template,
     body.overrides || {}
   );
 

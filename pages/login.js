@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({ account: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const returnTo = getSafeReturnTo(router.query.returnTo);
   const unlockItems = [
     {
       title: "大厅与快进房",
@@ -43,7 +44,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    router.push(returnTo || "/");
   }
 
   return (
@@ -125,6 +126,7 @@ export default function LoginPage() {
             <div className={styles.noteList}>
               <span>注册后即可拥有独立昵称、胜负记录和段位分。</span>
               <span>管理员账号登录后会自动显示后台入口。</span>
+              {returnTo ? <span>这次登录后会直接带你回到刚才的房间入口。</span> : null}
               <span>若只是测试流程，可先用既有管理员账户登录。</span>
             </div>
             <div className={styles.ctaRow}>
@@ -140,4 +142,18 @@ export default function LoginPage() {
       </div>
     </SiteLayout>
   );
+}
+
+function getSafeReturnTo(value) {
+  const nextValue = Array.isArray(value) ? value[0] : value;
+  if (typeof nextValue !== "string") {
+    return "";
+  }
+
+  const normalized = nextValue.trim();
+  if (!normalized.startsWith("/") || normalized.startsWith("//")) {
+    return "";
+  }
+
+  return normalized;
 }

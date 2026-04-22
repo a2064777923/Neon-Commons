@@ -8,6 +8,7 @@ export default function MatchResultOverlay({
   subtitle,
   badges = [],
   rows = [],
+  notice = null,
   primaryAction,
   secondaryAction
 }) {
@@ -35,6 +36,37 @@ export default function MatchResultOverlay({
           <strong>{title}</strong>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
+
+        {notice ? (
+          <div className={styles.noticePanel}>
+            <div className={styles.noticeCopy}>
+              <strong>{notice.title}</strong>
+              {notice.body ? <p>{notice.body}</p> : null}
+            </div>
+            {notice.secondaryAction || notice.primaryAction ? (
+              <div className={styles.noticeActions}>
+                {notice.secondaryAction ? (
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={notice.secondaryAction.onClick}
+                  >
+                    {notice.secondaryAction.label}
+                  </button>
+                ) : null}
+                {notice.primaryAction ? (
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={notice.primaryAction.onClick}
+                  >
+                    {notice.primaryAction.label}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {badges.length > 0 ? (
           <div className={styles.badgeRow}>

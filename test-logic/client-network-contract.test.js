@@ -81,7 +81,7 @@ test("API origin falls back to NEXT_PUBLIC_BACKEND_URL alias", () => {
   );
 });
 
-test("API origin maps split-port local frontend origins onto the backend port", () => {
+test("API origin maps split-port frontend origins onto the backend port", () => {
   withPublicEnv({}, () => {
     assert.equal(
       getApiBaseUrl(makeWindow("http://127.0.0.1:3100")),
@@ -90,6 +90,10 @@ test("API origin maps split-port local frontend origins onto the backend port", 
     assert.equal(
       getApiBaseUrl(makeWindow("http://localhost:3100")),
       "http://localhost:3101"
+    );
+    assert.equal(
+      getApiBaseUrl(makeWindow("http://192.168.4.11:3100")),
+      "http://192.168.4.11:3101"
     );
   });
 });
@@ -141,9 +145,10 @@ test("route builders cover representative auth, room, board, and admin endpoints
   assert.equal(API_ROUTES.admin.config(), "/api/admin/config");
 });
 
-test("local frontend origin detection only matches the split frontend runtime", () => {
+test("frontend origin detection matches any split-port frontend host", () => {
   assert.equal(isLocalFrontendOrigin("http://127.0.0.1:3100"), true);
   assert.equal(isLocalFrontendOrigin("http://localhost:3100"), true);
+  assert.equal(isLocalFrontendOrigin("http://192.168.4.11:3100"), true);
   assert.equal(isLocalFrontendOrigin("http://127.0.0.1:3101"), false);
   assert.equal(isLocalFrontendOrigin("https://play.neon-commons.test"), false);
 });

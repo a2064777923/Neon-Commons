@@ -1,5 +1,5 @@
 const { test, expect } = require("playwright/test");
-const { API_ROUTES, apiUrl } = require("../lib/client/network-runtime");
+const { API_ROUTES } = require("../lib/client/network-runtime");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
@@ -12,7 +12,7 @@ test("desktop and landscape room ui smoke", async ({ page }) => {
   await page.getByRole("button", { name: "登入" }).click();
   await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/`);
 
-  const createRoomUrl = apiUrl(API_ROUTES.cardRooms.create());
+  const createRoomUrl = API_ROUTES.cardRooms.create();
   const roomNo = await page.evaluate(async ({ url }) => {
     const response = await fetch(url, {
       method: "POST",
@@ -24,10 +24,16 @@ test("desktop and landscape room ui smoke", async ({ page }) => {
         templateId: 1,
         overrides: {
           baseScore: 20,
+          bidOptions: [0, 1, 2, 3, 4],
+          maxRobMultiplier: 4,
           countdownSeconds: 12,
           autoTrusteeMinSeconds: 2,
           autoTrusteeMaxSeconds: 4,
-          roomVisibility: "private"
+          allowBomb: false,
+          allowRocket: true,
+          rocketMultiplier: 3,
+          allowSpring: false,
+          roomVisibility: "public"
         }
       })
     });
@@ -40,7 +46,19 @@ test("desktop and landscape room ui smoke", async ({ page }) => {
     return data.room.roomNo;
   }, { url: createRoomUrl });
 
+  await page.goto(`${FRONTEND_BASE_URL}/lobby`);
+  const roomCard = page.locator("article", { hasText: `房号 ${roomNo}` });
+  await expect(roomCard).toContainText("叫分至 4");
+  await expect(roomCard).toContainText("禁炸彈");
+  await expect(roomCard).toContainText("春天關閉");
+  await expect(roomCard).toContainText("公開桌");
+
   await page.goto(`${FRONTEND_BASE_URL}/room/${roomNo}`);
+  await expect(page.locator('[data-ddz-room-rules="true"]')).toContainText("叫分至 4");
+  await expect(page.locator('[data-ddz-room-rules="true"]')).toContainText("禁炸彈");
+  await expect(page.locator('[data-ddz-room-rules="true"]')).toContainText("王炸 x3");
+  await expect(page.locator('[data-ddz-room-rules="true"]')).toContainText("春天關閉");
+  await expect(page.locator('[data-ddz-room-rules="true"]')).toContainText("公開桌");
   await page.getByRole("button", { name: "準備開局" }).click();
   await page.getByRole("button", { name: "補機器人" }).click();
   await page.getByRole("button", { name: "補機器人" }).click();

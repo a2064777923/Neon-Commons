@@ -62,6 +62,87 @@ export default function GameIcon({ gameKey, className = "" }) {
     );
   }
 
+  if (gameKey === "sokoban") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="推箱子图标" className={className}>
+        <defs>
+          <linearGradient id="sokobanBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#173a2a" />
+            <stop offset="100%" stopColor="#091b13" />
+          </linearGradient>
+          <linearGradient id="sokobanFloor" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f3d88a" />
+            <stop offset="100%" stopColor="#b9812d" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#sokobanBg)" />
+        <rect x="34" y="34" width="92" height="92" rx="16" fill="url(#sokobanFloor)" />
+        <g fill="#6f4316">
+          <rect x="44" y="44" width="18" height="18" rx="4" />
+          <rect x="98" y="44" width="18" height="18" rx="4" />
+          <rect x="44" y="98" width="18" height="18" rx="4" />
+        </g>
+        <rect x="69" y="68" width="30" height="30" rx="6" fill="#d36f2b" stroke="#7f350f" strokeWidth="4" />
+        <path d="M84 74v18M75 83h18" stroke="#ffe9c0" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="112" cy="108" r="10" fill="#f7f3d1" stroke="#ad9152" strokeWidth="4" />
+        <path d="M52 74c6-10 16-15 30-16" stroke="#f7f3d1" strokeWidth="6" strokeLinecap="round" fill="none" />
+        <path d="M79 52l9 4-7 8" fill="none" stroke="#f7f3d1" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (gameKey === "reversi") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="黑白棋图标" className={className}>
+        <defs>
+          <linearGradient id="reversiBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#174233" />
+            <stop offset="100%" stopColor="#081912" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#reversiBg)" />
+        <rect x="30" y="30" width="100" height="100" rx="20" fill="#2d7b53" />
+        {Array.from({ length: 5 }).map((_, index) => (
+          <g key={`reversi-grid-${index}`} stroke="#d3f0dd" strokeWidth="2" opacity="0.38">
+            <line x1={50 + index * 15} y1="42" x2={50 + index * 15} y2="118" />
+            <line x1="42" y1={50 + index * 15} x2="118" y2={50 + index * 15} />
+          </g>
+        ))}
+        <g>
+          <circle cx="67" cy="67" r="12" fill="#f8f7f3" stroke="#b9b4a7" strokeWidth="3" />
+          <circle cx="93" cy="67" r="12" fill="#0f1720" stroke="#3b4a5a" strokeWidth="3" />
+          <circle cx="67" cy="93" r="12" fill="#0f1720" stroke="#3b4a5a" strokeWidth="3" />
+          <circle cx="93" cy="93" r="12" fill="#f8f7f3" stroke="#b9b4a7" strokeWidth="3" />
+          <path d="M114 48c7 11 9 24 4 38" stroke="#ffd97a" strokeWidth="5" strokeLinecap="round" fill="none" />
+          <path d="M118 90l-13-3 7-11" fill="none" stroke="#ffd97a" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+      </svg>
+    );
+  }
+
+  if (gameKey === "undercover") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="谁是卧底图标" className={className}>
+        <defs>
+          <linearGradient id="undercoverBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3d1020" />
+            <stop offset="100%" stopColor="#12070d" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#undercoverBg)" />
+        <g transform="translate(30 38)">
+          <rect x="0" y="10" width="44" height="56" rx="14" fill="#f7e1bc" />
+          <rect x="28" y="0" width="44" height="66" rx="14" fill="#f6f1e8" />
+          <rect x="56" y="16" width="44" height="50" rx="14" fill="#d1434f" />
+          <path d="M80 28l4 10 10 1-8 7 3 10-9-5-9 5 3-10-8-7 10-1z" fill="#ffe49a" />
+          <circle cx="22" cy="84" r="10" fill="#f7e1bc" />
+          <circle cx="50" cy="84" r="10" fill="#f6f1e8" />
+          <circle cx="78" cy="84" r="10" fill="#d1434f" />
+        </g>
+      </svg>
+    );
+  }
+
   if (gameKey === "werewolf") {
     return (
       <svg viewBox="0 0 160 160" role="img" aria-label="狼人杀图标" className={className}>

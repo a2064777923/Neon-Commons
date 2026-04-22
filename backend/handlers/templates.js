@@ -1,6 +1,10 @@
 const { query } = require("../../lib/db");
 const { methodNotAllowed } = require("../../lib/http");
 const {
+  SUPPORTED_TEMPLATE_MODES,
+  normalizeTemplateRecord
+} = require("../../lib/game/template-settings");
+const {
   AUTH_SCOPES,
   API_ROUTE_PATTERNS,
   createHandlerContract
@@ -18,15 +22,8 @@ async function handler(req, res) {
   `);
 
   return res.status(200).json({
-    items: result.rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      title: row.title,
-      description: row.description,
-      mode: row.mode,
-      isActive: row.is_active,
-      settings: row.settings
-    }))
+    supportedModes: SUPPORTED_TEMPLATE_MODES,
+    items: result.rows.map((row) => normalizeTemplateRecord(row))
   });
 }
 

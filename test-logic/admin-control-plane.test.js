@@ -11,13 +11,20 @@ test("default capability families cover all managed games with new-room-only sco
 
   assert.deepEqual(
     families.map((family) => family.key),
-    ["card", "party", "board"]
+    ["card", "party", "board", "solo"]
   );
   assert.equal(families[0].items[0].gameKey, "doudezhu");
-  assert.equal(
-    families.flatMap((family) => family.items).every((item) => item.appliesTo === "new-rooms-only"),
-    true
-  );
+  const managedItems = families
+    .flatMap((family) => family.items)
+    .filter((item) => item.appliesTo === "new-rooms-only");
+  assert.equal(managedItems.every((item) => item.capabilityManaged), true);
+
+  const sokoban = families
+    .find((family) => family.key === "solo")
+    .items.find((item) => item.gameKey === "sokoban");
+  assert.equal(sokoban.appliesTo, "direct-launch");
+  assert.equal(sokoban.launchMode, "direct");
+  assert.equal(sokoban.enabled, true);
 });
 
 test("runtime control normalization keeps allowlisted values safe", () => {

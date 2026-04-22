@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
 import { API_ROUTES, apiFetch } from "../../lib/client/api";
+import { copyText, getRoomEntryPath } from "../../lib/client/room-entry";
 import styles from "../../styles/GameLobby.module.css";
 
 const {
@@ -11,10 +13,16 @@ const {
   getGameMeta,
   getGameMode,
   getPartyDefaultConfig,
+  getPartyRolePackOptions,
+  getPartyRolePackSummary,
   getBoardDefaultConfig,
+  getBoardOpeningOptions,
+  getBoardConfigSummary,
   getGameLimits,
   getBoardPlayerOptions
 } = require("../../lib/games/catalog");
+
+const PAUSED_NEW_ROOM_COPY = "目前不開新房，已有房號或邀請可直接加入。";
 
 export default function GameLobbyPage() {
   const router = useRouter();
@@ -23,14 +31,33 @@ export default function GameLobbyPage() {
   const gameMode = useMemo(() => getGameMode(gameKey), [gameKey]);
   const limits = useMemo(() => getGameLimits(gameKey), [gameKey]);
   const boardPlayerOptions = useMemo(() => getBoardPlayerOptions(gameKey), [gameKey]);
+  const boardOpeningOptions = useMemo(() => getBoardOpeningOptions(gameKey), [gameKey]);
+  const rolePackOptions = useMemo(() => getPartyRolePackOptions(gameKey), [gameKey]);
   const [me, setMe] = useState(null);
   const [rooms, setRooms] = useState([]);
+  const [discoveryItem, setDiscoveryItem] = useState(null);
   const [joinRoomNo, setJoinRoomNo] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState(() => ({
     visibility: "public"
   }));
+  const selectedRolePackSummary = useMemo(
+    () =>
+      gameMode === "party" && gameKey !== "undercover"
+        ? getPartyRolePackSummary(
+            gameKey,
+            Number(form.maxPlayers || limits.maxPlayers || limits.minPlayers),
+            form.rolePack
+          )
+        : null,
+    [gameKey, gameMode, form.maxPlayers, form.rolePack, limits.maxPlayers, limits.minPlayers]
+  );
+  const selectedBoardSummary = useMemo(
+    () => (gameMode === "board" ? getBoardConfigSummary(gameKey, form) : []),
+    [form, gameKey, gameMode]
+  );
 
   useEffect(() => {
     if (!gameKey || !["party", "board"].includes(gameMode)) {
@@ -56,20 +83,33 @@ export default function GameLobbyPage() {
   }, [gameKey, gameMode]);
 
   async function loadData(activeGameKey, activeMode = gameMode) {
-    const [meResponse, roomsResponse] = await Promise.all([
+    const [meResponse, roomsResponse, hubResponse] = await Promise.all([
       apiFetch(API_ROUTES.me()),
-      apiFetch(getRoomsRoute(activeMode, activeGameKey))
+      apiFetch(getRoomsRoute(activeMode, activeGameKey)),
+      apiFetch(API_ROUTES.hub())
     ]);
 
-    const [meData, roomsData] = await Promise.all([meResponse.json(), roomsResponse.json()]);
+    const [meData, roomsData, hubData] = await Promise.all([
+      meResponse.json(),
+      roomsResponse.json(),
+      hubResponse.json()
+    ]);
     setMe(meData.user || null);
     setRooms(roomsData.items || []);
+    setDiscoveryItem(findDiscoveryItem(hubData, activeGameKey));
   }
 
   async function createRoom(event) {
     event.preventDefault();
     setLoading(true);
     setError("");
+    setNotice("");
+
+    if (isPaused) {
+      setLoading(false);
+      setError(PAUSED_NEW_ROOM_COPY);
+      return;
+    }
 
     const response = await apiFetch(getRoomsRoute(gameMode, gameKey), {
       method: "POST",
@@ -84,31 +124,52 @@ export default function GameLobbyPage() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        router.push("/login");
+        router.push(`/login?returnTo=${encodeURIComponent(`/games/${gameKey}`)}`);
         return;
       }
       setError(data.error || "创建房间失败");
       return;
     }
 
-    router.push(gameMode === "party" ? `/party/${data.room.roomNo}` : `/board/${data.room.roomNo}`);
+    router.push(
+      getRoomDetailRoute(
+        meta,
+        data.room.roomNo,
+        gameMode === "party" ? "/party" : "/board"
+      )
+    );
   }
 
-  async function joinRoom(roomNo) {
-    setError("");
-    const response = await apiFetch(getJoinRoute(gameMode, roomNo), { method: "POST" });
-    const data = await response.json();
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        router.push("/login");
-        return;
-      }
-      setError(data.error || "加入房间失败");
+  function joinRoom(roomNo) {
+    const normalizedRoomNo = String(roomNo || "").trim();
+    if (!normalizedRoomNo) {
+      setError("先輸入六位房號，再走統一入口。");
+      setNotice("");
       return;
     }
 
-    router.push(gameMode === "party" ? `/party/${data.room.roomNo}` : `/board/${data.room.roomNo}`);
+    setError("");
+    setNotice("");
+    router.push(getRoomEntryPath(gameKey, normalizedRoomNo));
+  }
+
+  async function copyInvite(roomNo) {
+    const normalizedRoomNo = String(roomNo || "").trim();
+    if (!normalizedRoomNo) {
+      setError("先輸入或選一個房號，再複製邀請。");
+      setNotice("");
+      return;
+    }
+
+    try {
+      const invitePath = getRoomEntryPath(gameKey, normalizedRoomNo);
+      await copyText(invitePath);
+      setError("");
+      setNotice(`已複製邀請 ${invitePath}`);
+    } catch {
+      setError("複製邀請失敗");
+      setNotice("");
+    }
   }
 
   if (!meta || ![...PARTY_GAME_KEYS, ...BOARD_GAME_KEYS].includes(gameKey)) {
@@ -119,12 +180,20 @@ export default function GameLobbyPage() {
     );
   }
 
+  const isPaused = discoveryItem?.state === "paused-new-rooms";
+
   return (
     <SiteLayout>
       <div className={`${styles.page} ${styles[`theme${capitalize(gameKey)}`]}`}>
         <section className={styles.hero}>
           <div className={styles.heroMain}>
             <div className={styles.heroBadge}>房间入口</div>
+            <div className={styles.heroTopRow}>
+              <Link href="/" className="ghost-button">
+                返回遊戲家族
+              </Link>
+              <span className={styles.heroState}>{discoveryItem?.stateLabel || "可立即遊玩"}</span>
+            </div>
             <div className={styles.heroHeading}>
               <GameIcon gameKey={gameKey} className={styles.heroIcon} />
               <div>
@@ -154,16 +223,27 @@ export default function GameLobbyPage() {
             <div className={styles.quickJoin}>
                 <input
                   value={joinRoomNo}
-                onChange={(event) => setJoinRoomNo(event.target.value)}
+                onChange={(event) =>
+                  setJoinRoomNo(event.target.value.replace(/\D/g, "").slice(0, 6))
+                }
                 placeholder="输入 6 位房号"
               />
               <button type="button" onClick={() => joinRoom(joinRoomNo)}>
                 进房
               </button>
             </div>
+            <div className={styles.quickActions}>
+              <button type="button" className={styles.refreshButton} onClick={() => copyInvite(joinRoomNo)}>
+                複製邀請
+              </button>
+              <Link href="/" className={styles.backLink}>
+                返回遊戲家族
+              </Link>
+            </div>
             <p>
               {getQuickJoinCopy(gameKey, gameMode)}
             </p>
+            {notice ? <p className={styles.noticeMessage}>{notice}</p> : null}
           </aside>
         </section>
 
@@ -190,6 +270,13 @@ export default function GameLobbyPage() {
                 </div>
               )}
             </div>
+
+            {isPaused ? (
+              <div className={styles.pauseBanner}>
+                <strong>暫停新房</strong>
+                <span>{PAUSED_NEW_ROOM_COPY}</span>
+              </div>
+            ) : null}
 
             <div className={styles.fieldGrid}>
               <label className={styles.field}>
@@ -239,6 +326,24 @@ export default function GameLobbyPage() {
                 </select>
               </label>
 
+              {gameMode === "party" && gameKey !== "undercover" ? (
+                <label className={styles.field}>
+                  <span>角色預設</span>
+                  <select
+                    value={form.rolePack || rolePackOptions[0]?.key || ""}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, rolePack: event.target.value }))
+                    }
+                  >
+                    {rolePackOptions.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
               {gameMode === "party" ? (
                 gameKey === "werewolf" ? (
                 <>
@@ -286,6 +391,36 @@ export default function GameLobbyPage() {
                         }))
                       }
                     />
+                  </label>
+                  <label className={styles.field}>
+                    <span>猎人反击秒数</span>
+                    <input
+                      type="number"
+                      min="10"
+                      max="45"
+                      value={form.hunterSeconds || 20}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          hunterSeconds: Number(event.target.value)
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>房内沟通</span>
+                    <select
+                      value={form.voiceEnabled === false ? "text" : "voice"}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          voiceEnabled: event.target.value !== "text"
+                        }))
+                      }
+                    >
+                      <option value="voice">语音房</option>
+                      <option value="text">文字房</option>
+                    </select>
                   </label>
                 </>
                 ) : (
@@ -350,24 +485,61 @@ export default function GameLobbyPage() {
                       }
                     />
                   </label>
+                  <label className={styles.field}>
+                    <span>房内沟通</span>
+                    <select
+                      value={form.voiceEnabled === false ? "text" : "voice"}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          voiceEnabled: event.target.value !== "text"
+                        }))
+                      }
+                    >
+                      <option value="voice">语音房</option>
+                      <option value="text">文字房</option>
+                    </select>
+                  </label>
                 </>
                 )
               ) : (
-                <label className={styles.field}>
-                  <span>单回合秒数</span>
-                  <input
-                    type="number"
-                    min="10"
-                    max="90"
-                    value={form.turnSeconds || 25}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        turnSeconds: Number(event.target.value)
-                      }))
-                    }
-                  />
-                </label>
+                <>
+                  <label className={styles.field}>
+                    <span>单回合秒数</span>
+                    <input
+                      type="number"
+                      min="10"
+                      max="90"
+                      value={form.turnSeconds || 25}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          turnSeconds: Number(event.target.value)
+                        }))
+                      }
+                    />
+                  </label>
+                  {gameKey === "gomoku" && boardOpeningOptions.length > 0 ? (
+                    <label className={styles.field}>
+                      <span>开局规则</span>
+                      <select
+                        value={form.openingRule || boardOpeningOptions[0].key}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            openingRule: event.target.value
+                          }))
+                        }
+                      >
+                        {boardOpeningOptions.map((option) => (
+                          <option key={option.key} value={option.key}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                </>
               )}
             </div>
 
@@ -377,10 +549,36 @@ export default function GameLobbyPage() {
               ))}
             </div>
 
+            {selectedRolePackSummary ? (
+              <div className={styles.featureRow} data-party-role-pack="selected">
+                <span>{selectedRolePackSummary.label}</span>
+                <span>{selectedRolePackSummary.description}</span>
+                {selectedRolePackSummary.roles.map((item) => (
+                  <span key={`${selectedRolePackSummary.key}-${item.key}`}>
+                    {item.label}
+                    {item.count > 1 ? ` x${item.count}` : ""}
+                  </span>
+                ))}
+                {gameKey === "werewolf" ? (
+                  <span>猎人反击 {Number(form.hunterSeconds || 20)}s</span>
+                ) : null}
+                <span>{form.voiceEnabled === false ? "文字房" : "语音房"}</span>
+              </div>
+            ) : null}
+            {gameMode === "board" && selectedBoardSummary.length > 0 ? (
+              <div className={styles.featureRow} data-board-config="selected">
+                {selectedBoardSummary.map((item) => (
+                  <span key={`${gameKey}-${item}`}>{item}</span>
+                ))}
+              </div>
+            ) : null}
+
             {error ? <p className="error-text">{error}</p> : null}
-            <button className={styles.launchButton} disabled={loading}>
-              {loading ? "创建中..." : `立即开 ${meta.title} 房`}
-            </button>
+            {!isPaused ? (
+              <button className={styles.launchButton} disabled={loading}>
+                {loading ? "创建中..." : `立即开 ${meta.title} 房`}
+              </button>
+            ) : null}
           </form>
 
           <section className={styles.roomPanel}>
@@ -420,9 +618,27 @@ export default function GameLobbyPage() {
                       </span>
                       <span>{room.config.visibility === "private" ? "私密" : "公开"}</span>
                     </div>
-                    <button type="button" onClick={() => joinRoom(room.roomNo)}>
-                      立即加入
-                    </button>
+                    {gameMode === "party" && room.gameKey !== "undercover" ? (
+                      <div className={styles.featureRow}>
+                        {getPartyConfigSummary(room.gameKey, room.config).map((item) => (
+                          <span key={`${room.roomNo}-${item}`}>{item}</span>
+                        ))}
+                      </div>
+                    ) : gameMode === "board" ? (
+                      <div className={styles.featureRow} data-board-config="room">
+                        {getBoardConfigSummary(room.gameKey, room.config).map((item) => (
+                          <span key={`${room.roomNo}-${item}`}>{item}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className={styles.roomCardActions}>
+                      <button type="button" className={styles.refreshButton} onClick={() => copyInvite(room.roomNo)}>
+                        複製邀請
+                      </button>
+                      <button type="button" onClick={() => joinRoom(room.roomNo)}>
+                        立即加入
+                      </button>
+                    </div>
                   </article>
                 ))
               )}
@@ -438,16 +654,21 @@ function capitalize(value) {
   return value ? `${value[0].toUpperCase()}${value.slice(1)}` : "";
 }
 
+function findDiscoveryItem(hubData, gameKey) {
+  for (const family of hubData?.families || []) {
+    const matched = (family.items || []).find((item) => item.gameKey === gameKey);
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return null;
+}
+
 function getRoomsRoute(gameMode, gameKey) {
   return gameMode === "party"
     ? API_ROUTES.partyRooms.list(gameKey)
     : API_ROUTES.boardRooms.list(gameKey);
-}
-
-function getJoinRoute(gameMode, roomNo) {
-  return gameMode === "party"
-    ? API_ROUTES.partyRooms.join(roomNo)
-    : API_ROUTES.boardRooms.join(roomNo);
 }
 
 function getRealtimeCopy(gameKey) {
@@ -459,6 +680,14 @@ function getRealtimeCopy(gameKey) {
     return "组队 / 表决 / 任务 / 刺杀";
   }
 
+  if (gameKey === "reversi") {
+    return "落子 / 翻面 / 强制过手";
+  }
+
+  if (gameKey === "undercover") {
+    return "描述 / 投票 / 揭晓";
+  }
+
   if (gameKey === "gomoku") {
     return "落子 / 判胜 / 再开一局";
   }
@@ -466,14 +695,42 @@ function getRealtimeCopy(gameKey) {
   return "走子 / 连跳 / 抢营地";
 }
 
+function getPartyConfigSummary(gameKey, config = {}) {
+  const summary = getPartyRolePackSummary(
+    gameKey,
+    Number(config.maxPlayers || 0),
+    config.rolePack
+  );
+
+  return [
+    summary.label,
+    ...summary.roles.map((item) => `${item.label}${item.count > 1 ? ` x${item.count}` : ""}`),
+    gameKey === "werewolf" ? `猎人反击 ${Number(config.hunterSeconds || 20)}s` : null,
+    config.voiceEnabled === false ? "文字房" : "语音房"
+  ].filter(Boolean);
+}
+
 function getQuickJoinCopy(gameKey, gameMode) {
   if (gameMode === "party") {
+    if (gameKey === "undercover") {
+      return "準備後即可進入描述與投票輪次；私密房仍可直接用邀請連結帶遊客進場。";
+    }
+
     return gameKey === "werewolf"
       ? "建议全员先接通语音再准备开局，白天讨论阶段更顺。"
       : "组队和表决都会同步倒计时，语音连上后更适合快速推进。";
   }
 
+  if (gameKey === "reversi") {
+    return "黑棋先手；若下一手無合法落點，系統會自動過手並保持邀請路徑不變。";
+  }
+
   return gameKey === "gomoku"
     ? "两人都准备后立即开局；如果没人陪练，房主可在房内补 AI。"
     : "可创建 2 / 4 / 6 人完整中国跳棋房，房主可补 AI 凑满整桌后直接开局。";
+}
+
+function getRoomDetailRoute(meta, roomNo, fallbackPrefix) {
+  const prefix = meta?.detailRoutePrefix || fallbackPrefix;
+  return `${prefix}/${roomNo}`.replace(/\/+/g, "/");
 }

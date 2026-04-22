@@ -122,6 +122,15 @@
   gap: 12px;
 }
 
+.bannerActions,
+.quickActions,
+.roomActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .bannerStats {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -162,6 +171,49 @@
   display: block;
   margin-top: 6px;
   font-size: 22px;
+}
+
+.bannerState,
+.statusNote,
+.pauseBanner,
+.inlineLink {
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.16);
+  background: rgba(8, 18, 33, 0.74);
+}
+
+.bannerState,
+.inlineLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  color: #dff7ff;
+}
+
+.inlineLink {
+  text-decoration: none;
+}
+
+.statusNote {
+  margin: 0;
+  padding: 12px 14px;
+  color: #9ff8ff;
+}
+
+.pauseBanner {
+  display: grid;
+  gap: 6px;
+  max-width: 320px;
+  padding: 14px 16px;
+}
+
+.pauseBanner strong {
+  color: #ffd898;
+}
+
+.pauseBanner span {
+  color: var(--muted);
 }
 
 .floor {
@@ -348,6 +400,10 @@
   color: var(--muted);
 }
 
+.roomActions {
+  justify-content: flex-end;
+}
+
 .rankItem em {
   color: #ffd898;
   font-style: normal;
@@ -397,5 +453,11 @@
 
   .inlineJoin {
     flex-direction: column;
+  }
+
+  .roomActions,
+  .bannerActions,
+  .quickActions {
+    width: 100%;
   }
 }

@@ -103,6 +103,26 @@
   color: rgba(246, 240, 227, 0.74);
 }
 
+.roomRules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ruleChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 214, 140, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7e6ba;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
 .hudButton {
   border: 1px solid rgba(255, 235, 194, 0.18);
   border-radius: 999px;

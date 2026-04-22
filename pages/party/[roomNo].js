@@ -5,9 +5,18 @@ import MatchResultOverlay from "../../components/MatchResultOverlay";
 import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
+import {
+  clearPendingGuestMatchClaim,
+  readPendingGuestMatchClaim,
+  writePendingGuestMatchClaim
+} from "../../lib/client/room-entry";
 import styles from "../../styles/PartyRoom.module.css";
 
-const { getGameMeta, getGameLimits } = require("../../lib/games/catalog");
+const {
+  getGameMeta,
+  getGameLimits,
+  getPartyRolePackSummary
+} = require("../../lib/games/catalog");
 
 let socket;
 const PARTY_EVENTS = SOCKET_EVENTS.party;
@@ -48,12 +57,24 @@ export default function PartyRoomPage() {
   const remoteAudioRefs = useRef({});
   const joinedVoiceRef = useRef(false);
   const voiceMutedRef = useRef(false);
+  const guestClaimSyncRef = useRef("");
 
   const meta = useMemo(() => getGameMeta(room?.gameKey), [room?.gameKey]);
   const mySeat = room?.viewer || null;
   const phaseRemainingMs = room?.phaseEndsAt ? Math.max(0, room.phaseEndsAt - nowMs) : 0;
   const limits = getGameLimits(room?.gameKey);
   const players = room?.players || [];
+  const rolePackSummary = useMemo(
+    () =>
+      room?.gameKey && room?.gameKey !== "undercover"
+        ? getPartyRolePackSummary(
+            room.gameKey,
+            Number(room.config?.maxPlayers || room.players?.length || 0),
+            room.config?.rolePack
+          )
+        : null,
+    [room?.gameKey, room?.config?.maxPlayers, room?.config?.rolePack, room?.players?.length]
+  );
   const resultKey = room?.lastResult
     ? [
         room.roomNo,
@@ -181,6 +202,67 @@ export default function PartyRoomPage() {
     });
   }, [room?.round?.stage, room?.round?.nightNo, room?.round?.witchStatus?.committed]);
 
+  useEffect(() => {
+    if (me?.kind !== "user" || !roomNo) {
+      return;
+    }
+
+    const pendingClaim = readPendingGuestMatchClaim();
+    const currentRoute = `/party/${roomNo}`;
+    if (!pendingClaim || pendingClaim.returnTo !== currentRoute) {
+      return;
+    }
+
+    const claimKey = `${pendingClaim.guestId}:${pendingClaim.gameKey}:${pendingClaim.roomNo}`;
+    if (guestClaimSyncRef.current === claimKey) {
+      return;
+    }
+
+    guestClaimSyncRef.current = claimKey;
+    let cancelled = false;
+
+    async function syncPendingClaim() {
+      const response = await apiFetch(API_ROUTES.roomEntry.guestSync(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guestId: pendingClaim.guestId,
+          gameKey: pendingClaim.gameKey,
+          roomNo: pendingClaim.roomNo,
+          summary: pendingClaim.summary
+        })
+      });
+      const data = await response.json();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (response.ok) {
+        clearPendingGuestMatchClaim();
+        showMessage("本局已同步到帳號紀錄");
+        return;
+      }
+
+      if (response.status !== 401) {
+        clearPendingGuestMatchClaim();
+      }
+      guestClaimSyncRef.current = "";
+      showMessage(data.error || "本局同步失敗");
+    }
+
+    syncPendingClaim().catch(() => {
+      if (!cancelled) {
+        guestClaimSyncRef.current = "";
+        showMessage("本局同步失敗");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [me?.kind, roomNo]);
+
   async function loadRoom() {
     if (!roomNo) {
       return;
@@ -192,8 +274,9 @@ export default function PartyRoomPage() {
     ]);
 
     const [meData, roomData] = await Promise.all([meResponse.json(), roomResponse.json()]);
-    if (!meData.user) {
-      router.push("/login");
+    const nextSession = meData.session || meData.user || null;
+    if (!nextSession) {
+      router.push(`/login?returnTo=${encodeURIComponent(`/party/${roomNo}`)}`);
       return;
     }
 
@@ -202,7 +285,7 @@ export default function PartyRoomPage() {
       return;
     }
 
-    setMe(meData.user);
+    setMe(nextSession);
     roomRef.current = roomData.room;
     setRoom(roomData.room);
   }
@@ -456,6 +539,15 @@ export default function PartyRoomPage() {
     setNoteText("");
   }
 
+  function queueGuestClaimSync() {
+    if (me?.kind !== "guest" || !room?.lastResult) {
+      return;
+    }
+
+    writePendingGuestMatchClaim(buildPartyGuestClaim(room, me, mySeat));
+    router.push(`/login?returnTo=${encodeURIComponent(`/party/${room.roomNo}`)}`);
+  }
+
   if (!room || !meta) {
     return (
       <SiteLayout immersive>
@@ -527,10 +619,20 @@ export default function PartyRoomPage() {
                 <strong>{getStageHeadline(room)}</strong>
                 <span>{getStageSubline(room)}</span>
               </div>
-              <div className={styles.stageBadges}>
+              <div className={styles.stageBadges} data-party-config="true">
                 <span>{room.state === "waiting" ? "等待准备" : "对局进行中"}</span>
                 <span>{room.config.visibility === "private" ? "私密房" : "公开房"}</span>
                 <span>{room.config.voiceEnabled ? "语音已开启" : "文字房"}</span>
+                {rolePackSummary?.label ? <span>{rolePackSummary.label}</span> : null}
+                {room.gameKey === "werewolf" ? (
+                  <span>猎人反击 {Number(room.config.hunterSeconds || 20)}s</span>
+                ) : null}
+                {(rolePackSummary?.roles || []).map((item) => (
+                  <span key={`${item.key}-${item.count}`}>
+                    {item.label}
+                    {item.count > 1 ? ` x${item.count}` : ""}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -707,6 +809,22 @@ export default function PartyRoomPage() {
           subtitle={getPartyResultSubtitle(room)}
           badges={getPartyResultBadges(room, mySeat)}
           rows={getPartyResultRows(room)}
+          notice={
+            me?.kind === "guest"
+              ? {
+                  title: "保留這局紀錄",
+                  body: "登入或綁定帳號後，這場對局可同步到你的戰績與歷史紀錄。",
+                  secondaryAction: {
+                    label: "稍後再說",
+                    onClick: () => setDismissedResultKey(resultKey)
+                  },
+                  primaryAction: {
+                    label: "登入並同步本局",
+                    onClick: queueGuestClaimSync
+                  }
+                }
+              : null
+          }
           secondaryAction={{
             label: "返回大厅",
             onClick: () => router.push(meta?.route || "/")
@@ -1309,6 +1427,29 @@ function getPartyResultRows(room) {
           ? "negative"
           : "neutral"
   }));
+}
+
+function buildPartyGuestClaim(room, session, mySeat) {
+  const viewerRecord = room?.lastResult?.players?.find((player) => player.seatIndex === mySeat?.seatIndex);
+
+  return {
+    guestId: session.guestId || session.id,
+    gameKey: room.gameKey,
+    roomNo: room.roomNo,
+    familyKey: "party",
+    returnTo: `/party/${room.roomNo}`,
+    summary: {
+      title: room.title,
+      headline: room.lastResult?.headline || "",
+      detail: room.lastResult?.detail || "",
+      viewerDisplayName: session.displayName,
+      outcome: viewerRecord
+        ? viewerRecord.side === room.lastResult?.winnerSide
+          ? "win"
+          : "loss"
+        : "completed"
+    }
+  };
 }
 
 function capitalize(value) {

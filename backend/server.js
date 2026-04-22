@@ -1,6 +1,7 @@
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
+const { isAllowedSocketOrigin, resolveCorsOrigin } = require("./cors");
 const { initializeDatabase } = require("../lib/db");
 const { registerSocketHandlers } = require("../lib/socket-server");
 const { createRouter } = require("./router");
@@ -33,7 +34,9 @@ async function start() {
 
   const io = new Server(server, {
     cors: {
-      origin: frontendOrigin,
+      origin(origin, callback) {
+        callback(null, isAllowedSocketOrigin(origin, { frontendOrigin, frontendPort }));
+      },
       credentials: true
     }
   });
@@ -46,9 +49,10 @@ async function start() {
 }
 
 function applyCors(req, res) {
-  const requestOrigin = req.headers.origin;
-  const allowedOrigin =
-    requestOrigin && requestOrigin === frontendOrigin ? requestOrigin : frontendOrigin;
+  const allowedOrigin = resolveCorsOrigin(req.headers.origin, req.headers.host, {
+    frontendOrigin,
+    frontendPort
+  });
 
   res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Access-Control-Allow-Credentials", "true");

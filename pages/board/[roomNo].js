@@ -5,13 +5,19 @@ import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
 import MatchResultOverlay from "../../components/MatchResultOverlay";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
+import {
+  clearPendingGuestMatchClaim,
+  readPendingGuestMatchClaim,
+  writePendingGuestMatchClaim
+} from "../../lib/client/room-entry";
 import styles from "../../styles/BoardRoom.module.css";
 
-const { getGameMeta } = require("../../lib/games/catalog");
+const { getGameMeta, getBoardConfigSummary } = require("../../lib/games/catalog");
 
 let socket;
 const BOARD_EVENTS = SOCKET_EVENTS.board;
 const GOMOKU_SIZE = 15;
+const REVERSI_SIZE = 8;
 const CHINESE_CHECKERS_ROW_LENGTHS = [1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1];
 const CHINESE_VERTICAL_GAP = 0.8660254037844386;
 
@@ -20,6 +26,7 @@ export default function BoardRoomPage() {
   const { roomNo } = router.query;
   const [me, setMe] = useState(null);
   const [room, setRoom] = useState(null);
+  const [socketReady, setSocketReady] = useState(false);
   const [message, setMessage] = useState("");
   const [joining, setJoining] = useState(false);
   const [nowMs, setNowMs] = useState(Date.now());
@@ -28,14 +35,24 @@ export default function BoardRoomPage() {
   const [dismissedResultKey, setDismissedResultKey] = useState("");
   const messageTimerRef = useRef(null);
   const previousViewerCanMoveRef = useRef(false);
+  const guestClaimSyncRef = useRef("");
 
   const meta = useMemo(() => getGameMeta(room?.gameKey), [room?.gameKey]);
+  const boardSummary = useMemo(
+    () => getBoardConfigSummary(room?.gameKey, room?.config || {}),
+    [room?.config, room?.gameKey]
+  );
   const mySeat = room?.viewer || null;
   const phaseRemainingMs = room?.turnEndsAt ? Math.max(0, room.turnEndsAt - nowMs) : 0;
   const players = room?.players || [];
   const playerBySeat = useMemo(
     () => Object.fromEntries(players.map((player) => [player.seatIndex, player])),
     [players]
+  );
+  const chineseProgress = room?.gameKey === "chinesecheckers" ? room?.match?.progress || [] : [];
+  const chineseProgressBySeat = useMemo(
+    () => Object.fromEntries(chineseProgress.map((item) => [item.seatIndex, item])),
+    [chineseProgress]
   );
 
   useEffect(() => {
@@ -52,14 +69,26 @@ export default function BoardRoomPage() {
 
   useEffect(() => {
     if (!roomNo || !me || !mySeat) {
-      return;
+      setSocketReady(false);
+      return undefined;
     }
 
     if (!socket) {
       socket = io(getSocketUrl(), { withCredentials: true });
     }
 
-    socket.emit(BOARD_EVENTS.subscribe, { roomNo });
+    function subscribe() {
+      socket.emit(BOARD_EVENTS.subscribe, { roomNo });
+    }
+
+    function onConnect() {
+      setSocketReady(true);
+      subscribe();
+    }
+
+    function onDisconnect() {
+      setSocketReady(false);
+    }
 
     function onRoomUpdate({ room: nextRoom }) {
       setRoom(nextRoom);
@@ -70,12 +99,24 @@ export default function BoardRoomPage() {
       showMessage(error || "房间操作失败");
     }
 
+    if (socket.connected) {
+      setSocketReady(true);
+      subscribe();
+    } else {
+      setSocketReady(false);
+    }
+
+    socket.on("connect", onConnect);
+    socket.on("disconnect", onDisconnect);
     socket.on(BOARD_EVENTS.update, onRoomUpdate);
     socket.on(BOARD_EVENTS.error, onRoomError);
 
     return () => {
+      socket.off("connect", onConnect);
+      socket.off("disconnect", onDisconnect);
       socket.off(BOARD_EVENTS.update, onRoomUpdate);
       socket.off(BOARD_EVENTS.error, onRoomError);
+      setSocketReady(false);
     };
   }, [roomNo, me, mySeat]);
 
@@ -102,10 +143,73 @@ export default function BoardRoomPage() {
     const viewerCanMove = Boolean(room?.match?.viewerCanMove);
     if (viewerCanMove && !previousViewerCanMoveRef.current) {
       setActivePanel(null);
-      showMessage(room?.gameKey === "gomoku" ? "轮到你落子了" : "轮到你走子了，可借任意已占用棋子起跳");
+      showMessage(
+        room?.gameKey === "chinesecheckers" ? "轮到你走子了，可借任意已占用棋子起跳" : "轮到你落子了"
+      );
     }
     previousViewerCanMoveRef.current = viewerCanMove;
   }, [room?.match?.viewerCanMove, room?.gameKey]);
+
+  useEffect(() => {
+    if (me?.kind !== "user" || !roomNo) {
+      return;
+    }
+
+    const pendingClaim = readPendingGuestMatchClaim();
+    const currentRoute = `/board/${roomNo}`;
+    if (!pendingClaim || pendingClaim.returnTo !== currentRoute) {
+      return;
+    }
+
+    const claimKey = `${pendingClaim.guestId}:${pendingClaim.gameKey}:${pendingClaim.roomNo}`;
+    if (guestClaimSyncRef.current === claimKey) {
+      return;
+    }
+
+    guestClaimSyncRef.current = claimKey;
+    let cancelled = false;
+
+    async function syncPendingClaim() {
+      const response = await apiFetch(API_ROUTES.roomEntry.guestSync(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guestId: pendingClaim.guestId,
+          gameKey: pendingClaim.gameKey,
+          roomNo: pendingClaim.roomNo,
+          summary: pendingClaim.summary
+        })
+      });
+      const data = await response.json();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (response.ok) {
+        clearPendingGuestMatchClaim();
+        showMessage("本局已同步到帳號紀錄");
+        return;
+      }
+
+      if (response.status !== 401) {
+        clearPendingGuestMatchClaim();
+      }
+      guestClaimSyncRef.current = "";
+      showMessage(data.error || "本局同步失敗");
+    }
+
+    syncPendingClaim().catch(() => {
+      if (!cancelled) {
+        guestClaimSyncRef.current = "";
+        showMessage("本局同步失敗");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [me?.kind, roomNo]);
 
   async function loadRoom() {
     if (!roomNo) {
@@ -118,8 +222,9 @@ export default function BoardRoomPage() {
     ]);
 
     const [meData, roomData] = await Promise.all([meResponse.json(), roomResponse.json()]);
-    if (!meData.user) {
-      router.push("/login");
+    const nextSession = meData.session || meData.user || null;
+    if (!nextSession) {
+      router.push(`/login?returnTo=${encodeURIComponent(getCurrentBoardRoute(router.asPath, roomNo))}`);
       return;
     }
 
@@ -128,7 +233,7 @@ export default function BoardRoomPage() {
       return;
     }
 
-    setMe(meData.user);
+    setMe(nextSession);
     setRoom(roomData.room);
   }
 
@@ -154,15 +259,36 @@ export default function BoardRoomPage() {
   }
 
   function emitReady(ready) {
+    if (!socket?.connected) {
+      showMessage("实时连线同步中，请稍候");
+      return;
+    }
     socket?.emit(BOARD_EVENTS.ready, { roomNo, ready });
   }
 
   function emitAddBot(count = 1) {
+    if (!socket?.connected) {
+      showMessage("实时连线同步中，请稍候");
+      return;
+    }
     socket?.emit(BOARD_EVENTS.addBot, { roomNo, count });
   }
 
   function emitMove(payload) {
+    if (!socket?.connected) {
+      showMessage("实时连线同步中，请稍候");
+      return;
+    }
     socket?.emit(BOARD_EVENTS.move, { roomNo, payload });
+  }
+
+  function queueGuestClaimSync() {
+    if (me?.kind !== "guest" || !room?.lastResult) {
+      return;
+    }
+
+    writePendingGuestMatchClaim(buildBoardGuestClaim(room, me, mySeat));
+    router.push(`/login?returnTo=${encodeURIComponent(getCurrentBoardRoute(router.asPath, room.roomNo, meta))}`);
   }
 
   if (!room || !meta) {
@@ -188,28 +314,33 @@ export default function BoardRoomPage() {
 
   return (
     <SiteLayout immersive>
-      <section
-        className={`${styles.scene} ${
-          room.gameKey === "gomoku" ? styles.themeGomoku : styles.themeChinesecheckers
-        }`}
-      >
+      <section className={`${styles.scene} ${getBoardThemeClass(room.gameKey)}`}>
         <div className={styles.sceneGlow} />
         <div className={styles.sceneDust} />
         <div className={styles.sceneSweep} />
 
         <header className={styles.hud}>
-          <div className={styles.hudMain}>
-            <div className={styles.hudIcon}>
-              <GameIcon gameKey={room.gameKey} />
+            <div className={styles.hudMain}>
+              <div className={styles.hudIcon}>
+                <GameIcon gameKey={room.gameKey} />
+              </div>
+              <div>
+                <span className={styles.roomTag}>房号 {room.roomNo}</span>
+                <h1>{meta.title}</h1>
+                <p>
+                  {meta.strapline} · {players.length}/{room.config.maxPlayers} 人
+                </p>
+                {boardSummary.length > 0 ? (
+                  <div className={styles.stageBadges}>
+                    {boardSummary.map((item) => (
+                      <span key={`${room.roomNo}-${item}`} data-board-chip={item}>
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <div>
-              <span className={styles.roomTag}>房号 {room.roomNo}</span>
-              <h1>{meta.title}</h1>
-              <p>
-                {meta.strapline} · {players.length}/{room.config.maxPlayers} 人
-              </p>
-            </div>
-          </div>
 
           <div className={styles.hudActions}>
             <TurnTimer
@@ -225,9 +356,32 @@ export default function BoardRoomPage() {
 
         <div className={styles.layout}>
           <section className={styles.stage}>
+            {room.gameKey === "chinesecheckers" && chineseProgress.length > 0 ? (
+              <div className={styles.stageTopline}>
+                <div className={styles.progressRow}>
+                  {chineseProgress.map((item) => (
+                    <span
+                      key={`${room.roomNo}-progress-${item.seatIndex}`}
+                      className={styles.progressBadge}
+                      data-progress-seat={item.seatIndex}
+                      data-progress-value={`${item.goalReached}/${item.goalTotal}`}
+                    >
+                      <strong>{item.pieceLabel}</strong>
+                      <span>
+                        {item.targetCampLabel} {item.goalReached}/{item.goalTotal}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div
               className={`${styles.boardBody} ${isMyTurn ? styles.boardBodyActive : ""} ${
-                room.gameKey === "gomoku" ? styles.boardBodyGomoku : styles.boardBodyChinese
+                room.gameKey === "gomoku"
+                  ? styles.boardBodyGomoku
+                  : room.gameKey === "reversi"
+                    ? styles.boardBodyReversi
+                    : styles.boardBodyChinese
               }`.trim()}
             >
               {room.state === "playing" ? (
@@ -235,9 +389,11 @@ export default function BoardRoomPage() {
                   <span>{isMyTurn ? "你的操作窗口" : "当前行动者"}</span>
                   <strong>
                     {isMyTurn
-                      ? room.gameKey === "gomoku"
-                        ? "现在落子"
-                        : "现在走子，可借任意已占用棋子连跳"
+                      ? room.gameKey === "chinesecheckers"
+                        ? "现在走子，可借任意已占用棋子连跳"
+                        : room.gameKey === "reversi"
+                          ? "现在落子，抢角与边线"
+                          : "现在落子"
                       : actingPlayerName}
                   </strong>
                 </div>
@@ -245,6 +401,8 @@ export default function BoardRoomPage() {
 
               {room.gameKey === "gomoku" ? (
                 <GomokuBoard room={room} emitMove={emitMove} />
+              ) : room.gameKey === "reversi" ? (
+                <ReversiBoard room={room} emitMove={emitMove} />
               ) : (
                 <ChineseCheckersBoard
                   room={room}
@@ -268,6 +426,7 @@ export default function BoardRoomPage() {
                       type="button"
                       className={styles.primaryButton}
                       onClick={() => emitReady(!mySeat.ready)}
+                      disabled={!socketReady}
                     >
                       {mySeat.ready ? "取消准备" : room.lastResult ? "准备再来" : "准备开局"}
                     </button>
@@ -276,6 +435,7 @@ export default function BoardRoomPage() {
                         type="button"
                         className={styles.hudButton}
                         onClick={() => emitAddBot(1)}
+                        disabled={!socketReady}
                       >
                         补机器人
                       </button>
@@ -391,7 +551,10 @@ export default function BoardRoomPage() {
                   <span>{players.length} / {room.config.maxPlayers}</span>
                 </div>
                 <div className={styles.seatList}>
-                  {players.map((player) => (
+                  {players.map((player) => {
+                    const progress = chineseProgressBySeat[player.seatIndex] || null;
+
+                    return (
                     <div
                       key={player.userId}
                       className={`${styles.seatCard} ${
@@ -412,8 +575,21 @@ export default function BoardRoomPage() {
                       {player.targetCampLabel ? (
                         <div className={styles.seatTrail}>目标营地 · {player.targetCampLabel}</div>
                       ) : null}
+                      {progress ? (
+                        <div
+                          className={styles.seatProgress}
+                          data-progress-seat={player.seatIndex}
+                          data-progress-value={`${progress.goalReached}/${progress.goalTotal}`}
+                        >
+                          <strong>
+                            {progress.goalReached}/{progress.goalTotal}
+                          </strong>
+                          <span>剩余 {progress.remaining} 格</span>
+                        </div>
+                      ) : null}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             ) : null}
@@ -444,6 +620,22 @@ export default function BoardRoomPage() {
           subtitle={getBoardResultSubtitle(room, mySeat)}
           badges={getBoardResultBadges(room, mySeat)}
           rows={getBoardResultRows(room)}
+          notice={
+            me?.kind === "guest"
+              ? {
+                  title: "保留這局紀錄",
+                  body: "登入或綁定帳號後，這場對局可同步到你的戰績與歷史紀錄。",
+                  secondaryAction: {
+                    label: "稍後再說",
+                    onClick: () => setDismissedResultKey(resultKey)
+                  },
+                  primaryAction: {
+                    label: "登入並同步本局",
+                    onClick: queueGuestClaimSync
+                  }
+                }
+              : null
+          }
           secondaryAction={{
             label: "返回大厅",
             onClick: () => router.push(meta.route)
@@ -502,6 +694,62 @@ function GomokuBoard({ room, emitMove }) {
                 {cell ? (
                   <span
                     className={`${styles.stone} ${
+                      cell === "black" ? styles.stoneBlack : styles.stoneWhite
+                    }`}
+                  />
+                ) : null}
+              </button>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReversiBoard({ room, emitMove }) {
+  const match = room.match;
+  const board = match?.board || Array.from({ length: REVERSI_SIZE }, () => Array(REVERSI_SIZE).fill(null));
+  const legalMoves = new Set((match?.viewerLegalMoves || []).map((move) => `${move.row}-${move.col}`));
+  const score = match?.score || { black: 2, white: 2 };
+
+  return (
+    <div className={styles.reversiWrap}>
+      {!match ? (
+        <div className={styles.boardWaitingOverlay}>
+          <strong>等待棋手准备</strong>
+          <span>雙方準備後會立即展開 8x8 黑白棋盤。</span>
+        </div>
+      ) : null}
+      <div className={styles.reversiScore}>
+        <span data-reversi-score="black">黑棋 {score.black}</span>
+        <span data-reversi-score="white">白棋 {score.white}</span>
+      </div>
+      <div className={styles.reversiBoard}>
+        {board.map((line, rowIndex) =>
+          line.map((cell, colIndex) => {
+            const moveKey = `${rowIndex}-${colIndex}`;
+            const isLast = match?.lastMove?.row === rowIndex && match?.lastMove?.col === colIndex;
+            const isLegal = legalMoves.has(moveKey);
+            return (
+              <button
+                key={moveKey}
+                type="button"
+                data-reversi-cell={moveKey}
+                data-reversi-piece={cell || "empty"}
+                data-reversi-legal={isLegal ? "true" : "false"}
+                className={`${styles.reversiCell} ${isLast ? styles.reversiCellLast : ""}`}
+                disabled={!match?.viewerCanMove || !isLegal}
+                onClick={() => {
+                  if (match?.viewerCanMove && isLegal) {
+                    emitMove({ row: rowIndex, col: colIndex });
+                  }
+                }}
+              >
+                {isLegal && !cell ? <span className={styles.reversiHint} /> : null}
+                {cell ? (
+                  <span
+                    className={`${styles.reversiStone} ${
                       cell === "black" ? styles.stoneBlack : styles.stoneWhite
                     }`}
                   />
@@ -741,7 +989,15 @@ function getTurnHint(room, mySeat, selectedPiece) {
   }
 
   if (room.gameKey === "gomoku") {
+    if (room.config.openingRule === "center-opening" && room.match?.moveCount === 0) {
+      return "本局採用天元开局，首手必须落在棋盘中心。";
+    }
+
     return "点击棋盘交叉点即可落子，五连成线直接获胜。";
+  }
+
+  if (room.gameKey === "reversi") {
+    return "只能落在高亮位置，必須形成包夾翻面；若沒有合法落點會自動過手。";
   }
 
   if (selectedPiece) {
@@ -760,7 +1016,19 @@ function getViewerNotes(room, mySeat) {
 
   if (room.gameKey === "gomoku") {
     return [
-      `${mySeat.pieceLabel} ${mySeat.seatIndex === 0 ? "先手" : "后手"}，在 15 路棋盘中抢先形成五连。`
+      `${mySeat.pieceLabel} ${mySeat.seatIndex === 0 ? "先手" : "后手"}，在 15 路棋盘中抢先形成五连。`,
+      room.config.openingRule === "center-opening"
+        ? "本局採用天元开局，首手必须先占住棋盘中心。"
+        : "本局採用標準开局，首手可自由选择空位。"
+    ];
+  }
+
+  if (room.gameKey === "reversi") {
+    return [
+      `${mySeat.pieceLabel} ${
+        mySeat.seatIndex === 0 ? "先手" : "後手"
+      }，開局四子固定落在棋盤中央。`,
+      "角位最穩，邊線次之；沒有合法落點時系統會自動過手。"
     ];
   }
 
@@ -1055,7 +1323,7 @@ function getBoardResultBadges(room, mySeat) {
   }
 
   return [
-    room.gameKey === "gomoku" ? "五子棋" : "中国跳棋",
+    room.gameKey === "gomoku" ? "五子棋" : room.gameKey === "reversi" ? "黑白棋" : "中国跳棋",
     `房号 ${room.roomNo}`,
     mySeat
       ? typeof room.lastResult.winnerSeat === "number"
@@ -1092,6 +1360,57 @@ function getBoardResultRows(room) {
         delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral"
     };
   });
+}
+
+function buildBoardGuestClaim(room, session, mySeat) {
+  const viewerDelta =
+    room?.lastResult?.deltas?.find((entry) => entry.seatIndex === mySeat?.seatIndex)?.delta ?? null;
+  const didWin =
+    typeof room?.lastResult?.winnerSeat === "number" &&
+    room.lastResult.winnerSeat === mySeat?.seatIndex;
+
+  return {
+    guestId: session.guestId || session.id,
+    gameKey: room.gameKey,
+    roomNo: room.roomNo,
+    familyKey: "board",
+    returnTo: getCurrentBoardRoute("", room.roomNo, { detailRoutePrefix: room.gameKey === "reversi" ? "/reversi" : "/board" }),
+    summary: {
+      title: room.title,
+      headline: room.lastResult?.headline || "",
+      detail: room.lastResult?.detail || "",
+      viewerDisplayName: session.displayName,
+      delta: viewerDelta,
+      outcome:
+        typeof room?.lastResult?.winnerSeat === "number"
+          ? didWin
+            ? "win"
+            : "loss"
+          : "draw"
+    }
+  };
+}
+
+function getBoardThemeClass(gameKey) {
+  if (gameKey === "gomoku") {
+    return styles.themeGomoku;
+  }
+
+  if (gameKey === "reversi") {
+    return styles.themeReversi;
+  }
+
+  return styles.themeChinesecheckers;
+}
+
+function getCurrentBoardRoute(asPath, roomNo, meta = null) {
+  const normalizedAsPath = String(asPath || "").split("?")[0];
+  if (normalizedAsPath && /\d{6}$/.test(normalizedAsPath)) {
+    return normalizedAsPath;
+  }
+
+  const prefix = meta?.detailRoutePrefix || "/board";
+  return `${prefix}/${roomNo}`.replace(/\/+/g, "/");
 }
 
 function formatSigned(value) {

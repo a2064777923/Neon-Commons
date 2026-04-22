@@ -1,4 +1,4 @@
-const { getUserFromRequest } = require("../../lib/auth");
+const { getSessionFromRequest } = require("../../lib/auth");
 const { methodNotAllowed } = require("../../lib/http");
 const {
   AUTH_SCOPES,
@@ -11,8 +11,11 @@ async function handler(req, res) {
     return methodNotAllowed(res, ["GET"]);
   }
 
-  const user = await getUserFromRequest(req);
-  return res.status(200).json({ user });
+  const session = await getSessionFromRequest(req);
+  return res.status(200).json({
+    user: session?.kind === "user" ? session : null,
+    session
+  });
 }
 
 handler.contract = createHandlerContract(

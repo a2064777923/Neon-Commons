@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [me, setMe] = useState(null);
   const [players, setPlayers] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [templateModes, setTemplateModes] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [capabilityFamilies, setCapabilityFamilies] = useState([]);
   const [runtimeControls, setRuntimeControls] = useState([]);
@@ -91,6 +92,7 @@ export default function AdminPage() {
     setMe(meData.user);
     setPlayers(playersData.items || []);
     setTemplates(templatesData.items || []);
+    setTemplateModes(templatesData.supportedModes || []);
     setConfigs(configsData.items || []);
     setCapabilityFamilies(capabilitiesData.families || []);
     setRuntimeControls(runtimeData.controls || []);
@@ -545,14 +547,30 @@ export default function AdminPage() {
             <details className={styles.advancedDetails}>
               <summary className={styles.advancedSummary}>模板編輯器</summary>
               <div className={styles.advancedBody}>
+                <p className={styles.summaryCopy} data-template-support-note="true">
+                  支持上線模式：{templateModes.join(" / ") || "CLASSIC / ROB / NO_SHUFFLE"}。`LAIZI`
+                  目前只可保留為未上線模板，不能啟用或拿來開房。
+                </p>
+                <div className={styles.heroList}>
+                  <span>
+                    建議只編輯已接通字段：`baseScore`、`maxRobMultiplier`、`bidOptions`、`countdownSeconds`、
+                    托管窗口、炸彈 / 王炸 / 春天開關與倍率、`roomVisibility`。
+                  </span>
+                  <span>玩家建房、公開模板列表與牌桌 runtime 都走同一套規則正規化。</span>
+                </div>
                 <div className="template-list">
                   {templates.map((template) => (
-                    <div key={template.id} className="template-item">
+                    <div key={template.id} className="template-item" data-admin-template={template.name}>
                       <strong>
                         #{template.id} {template.title}
                       </strong>
                       <span>
                         {template.mode} / {template.isActive ? "已上線" : "未上線"}
+                      </span>
+                      <span>
+                        {template.modeSupported
+                          ? getTemplateRuleSummary(template.settings).join(" · ")
+                          : template.unsupportedReason}
                       </span>
                       <pre>{JSON.stringify(template.settings, null, 2)}</pre>
                     </div>
@@ -626,6 +644,22 @@ function formatAuditTarget(item, capabilityLabels = {}) {
   }
 
   return item.detail?.scope || "系統操作";
+}
+
+function getTemplateRuleSummary(settings) {
+  const autoMin = Number(settings?.autoTrusteeMinSeconds || 2);
+  const autoMax = Number(settings?.autoTrusteeMaxSeconds || settings?.autoTrusteeSeconds || 5);
+
+  return [
+    `${settings?.baseScore || 0} 底分`,
+    `叫分至 ${Number(settings?.maxRobMultiplier || 3)}`,
+    `${settings?.countdownSeconds || 0}s 出牌`,
+    `托管 ${autoMin}-${autoMax}s`,
+    settings?.allowBomb === false ? "禁炸彈" : `炸彈 x${Number(settings?.bombMultiplier || 2)}`,
+    settings?.allowRocket === false ? "禁王炸" : `王炸 x${Number(settings?.rocketMultiplier || 2)}`,
+    settings?.allowSpring === false ? "春天關閉" : `春天 x${Number(settings?.springMultiplier || 2)}`,
+    settings?.roomVisibility === "private" ? "私密桌" : "公開桌"
+  ];
 }
 
 function formatTimestamp(value) {

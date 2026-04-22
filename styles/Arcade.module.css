@@ -3,200 +3,231 @@
   gap: 20px;
 }
 
-.commandBar,
-.walletCard,
-.signalCard,
-.rankCard,
-.centerArena,
-.gameCard {
+.commandBanner,
+.profileCard,
+.utilityCard,
+.commandDock,
+.familyBand,
+.anchorCard,
+.compactCard {
   position: relative;
   overflow: hidden;
   clip-path: var(--clip-xl);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(103, 235, 255, 0.14);
   background:
-    linear-gradient(180deg, rgba(9, 19, 34, 0.94), rgba(6, 13, 24, 0.88)),
-    rgba(7, 15, 28, 0.92);
-  box-shadow: var(--shadow-soft);
+    linear-gradient(180deg, rgba(8, 17, 31, 0.96), rgba(4, 10, 20, 0.92)),
+    rgba(5, 9, 19, 0.92);
+  box-shadow: 0 28px 72px rgba(2, 6, 14, 0.34);
 }
 
-.commandBar::before,
-.walletCard::before,
-.signalCard::before,
-.rankCard::before,
-.centerArena::before,
-.gameCard::before {
+.commandBanner::before,
+.profileCard::before,
+.utilityCard::before,
+.commandDock::before,
+.familyBand::before,
+.anchorCard::before,
+.compactCard::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(135deg, rgba(103, 235, 255, 0.08), transparent 34%, transparent 66%, rgba(255, 82, 212, 0.08)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 18%);
+    linear-gradient(135deg, rgba(103, 235, 255, 0.1), transparent 32%, transparent 66%, rgba(255, 196, 102, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 22%);
 }
 
-.commandBar > *,
-.walletCard > *,
-.signalCard > *,
-.rankCard > *,
-.centerArena > *,
-.gameCard > * {
+.commandBanner > *,
+.profileCard > *,
+.utilityCard > *,
+.commandDock > *,
+.familyBand > *,
+.anchorCard > *,
+.compactCard > * {
   position: relative;
   z-index: 1;
 }
 
-.commandBar {
+.commandBanner {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-  gap: 18px;
-  padding: 26px;
+  grid-template-columns: minmax(0, 1.34fr) minmax(280px, 0.66fr);
+  gap: 16px;
+  padding: 22px 24px;
 }
 
-.badge,
-.panelEyebrow {
+.bannerCopy {
+  display: grid;
+  gap: 12px;
+}
+
+.bannerCopy h1,
+.commandHead h2,
+.sectionHead h2,
+.cardCopy h3,
+.compactHead h3,
+.profileCard strong,
+.utilityHead strong,
+.rankItem strong,
+.statCard strong {
+  margin: 0;
+  font-family: "Orbitron", "Chakra Petch", "Noto Sans TC", sans-serif;
+}
+
+.bannerCopy h1 {
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 0.94;
+  max-width: 760px;
+}
+
+.bannerCopy p,
+.profileCard p,
+.familyBandHead p,
+.cardCopy p,
+.compactCard p,
+.commandHint,
+.emptyFeed {
+  margin: 0;
+  color: rgba(206, 224, 238, 0.76);
+}
+
+.eyebrow {
   display: inline-flex;
-  align-items: center;
-  min-height: 34px;
   width: fit-content;
+  min-height: 32px;
+  align-items: center;
   padding: 0 12px;
   clip-path: var(--clip-lg);
   border: 1px solid rgba(103, 235, 255, 0.18);
   color: #b9f7ff;
   font-size: 12px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 
-.commandBar h1,
-.commandStats strong,
-.stageHead h2,
-.walletCard strong,
-.rankItem strong,
-.gameFoot strong,
-.gameCopy h3 {
-  font-family: "Orbitron", "Chakra Petch", "Noto Sans TC", sans-serif;
-}
-
-.commandBar h1 {
-  margin: 12px 0 8px;
-  max-width: 760px;
-  font-size: clamp(36px, 4vw, 62px);
-  line-height: 0.96;
-}
-
-.commandBar p,
-.walletCard p,
-.signalItem span,
-.emptyState {
-  margin: 0;
-  color: var(--muted);
-}
-
-.commandStats {
+.bannerStats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
-.commandStats > div,
-.metricStack > div,
-.rankItem,
-.signalItem,
-.gameMeta span,
-.roomPeek span,
-.fastActions :global(a) {
+.statCard,
+.metricList > div,
+.feedItem,
+.rankItem {
   clip-path: var(--clip-lg);
-  border: 1px solid rgba(103, 235, 255, 0.14);
-  background: rgba(8, 18, 33, 0.74);
+  border: 1px solid rgba(103, 235, 255, 0.12);
+  background: rgba(8, 16, 30, 0.72);
 }
 
-.commandStats > div,
-.metricStack > div {
-  padding: 16px;
+.statCard,
+.metricList > div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
 }
 
-.commandStats span,
-.metricStack span {
-  display: block;
-  color: var(--muted);
+.statCard span,
+.metricList span {
+  color: rgba(206, 224, 238, 0.6);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.commandStats strong,
-.metricStack strong {
-  display: block;
-  margin-top: 6px;
+.statCard strong,
+.metricList strong {
   font-size: 22px;
 }
 
-.hubGrid {
+.stageGrid {
   display: grid;
-  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.6fr) minmax(260px, 0.7fr);
-  gap: 18px;
+  grid-template-columns: minmax(220px, 0.54fr) minmax(0, 1.92fr) minmax(210px, 0.5fr);
+  gap: 14px;
   align-items: start;
 }
 
-.sideRail {
+.leftRail,
+.rightRail,
+.centerColumn,
+.familyStack,
+.feedList,
+.rankList {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
-.walletCard,
-.signalCard,
-.rankCard,
-.centerArena {
+.profileCard,
+.utilityCard,
+.commandDock,
+.familyBand {
   display: grid;
-  gap: 16px;
-  padding: 22px;
+  gap: 14px;
+  padding: 18px;
 }
 
-.metricStack,
-.rankList,
-.signalList {
+.metricList {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
-.actionRow,
-.fastActions {
+.linkRow,
+.quickLinks,
+.modeTabs,
+.cardMeta,
+.compactFoot {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.signalItem,
-.rankItem {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
+.primaryLink,
+.ghostLink,
+.inlineLink,
+.compactLink,
+.commandButton,
+.modeTab,
+.comingSoonChip {
+  display: inline-flex;
   align-items: center;
-  padding: 14px;
-}
-
-.signalItem strong,
-.rankItem span {
-  color: white;
-}
-
-.rankItem em {
-  color: #ffd898;
-  font-style: normal;
-  font-weight: 700;
-}
-
-.emptyState {
-  display: grid;
-  place-items: center;
-  min-height: 140px;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
   clip-path: var(--clip-lg);
-  border: 1px dashed rgba(103, 235, 255, 0.16);
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-.centerArena {
-  gap: 18px;
+.primaryLink,
+.commandButton,
+.compactLink {
+  border: 0;
+  background: linear-gradient(135deg, #67ebff, #1c90c4);
+  color: #04131e;
+  box-shadow: 0 14px 28px rgba(103, 235, 255, 0.18);
 }
 
-.stageHead {
+.ghostLink,
+.inlineLink,
+.modeTab,
+.comingSoonChip {
+  border: 1px solid rgba(103, 235, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #d9f8ff;
+}
+
+.primaryLink:hover,
+.ghostLink:hover,
+.inlineLink:hover,
+.compactLink:hover,
+.commandButton:hover,
+.modeTab:hover {
+  transform: translateY(-1px);
+}
+
+.utilityHead,
+.commandHead,
+.sectionHead,
+.familyBandHead,
+.compactHead {
   display: flex;
   justify-content: space-between;
   gap: 14px;
@@ -204,232 +235,301 @@
   flex-wrap: wrap;
 }
 
-.stageHead h2 {
-  margin: 8px 0 0;
+.commandHead h2,
+.sectionHead h2 {
+  margin-top: 8px;
   font-size: 28px;
 }
 
-.gameGrid {
+.modeTabs {
+  margin-top: 2px;
+}
+
+.modeTabActive {
+  border-color: rgba(103, 235, 255, 0.34);
+  background: rgba(103, 235, 255, 0.14);
+  color: #f2fbff;
+}
+
+.commandForm {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 12px;
 }
 
-.gameCard {
+.commandField {
   display: grid;
-  grid-column: span 4;
-  gap: 14px;
-  padding: 18px;
-  min-height: 220px;
+  gap: 8px;
 }
 
-.gameCardFeatured {
-  grid-column: span 8;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    "icon copy foot"
-    "icon peek foot";
-  align-items: start;
-  min-height: 220px;
+.commandField span {
+  color: rgba(206, 224, 238, 0.74);
+  font-size: 13px;
+  letter-spacing: 0.08em;
 }
 
-.gameCardFeatured .gameIconWrap {
-  grid-area: icon;
-  width: 78px;
-  height: 78px;
+.commandField input,
+.commandField textarea,
+.commandField select {
+  width: 100%;
+  min-height: 50px;
+  border-radius: 18px;
+  border: 1px solid rgba(103, 235, 255, 0.12);
+  background: rgba(4, 11, 22, 0.74);
+  color: #f2fbff;
+}
+
+.commandField textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.commandMessage {
+  min-height: 48px;
+  display: grid;
+  place-items: center start;
+  padding: 0 16px;
+  clip-path: var(--clip-lg);
+  border: 1px dashed rgba(103, 235, 255, 0.16);
+  color: #bfeef7;
+  background: rgba(8, 18, 33, 0.62);
+}
+
+.feedList,
+.rankList {
+  gap: 10px;
+}
+
+.feedItem,
+.rankItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+}
+
+.feedItem strong,
+.rankItem span,
+.compactHead h3 {
+  color: white;
+}
+
+.feedItem span {
+  color: rgba(206, 224, 238, 0.68);
+}
+
+.feedItem em,
+.rankItem em {
+  color: #ffd898;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.emptyFeed {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  clip-path: var(--clip-lg);
+  border: 1px dashed rgba(103, 235, 255, 0.16);
+  background: rgba(8, 18, 33, 0.56);
+}
+
+.familyStack {
+  gap: 12px;
+}
+
+.familyBand {
+  gap: 12px;
+}
+
+.familyTitle {
+  display: block;
+  color: #f6fbff;
+  font-size: 22px;
+  font-family: "Orbitron", "Chakra Petch", "Noto Sans TC", sans-serif;
+}
+
+.familyBandGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(280px, 0.82fr);
+  gap: 10px;
+}
+
+.anchorCard,
+.compactCard {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.anchorCard {
+  grid-template-columns: 74px minmax(0, 1fr) minmax(132px, 0.56fr);
+  align-items: center;
+}
+
+.cardIcon,
+.compactIcon {
+  display: grid;
+  place-items: center;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.14);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(103, 235, 255, 0.18), transparent 42%),
+    rgba(7, 15, 28, 0.72);
+}
+
+.cardIcon {
+  width: 74px;
+  height: 74px;
   padding: 10px;
 }
 
-.gameCardFeatured .gameCopy {
-  grid-area: copy;
-  gap: 6px;
-  align-content: start;
+.compactIcon {
+  width: 48px;
+  height: 48px;
+  padding: 8px;
 }
 
-.gameCardFeatured .gameMeta {
-  gap: 6px;
-}
-
-.gameCardFeatured .roomPeek {
-  grid-area: peek;
-  margin-top: 0;
-}
-
-.gameCardFeatured .gameFoot {
-  grid-area: foot;
-  margin-top: 0;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.gameCardFeatured .gameFoot strong {
-  max-width: 180px;
-  text-align: right;
-}
-
-.gameCardFeatured .enterLink {
-  min-height: 40px;
-  padding: 0 16px;
-}
-
-.gameIconWrap {
-  width: 86px;
-  height: 86px;
-  padding: 12px;
-  clip-path: var(--clip-lg);
-  border: 1px solid rgba(103, 235, 255, 0.18);
-  background:
-    radial-gradient(circle at 30% 30%, rgba(103, 235, 255, 0.22), transparent 42%),
-    rgba(8, 18, 33, 0.78);
-  box-shadow: 0 0 26px rgba(103, 235, 255, 0.12);
-}
-
-.gameIcon {
+.iconGraphic {
   width: 100%;
   height: auto;
 }
 
-.gameCopy {
+.cardCopy,
+.cardActions {
   display: grid;
   gap: 8px;
 }
 
-.gameMeta,
-.roomPeek {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.cardCopy h3 {
+  font-size: clamp(24px, 2vw, 30px);
+  line-height: 1;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.gameMeta span,
-.roomPeek span {
+.cardCopy p,
+.compactCard p,
+.cardActions strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardCopy p {
+  -webkit-line-clamp: 2;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.cardActions {
+  align-content: center;
+  justify-items: end;
+}
+
+.cardActions strong {
+  max-width: 150px;
+  color: #d8edf4;
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+}
+
+.stateBadge {
   display: inline-flex;
-  align-items: center;
+  width: fit-content;
   min-height: 30px;
+  align-items: center;
   padding: 0 10px;
-  color: #b9f7ff;
+  clip-path: var(--clip-lg);
+  border: 1px solid rgba(103, 235, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #b8f2ff;
   font-size: 12px;
 }
 
-.gameCopy h3 {
-  margin: 0;
-  font-size: clamp(24px, 2.2vw, 34px);
+.compactGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.gameCopy p {
-  margin: 0;
-  color: #ffd898;
-}
-
-.gameFoot {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-end;
-  margin-top: auto;
-}
-
-.gameFoot strong {
-  max-width: 60%;
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.enterLink {
-  display: inline-flex;
+.compactHead {
   align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 18px;
-  clip-path: var(--clip-lg);
-  border: 1px solid rgba(103, 235, 255, 0.38);
-  background: linear-gradient(135deg, rgba(103, 235, 255, 0.94), rgba(17, 185, 245, 0.86));
-  color: #04101c;
-  font-weight: 700;
+  gap: 10px;
 }
 
-@media (max-width: 1280px) {
-  .hubGrid {
+.compactHead h3 {
+  margin: 6px 0 0;
+  font-size: 18px;
+  line-height: 1.08;
+  white-space: nowrap;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compactFoot {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.compactCard p {
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.compactCardMuted {
+  opacity: 0.88;
+}
+
+.quickLinks {
+  gap: 12px;
+}
+
+@media (max-width: 1180px) {
+  .stageGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .leftRail,
+  .rightRail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .familyBandGrid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 1100px) {
-  .commandBar {
+@media (max-width: 820px) {
+  .commandBanner,
+  .anchorCard {
     grid-template-columns: 1fr;
   }
 
-  .gameCard,
-  .gameCardFeatured {
-    grid-column: span 6;
+  .bannerStats,
+  .leftRail,
+  .rightRail,
+  .compactGrid {
+    grid-template-columns: 1fr;
   }
 
-  .gameCardFeatured {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "icon copy"
-      "peek peek"
-      "foot foot";
+  .cardActions {
+    justify-items: start;
   }
 
-  .gameCardFeatured .gameFoot {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .gameCardFeatured .gameFoot strong {
-    max-width: none;
+  .cardActions strong {
     text-align: left;
-  }
-}
-
-@media (max-width: 760px) {
-  .commandBar,
-  .walletCard,
-  .signalCard,
-  .rankCard,
-  .centerArena,
-  .gameCard {
-    clip-path: none;
-    border-radius: 24px;
-  }
-
-  .commandStats,
-  .gameGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .gameCard,
-  .gameCardFeatured {
-    grid-column: span 1;
-  }
-
-  .gameCardFeatured {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "icon"
-      "copy"
-      "peek"
-      "foot";
-  }
-
-  .gameCardFeatured .gameFoot {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .gameCardFeatured .gameFoot strong {
     max-width: none;
-    text-align: left;
   }
 
-  .gameFoot {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .gameFoot strong {
-    max-width: none;
+  .cardCopy h3,
+  .compactHead h3 {
+    white-space: normal;
   }
 }

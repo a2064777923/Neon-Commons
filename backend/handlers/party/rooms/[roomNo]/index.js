@@ -1,4 +1,4 @@
-const { getUserFromRequest } = require("../../../../../lib/auth");
+const { getSessionFromRequest } = require("../../../../../lib/auth");
 const { methodNotAllowed } = require("../../../../../lib/http");
 const { getPartyRoomManager } = require("../../../../../lib/party/manager");
 const {
@@ -18,9 +18,9 @@ async function handler(req, res) {
     return res.status(404).json({ error: "房间不存在" });
   }
 
-  const user = await getUserFromRequest(req);
+  const session = await getSessionFromRequest(req);
   return res.status(200).json({
-    room: roomManager.serializeRoom(room, user?.id || null)
+    room: roomManager.serializeRoom(room, session?.id || null)
   });
 }
 

@@ -130,6 +130,15 @@
   gap: 18px;
 }
 
+.heroTopRow,
+.quickActions,
+.roomCardActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .heroBadge {
   display: inline-flex;
   width: fit-content;
@@ -149,6 +158,44 @@
   display: flex;
   gap: 18px;
   align-items: center;
+}
+
+.heroState,
+.backLink,
+.noticeMessage,
+.pauseBanner {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 229, 172, 0.12);
+  background: rgba(255, 250, 239, 0.06);
+}
+
+.heroState,
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 14px;
+  color: #fff2c8;
+}
+
+.backLink {
+  text-decoration: none;
+}
+
+.noticeMessage {
+  margin: 0;
+  padding: 12px 14px;
+  color: #fff2c8;
+}
+
+.pauseBanner {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.pauseBanner strong {
+  color: #fff1c7;
 }
 
 .heroIcon {
@@ -345,6 +392,10 @@
   flex-wrap: wrap;
 }
 
+.roomCardActions {
+  justify-content: flex-end;
+}
+
 .emptyState {
   display: grid;
   place-items: center;
@@ -379,5 +430,11 @@
   .heroHeading {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .heroTopRow,
+  .quickActions,
+  .roomCardActions {
+    width: 100%;
   }
 }

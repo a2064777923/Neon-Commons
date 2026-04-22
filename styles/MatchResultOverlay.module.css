@@ -92,6 +92,39 @@
   gap: 10px;
 }
 
+.noticePanel {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 229, 170, 0.14);
+  background:
+    radial-gradient(circle at top right, rgba(255, 226, 152, 0.12), transparent 30%),
+    rgba(255, 255, 255, 0.05);
+}
+
+.noticeCopy {
+  display: grid;
+  gap: 6px;
+}
+
+.noticeCopy strong {
+  color: #fff1cc;
+  font-size: 18px;
+}
+
+.noticeCopy p {
+  margin: 0;
+  color: rgba(255, 239, 207, 0.76);
+  font-size: 15px;
+}
+
+.noticeActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .hero strong {
   font-size: clamp(34px, 6vw, 54px);
   line-height: 0.96;
@@ -181,7 +214,15 @@
     justify-content: stretch;
   }
 
+  .noticeActions {
+    justify-content: stretch;
+  }
+
   .actionRow button {
+    width: 100%;
+  }
+
+  .noticeActions button {
     width: 100%;
   }
 }

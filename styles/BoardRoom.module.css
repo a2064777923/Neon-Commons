@@ -20,6 +20,13 @@
     linear-gradient(180deg, #0d1e3c 0%, #14284a 58%, #0b1630 100%);
 }
 
+.themeReversi {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(123, 235, 171, 0.14), transparent 24%),
+    radial-gradient(circle at 82% 18%, rgba(255, 215, 126, 0.14), transparent 20%),
+    linear-gradient(180deg, #08150e 0%, #10261a 58%, #07110c 100%);
+}
+
 .sceneGlow {
   position: absolute;
   inset: 0;
@@ -126,6 +133,30 @@
 .stageBadges span {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 232, 180, 0.08);
+}
+
+.progressBadge {
+  display: grid;
+  gap: 4px;
+  min-width: 148px;
+  padding: 11px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 232, 180, 0.1);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.progressBadge strong,
+.seatProgress strong {
+  color: #fff0c7;
+}
+
+.progressBadge span,
+.seatProgress span {
+  color: rgba(246, 237, 216, 0.7);
+  font-size: 13px;
 }
 
 .rolePill {
@@ -286,6 +317,13 @@
   flex-wrap: wrap;
 }
 
+.progressRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .boardBody {
   position: relative;
   min-height: 560px;
@@ -308,6 +346,10 @@
 
 .boardBodyChinese {
   min-height: clamp(620px, 72vh, 920px);
+}
+
+.boardBodyReversi {
+  min-height: 600px;
 }
 
 .boardBodyActive {
@@ -490,6 +532,17 @@
 .seatTrail {
   color: rgba(246, 237, 216, 0.64);
   font-size: 13px;
+}
+
+.seatProgress {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 232, 180, 0.08);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .seatCard[data-accent="red"] {
@@ -725,6 +778,90 @@
 
 .gomokuLast {
   background: radial-gradient(circle, rgba(255, 241, 168, 0.26), transparent 64%);
+}
+
+.reversiWrap {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  width: min(100%, 760px);
+}
+
+.reversiScore {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.reversiScore span {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 232, 180, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff1c9;
+}
+
+.reversiBoard {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  padding: 18px;
+  border-radius: 34px;
+  background:
+    linear-gradient(145deg, rgba(24, 98, 62, 0.96), rgba(12, 51, 32, 0.94)),
+    rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 24px 48px rgba(0, 0, 0, 0.24);
+}
+
+.reversiCell {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid rgba(211, 240, 221, 0.12);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(53, 145, 95, 0.96), rgba(23, 96, 58, 0.92));
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.reversiCell:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(255, 232, 180, 0.24);
+  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.18);
+}
+
+.reversiCell:disabled {
+  cursor: default;
+}
+
+.reversiCellLast {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 225, 126, 0.4),
+    0 0 0 4px rgba(255, 225, 126, 0.08);
+}
+
+.reversiHint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18%;
+  height: 18%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 238, 188, 0.82);
+  box-shadow: 0 0 0 8px rgba(255, 238, 188, 0.1);
+}
+
+.reversiStone {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.24);
 }
 
 .jumpWrap {

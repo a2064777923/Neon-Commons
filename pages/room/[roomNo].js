@@ -138,8 +138,11 @@ export default function RoomPage() {
     if (!canPlay) {
       return [];
     }
-    return listSuggestedPlays(myHand, activeTargetCombo);
-  }, [canPlay, handSignature, hintSignature]);
+    return listSuggestedPlays(myHand, activeTargetCombo, {
+      allowBomb: room?.settings?.allowBomb !== false,
+      allowRocket: room?.settings?.allowRocket !== false
+    });
+  }, [canPlay, handSignature, hintSignature, room?.settings?.allowBomb, room?.settings?.allowRocket]);
   const canBeatSelection =
     Boolean(selectedCombo) && (!activeTargetCombo || compareCombos(selectedCombo, activeTargetCombo));
   const selectionFeedback = useMemo(
@@ -758,6 +761,13 @@ export default function RoomPage() {
                 {room.mode} · 底分 {room.settings.baseScore} · 倍率 x
                 {room.round?.multiplier || 1}
               </p>
+              <div className={styles.roomRules} data-ddz-room-rules="true">
+                {getDdzRuleSummary(room.settings).map((item) => (
+                  <span key={`rule-${item}`} className={styles.ruleChip}>
+                    {item}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -1749,6 +1759,28 @@ function getCardResultRows(room) {
     value: `${item.delta >= 0 ? "+" : ""}${item.delta}`,
     tone: item.delta >= 0 ? "positive" : "negative"
   }));
+}
+
+function getDdzRuleSummary(settings) {
+  const autoMin = Number(settings?.autoTrusteeMinSeconds || 2);
+  const autoMax = Number(settings?.autoTrusteeMaxSeconds || settings?.autoTrusteeSeconds || 5);
+
+  return [
+    `${settings?.baseScore || 0} 底分`,
+    `叫分至 ${Number(settings?.maxRobMultiplier || 3)}`,
+    `${settings?.countdownSeconds || 0}s 出牌`,
+    `托管 ${autoMin}-${autoMax}s`,
+    settings?.allowBomb === false
+      ? "禁炸彈"
+      : `炸彈 x${Number(settings?.bombMultiplier || 2)}`,
+    settings?.allowRocket === false
+      ? "禁王炸"
+      : `王炸 x${Number(settings?.rocketMultiplier || 2)}`,
+    settings?.allowSpring === false
+      ? "春天關閉"
+      : `春天 x${Number(settings?.springMultiplier || 2)}`,
+    settings?.roomVisibility === "private" ? "私密桌" : "公開桌"
+  ];
 }
 
 function capitalize(value) {
