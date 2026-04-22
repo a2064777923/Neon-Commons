@@ -1,42 +1,43 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Archived v1.0 milestone
-last_updated: "2026-04-22T10:28:41Z"
+milestone: v1.1
+milestone_name: live-ops-and-reliability
+status: planning
+stopped_at: Started v1.1 milestone
+last_updated: "2026-04-22T10:37:27Z"
 last_activity: 2026-04-22
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 21
-  completed_plans: 21
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-20)
+See: .planning/PROJECT.md (updated 2026-04-22)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** v1.0 archived — ready to define the next milestone
+**Current focus:** v1.1 Live Ops & Reliability — defining requirements and roadmap
 
 ## Current Position
 
-Phase: 6 (verification-release-hardening) — COMPLETE
-Plan: 3 of 3
-Status: v1.0 milestone complete
-Last activity: 2026-04-22
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements and roadmap for v1.1
+Last activity: 2026-04-22 — Milestone v1.1 started
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 21
+- Last milestone plans completed: 21
+- Current milestone plans completed: 0
 - Average duration: n/a
 - Total execution time: n/a
 
@@ -44,18 +45,15 @@ Progress: [██████████] 100%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 3 | n/a | n/a |
-| 2 | 3 | n/a | n/a |
-| 3 | 3 | n/a | n/a |
-| 03.1 | 4 | - | - |
-| 4 | 3 | - | - |
-| 5 | 2 | - | - |
-| 6 | 3 | - | - |
+| 7 | 0 | - | - |
+| 8 | 0 | - | - |
+| 9 | 0 | - | - |
+| 10 | 0 | - | - |
 
 **Recent Trend:**
 
-- Last 5 plans: 05-01, 05-02, 06-01, 06-02, 06-03
-- Trend: Stable
+- Last completed plans: 05-01, 05-02, 06-01, 06-02, 06-03
+- Trend: Reset for v1.1 planning
 
 ## Accumulated Context
 
@@ -75,6 +73,7 @@ Recent decisions affecting current work:
 - [06-01]: Expose the shipped regression surface through `test:logic:critical` and `test:ui:critical`
 - [06-02]: Treat `npm run deploy:3100` plus `npm run verify:release` as the canonical release gate
 - [06-03]: Refresh operator docs and requirement traceability only after the release commands are real
+- [v1.1 Init]: Prioritize live room operations and single-node recovery before starting another new-content wave
 
 ### Pending Todos
 
@@ -82,7 +81,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 4 should extend card/party gameplay through the shared hub-room metadata and room-entry contracts instead of adding one-off entry paths.
+- v1.1 recovery work must preserve the shared room-entry contract and stay within the current single-node runtime model.
 
 ## Deferred Items
 
@@ -94,10 +93,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-22T10:28:41Z
-Stopped at: Archived v1.0 milestone
+Last session: 2026-04-22T10:37:27Z
+Stopped at: Started v1.1 milestone
 Resume file: None
 
 **Last completed phase:** 6 (Verification & Release Hardening) — 3 plans — 2026-04-22T10:20:49Z
 
-**Next recommended action:** Run $gsd-new-milestone
+**Next recommended action:** Define v1.1 requirements, then run $gsd-plan-phase 7

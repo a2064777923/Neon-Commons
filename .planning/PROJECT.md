@@ -38,11 +38,15 @@ npm run verify:release
 
 Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
 
-## Next Milestone Goals
+## Current Milestone: v1.1 Live Ops & Reliability
 
-- Define the post-v1.0 requirements and roadmap through `$gsd-new-milestone`
-- Continue gameplay and backend/admin expansion without regressing shipped room flows
-- Decide whether the next milestone prioritizes new content, operational depth, or platform scaling
+**Goal:** Deepen live room operations and single-node recovery so players survive transient disconnects and operators can manage active rooms without database edits or stack-wide restarts.
+
+**Target features:**
+
+- Recover player and guest sessions after refresh/disconnect through the shared room-entry contract
+- Expose live room directory, room health, and safe intervention tools in the admin surface
+- Add single-node room snapshot/expiry guardrails plus release verification for recovery and live-ops workflows
 
 ## Constraints
 
@@ -66,9 +70,30 @@ Players can jump from the hub into stable real-time social game rooms with as li
 | Treat shipped gameplay/admin flows as the compatibility baseline | The repo is brownfield and should expand incrementally | Validated in v1.0 |
 | Prioritize game/backend/admin expansion over another platform rewrite | Matches the actual delivered surface and remaining opportunity | Still active |
 | Defer distributed room-state infrastructure until later | Current milestone proved feature and verification depth mattered more than scaling first | Still deferred |
+| Start v1.1 with live ops and single-node reliability instead of another content wave | The shipped game surface is broad enough that operational depth is the current limiting factor | Pending validation |
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `$gsd-transition`):
+1. Requirements invalidated? -> Move to Out of Scope with reason
+2. Requirements validated? -> Move to Validated with phase reference
+3. New requirements emerged? -> Add to Active
+4. Decisions to log? -> Add to Key Decisions
+5. "What This Is" still accurate? -> Update if drifted
+
+**After each milestone** (via `$gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check -> still the right priority?
+3. Audit Out of Scope -> reasons still valid?
+4. Update Context with current state (users, feedback, metrics)
 
 ## Milestone History
 
 - **v1.0 shipped on 2026-04-22**: backend contract hardening, admin control plane expansion, hub and room-entry unification, Wave 1 new games, gameplay expansion, and release hardening
 
 For detailed archived planning context, see [MILESTONES.md](./MILESTONES.md) and [v1.0 roadmap archive](./milestones/v1.0-ROADMAP.md).
+
+---
+*Last updated: 2026-04-22 after starting the v1.1 milestone*
