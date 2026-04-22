@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Live Ops & Reliability
-status: milestone_archived
-stopped_at: v1.1 archived, requirements snapshot saved, and local release tag created
-last_updated: "2026-04-23T06:42:14+08:00"
-last_activity: 2026-04-23 -- archived v1.1 milestone and prepared the repo for a new milestone
+milestone: v1.2
+milestone_name: 大跃进
+status: roadmap_initialized
+stopped_at: milestone v1.2 initialized and ready for Phase 11 planning
+last_updated: "2026-04-23T06:55:27+08:00"
+last_activity: 2026-04-23 -- milestone v1.2 initialized with requirements and roadmap
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 15
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,38 +21,41 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-23)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** No active milestone is open. v1.1 is archived and the repo is ready for fresh requirements and roadmap definition.
+**Current focus:** v1.2 大跃进 — push toward higher availability through degraded-mode controls, voice reliability, Wave 2 games, and stronger admin/backend operations.
 
 ## Current Position
 
-Milestone: v1.1 (Live Ops & Reliability) — ARCHIVED
-Status: Waiting for next milestone definition
-Last activity: 2026-04-23 -- milestone archives created, roadmap collapsed, and v1.1 tagged locally
+Phase: 11 (availability-signals-and-degraded-modes) — READY FOR PLANNING
+Plan: Not started
+Status: Defining milestone roadmap and ready to plan Phase 11
+Last activity: 2026-04-23 -- milestone v1.2 initialized
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Last milestone plans completed: 21
-- Current milestone plans completed: 9
-- Average duration: ~21 min
-- Total execution time: ~190 min
+- Last milestone plans completed: 9
+- Current milestone plans completed: 0
+- Average duration: —
+- Total execution time: —
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 7 | 3/3 | ~51 min | ~17 min |
-| 8 | delivered inline in 10-01 | see 10-01 summary | n/a |
-| 9 | 3/3 | ~24 min | ~8 min |
-| 10 | 3/3 | ~115 min | ~38 min |
+| 11 | 0/3 | - | - |
+| 12 | 0/3 | - | - |
+| 13 | 0/3 | - | - |
+| 14 | 0/2 | - | - |
+| 15 | 0/2 | - | - |
+| 16 | 0/2 | - | - |
 
 **Recent Trend:**
 
-- Last completed plans: 09-02, 09-03, 10-01, 10-02, 10-03
-- Trend: all v1.1 requirements are archived as shipped and the repo is waiting on the next milestone definition
+- Last shipped milestone: v1.1 Live Ops & Reliability
+- Trend: the repo is moving from single-node recovery hardening toward broader availability, voice resilience, and Wave 2 content delivery
 
 ## Accumulated Context
 
@@ -82,6 +85,7 @@ Recent decisions affecting current work:
 - [10-01]: Absorb the minimum truthful Phase 8 room-ops surface into Phase 10 execution because release verification cannot prove operator interventions against nonexistent UI/API paths
 - [10-02]: Keep `npm run verify:release` as the single pre-ship command, and add narrow live-ops helpers only for post-failure diagnosis
 - [10-03]: Treat roadmap and requirement status as shipped-artifact traceability, not just original plan ordering
+- [v1.2 Init]: Push the next milestone toward higher availability through degraded-mode controls, voice reliability, Wave 2 content, and stronger operator tooling instead of attempting full distributed room recovery immediately
 
 ### Pending Todos
 
@@ -89,22 +93,23 @@ None yet.
 
 ### Blockers/Concerns
 
-- No active milestone blockers. Remaining concerns are deferred platform and product items for future milestone selection.
+- Multi-node room recovery is still deferred, so v1.2 must improve resilience honestly without implying full distributed failover.
+- Wave 2 content should reuse the shipped release and admin contract instead of introducing one-off launch plumbing.
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
 | Platform | Distributed room-state recovery | Deferred | 2026-04-20 |
-| Voice | TURN/SFU infrastructure | Deferred | 2026-04-20 |
+| Voice | Dedicated SFU infrastructure | Deferred | 2026-04-23 |
 | Product | Native mobile apps | Deferred | 2026-04-20 |
 
 ## Session Continuity
 
-Last session: 2026-04-23T06:42:14+08:00
-Stopped at: v1.1 archived and ready for next milestone setup
-Resume file: None
+Last session: 2026-04-23T06:55:27+08:00
+Stopped at: milestone v1.2 initialized
+Resume file: .planning/ROADMAP.md
 
 **Last completed phase:** 10 (Release Verification for Live Ops) — 3 plans — 2026-04-23
 
-**Next recommended action:** Run `$gsd-new-milestone` to define fresh requirements and roadmap for the next version
+**Next recommended action:** Run `$gsd-plan-phase 11` to start the availability-signals-and-degraded-modes phase

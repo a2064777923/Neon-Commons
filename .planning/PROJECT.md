@@ -52,15 +52,15 @@ FRONTEND_BASE_URL=http://127.0.0.1:3100 npm run test:ui:liveops
 
 Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
 
-## No Active Milestone
+## Current Milestone: v1.2 大跃进
 
-v1.1 has been archived and there is no active milestone yet. The next milestone should start with fresh requirements and roadmap definition through `$gsd-new-milestone`.
+**Goal:** Push the platform toward higher availability while shipping a second wave of games, more reliable voice, and stronger backend/admin operating leverage.
 
-## Next Milestone Goals
+**Target features:**
 
-- Continue expanding gameplay and backend/admin capability without regressing the current room-entry and release-verification contract
-- Decide whether the next priority is multi-node room recovery, voice reliability, or a second content wave
-- Keep the split runtime and canonical `3100/3101` release gate as the non-negotiable baseline for future changes
+- Ship Wave 2 new games through the shared hub, room-entry, recovery, and rollout contract
+- Improve party-room voice reliability with fallback transport, reconnect handling, and clearer degraded-state signaling
+- Expand the backend/admin surface for health visibility, degraded modes, rollout control, and auditability
 
 <details>
 <summary>Archived v1.1 milestone framing</summary>
@@ -81,11 +81,12 @@ v1.1 has been archived and there is no active milestone yet. The next milestone 
 - Keep `/api/*` and `/socket.io/*` owned by the dedicated backend
 - Protect the unified hub, room-number join flow, and live Socket.IO room behavior
 - Treat the current release gate and docs as part of the shipped contract
+- Move toward higher availability incrementally; do not fake full multi-node room recovery before the runtime contract is ready
 
 ## Deferred Work
 
-- Distributed room-state recovery beyond one process
-- TURN / SFU voice infrastructure
+- Full multi-node room-state recovery and live room migration
+- Dedicated SFU-grade media architecture beyond fallback voice reliability
 - Native mobile clients
 - Richer economy / monetization systems
 
@@ -100,6 +101,7 @@ v1.1 has been archived and there is no active milestone yet. The next milestone 
 | Start v1.1 with live ops and single-node reliability instead of another content wave | The shipped game surface was broad enough that operational depth became the limiting factor | Validated in v1.1 |
 | Expose `snapshot-only` as an explicit availability state across hub and room-entry flows | Restart recovery should stay visible without pretending a room is fully live | Validated in v1.1 |
 | Keep `npm run verify:release` as the single canonical pre-ship command | Operators need one stable release habit even as diagnostics widen | Validated in v1.1 |
+| Push v1.2 toward higher availability through degraded-mode and voice hardening before full multi-node recovery | The next safe step is to improve resilience and operator control without overstating runtime guarantees | — Pending |
 
 ## Evolution
 
@@ -126,4 +128,4 @@ This document evolves at phase transitions and milestone boundaries.
 For detailed archived planning context, see [MILESTONES.md](./MILESTONES.md), [v1.1 roadmap archive](./milestones/v1.1-ROADMAP.md), and [v1.0 roadmap archive](./milestones/v1.0-ROADMAP.md).
 
 ---
-*Last updated: 2026-04-23 after completing the v1.1 milestone*
+*Last updated: 2026-04-23 after starting the v1.2 milestone*
