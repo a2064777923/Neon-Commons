@@ -5,7 +5,8 @@ const path = require("node:path");
 const {
   decodeSessionToken,
   GUEST_SCOPE_ERROR,
-  signGuestToken
+  signGuestToken,
+  serializeSessionForClient
 } = require("../lib/auth");
 const controlPlane = require("../lib/admin/control-plane");
 const {
@@ -499,6 +500,231 @@ test("guest sockets are rejected outside their scoped room", async () => {
   assert.equal(socket.emitted.at(-1).payload.error, GUEST_SCOPE_ERROR);
 });
 
+test("/api/me exposes recovery metadata for user and scoped guest sessions", async () => {
+  const userSession = {
+    kind: "user",
+    id: 121,
+    username: "owner121",
+    displayName: "Owner 121",
+    role: "player",
+    status: "active"
+  };
+  const guestSession = {
+    kind: "guest",
+    id: "guest_me_1",
+    guestId: "guest_me_1",
+    username: "guest_me_1",
+    displayName: "Guest Me",
+    role: "guest",
+    status: "guest",
+    gameKey: "werewolf",
+    roomNo: "612345"
+  };
+
+  const handler = loadWithMocks("./backend/handlers/me.js", {
+    "./lib/auth": {
+      getSessionFromRequest: async (req) =>
+        req.headers["x-session-kind"] === "guest" ? guestSession : userSession,
+      serializeSessionForClient
+    }
+  });
+
+  const userResponse = createMockResponse();
+  await handler({ method: "GET", headers: {} }, userResponse);
+
+  assert.equal(userResponse.statusCode, 200);
+  assert.equal(userResponse.jsonBody.session.presenceState, "connected");
+  assert.equal(userResponse.jsonBody.session.recoveryEligible, true);
+  assert.equal(userResponse.jsonBody.session.reconnectGraceEndsAt, null);
+  assert.equal(userResponse.jsonBody.session.recoveryScope, "account");
+  assert.equal(userResponse.jsonBody.user.username, "owner121");
+
+  const guestResponse = createMockResponse();
+  await handler(
+    {
+      method: "GET",
+      headers: { "x-session-kind": "guest" }
+    },
+    guestResponse
+  );
+
+  assert.equal(guestResponse.statusCode, 200);
+  assert.equal(guestResponse.jsonBody.user, null);
+  assert.equal(guestResponse.jsonBody.session.presenceState, "connected");
+  assert.equal(guestResponse.jsonBody.session.recoveryEligible, true);
+  assert.equal(guestResponse.jsonBody.session.reconnectGraceEndsAt, null);
+  assert.equal(guestResponse.jsonBody.session.recoveryScope, "room");
+  assert.equal(guestResponse.jsonBody.session.roomNo, "612345");
+});
+
+test("room detail handlers expose one aligned recovery contract across card, party, and board rooms", async () => {
+  resetLiveRoomState();
+
+  const cardManager = getRoomManager();
+  const partyManager = getPartyRoomManager();
+  const boardManager = getBoardRoomManager();
+  const owner = {
+    id: 131,
+    username: "owner131",
+    displayName: "Owner 131",
+    kind: "user"
+  };
+  const joiner = {
+    id: 132,
+    username: "joiner132",
+    displayName: "Joiner 132",
+    kind: "user"
+  };
+  const partyGuest = {
+    id: "guest_party_1",
+    username: "guest_party_1",
+    displayName: "Guest Party"
+  };
+  const boardGuest = {
+    id: "guest_board_1",
+    username: "guest_board_1",
+    displayName: "Guest Board"
+  };
+
+  const cardRoom = cardManager.createRoom(
+    owner,
+    {
+      id: 3,
+      name: "phase7-classic",
+      title: "Phase 7 經典桌",
+      mode: "CLASSIC",
+      settings: {
+        baseScore: 50,
+        countdownSeconds: 18,
+        autoTrusteeMinSeconds: 2,
+        autoTrusteeMaxSeconds: 5,
+        roomVisibility: "public"
+      }
+    },
+    {}
+  );
+  cardManager.joinRoom(cardRoom.roomNo, joiner);
+  cardManager.addBot(cardRoom.roomNo, owner.id, 1);
+
+  const partyRoom = partyManager.createRoom(owner, "werewolf", {
+    visibility: "private",
+    maxPlayers: 8
+  });
+  partyManager.joinRoom(partyRoom.roomNo, partyGuest);
+  partyManager.addBot(partyRoom.roomNo, owner.id, 1);
+
+  const boardRoom = boardManager.createRoom(owner, "gomoku", {
+    visibility: "private",
+    maxPlayers: 2
+  });
+  boardManager.joinRoom(boardRoom.roomNo, boardGuest);
+
+  const cardHandler = loadWithMocks("./backend/handlers/rooms/[roomNo]/index.js", {
+    "./lib/auth": {
+      getSessionFromRequest: async () => owner
+    }
+  });
+  const partyHandler = loadWithMocks("./backend/handlers/party/rooms/[roomNo]/index.js", {
+    "./lib/auth": {
+      getSessionFromRequest: async () => ({
+        kind: "guest",
+        id: partyGuest.id,
+        guestId: partyGuest.id,
+        displayName: partyGuest.displayName,
+        gameKey: "werewolf",
+        roomNo: partyRoom.roomNo
+      })
+    }
+  });
+  const boardHandler = loadWithMocks("./backend/handlers/board/rooms/[roomNo]/index.js", {
+    "./lib/auth": {
+      getSessionFromRequest: async () => ({
+        kind: "guest",
+        id: boardGuest.id,
+        guestId: boardGuest.id,
+        displayName: boardGuest.displayName,
+        gameKey: "gomoku",
+        roomNo: boardRoom.roomNo
+      })
+    }
+  });
+
+  const cardResponse = createMockResponse();
+  const partyResponse = createMockResponse();
+  const boardResponse = createMockResponse();
+
+  await cardHandler(
+    {
+      method: "GET",
+      query: { roomNo: cardRoom.roomNo },
+      headers: {}
+    },
+    cardResponse
+  );
+  await partyHandler(
+    {
+      method: "GET",
+      query: { roomNo: partyRoom.roomNo },
+      headers: {}
+    },
+    partyResponse
+  );
+  await boardHandler(
+    {
+      method: "GET",
+      query: { roomNo: boardRoom.roomNo },
+      headers: {}
+    },
+    boardResponse
+  );
+
+  assert.equal(cardResponse.statusCode, 200);
+  assert.equal(partyResponse.statusCode, 200);
+  assert.equal(boardResponse.statusCode, 200);
+
+  const expectedHumanRecovery = {
+    connected: true,
+    presenceState: "connected",
+    recoveryEligible: true,
+    reconnectGraceEndsAt: null
+  };
+
+  assert.deepEqual(
+    pickRecoveryFields(cardResponse.jsonBody.room.players.find((player) => player.userId === owner.id)),
+    expectedHumanRecovery
+  );
+  assert.deepEqual(
+    pickRecoveryFields(
+      partyResponse.jsonBody.room.players.find((player) => player.userId === partyGuest.id)
+    ),
+    expectedHumanRecovery
+  );
+  assert.deepEqual(
+    pickRecoveryFields(
+      boardResponse.jsonBody.room.players.find((player) => player.userId === boardGuest.id)
+    ),
+    expectedHumanRecovery
+  );
+
+  assert.deepEqual(
+    pickRecoveryFields(partyResponse.jsonBody.room.viewer),
+    expectedHumanRecovery
+  );
+  assert.deepEqual(
+    pickRecoveryFields(boardResponse.jsonBody.room.viewer),
+    expectedHumanRecovery
+  );
+  assert.deepEqual(
+    pickRecoveryFields(cardResponse.jsonBody.room.players.find((player) => player.isBot)),
+    {
+      connected: true,
+      presenceState: "connected",
+      recoveryEligible: false,
+      reconnectGraceEndsAt: null
+    }
+  );
+});
+
 test("/api/hub returns unified family discovery payload without hiding paused live rooms", async () => {
   const handler = loadWithMocks("./backend/handlers/hub.js", {
     "./lib/db": {
@@ -608,6 +834,15 @@ function extractCookieToken(setCookie) {
     .split("=")
     .slice(1)
     .join("=");
+}
+
+function pickRecoveryFields(value) {
+  return {
+    connected: value.connected,
+    presenceState: value.presenceState,
+    recoveryEligible: value.recoveryEligible,
+    reconnectGraceEndsAt: value.reconnectGraceEndsAt
+  };
 }
 
 function createIoHarness() {

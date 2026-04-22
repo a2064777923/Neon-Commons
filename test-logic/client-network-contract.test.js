@@ -2,6 +2,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  PRESENCE_STATES,
+  RECOVERY_SCOPES,
+  buildSeatRecoveryState,
+  buildSessionRecoveryState
+} = require("../lib/shared/network-contract");
+const {
   API_ROUTES,
   DEFAULT_BACKEND_ORIGIN,
   apiUrl,
@@ -151,4 +157,80 @@ test("frontend origin detection matches any split-port frontend host", () => {
   assert.equal(isLocalFrontendOrigin("http://192.168.4.11:3100"), true);
   assert.equal(isLocalFrontendOrigin("http://127.0.0.1:3101"), false);
   assert.equal(isLocalFrontendOrigin("https://play.neon-commons.test"), false);
+});
+
+test("shared recovery contract distinguishes connected, reconnecting, and disconnected seats", () => {
+  const reconnectGraceEndsAt = new Date("2026-04-22T03:15:00.000Z").toISOString();
+
+  assert.deepEqual(buildSeatRecoveryState({ connected: true, isBot: false }), {
+    connected: true,
+    presenceState: PRESENCE_STATES.CONNECTED,
+    recoveryEligible: true,
+    reconnectGraceEndsAt: null
+  });
+
+  assert.deepEqual(
+    buildSeatRecoveryState(
+      {
+        connected: false,
+        isBot: false,
+        reconnectGraceEndsAt
+      },
+      { now: Date.parse("2026-04-22T03:10:00.000Z") }
+    ),
+    {
+      connected: false,
+      presenceState: PRESENCE_STATES.RECONNECTING,
+      recoveryEligible: true,
+      reconnectGraceEndsAt
+    }
+  );
+
+  assert.deepEqual(
+    buildSeatRecoveryState(
+      {
+        connected: false,
+        isBot: true,
+        reconnectGraceEndsAt
+      },
+      { now: Date.parse("2026-04-22T03:20:00.000Z") }
+    ),
+    {
+      connected: false,
+      presenceState: PRESENCE_STATES.DISCONNECTED,
+      recoveryEligible: false,
+      reconnectGraceEndsAt
+    }
+  );
+});
+
+test("shared recovery contract exposes account and room scopes for session payloads", () => {
+  assert.deepEqual(
+    buildSessionRecoveryState({
+      kind: "user",
+      id: 7,
+      username: "hong"
+    }),
+    {
+      presenceState: PRESENCE_STATES.CONNECTED,
+      recoveryEligible: true,
+      reconnectGraceEndsAt: null,
+      recoveryScope: RECOVERY_SCOPES.ACCOUNT
+    }
+  );
+
+  assert.deepEqual(
+    buildSessionRecoveryState({
+      kind: "guest",
+      id: "guest_1",
+      gameKey: "werewolf",
+      roomNo: "312456"
+    }),
+    {
+      presenceState: PRESENCE_STATES.CONNECTED,
+      recoveryEligible: true,
+      reconnectGraceEndsAt: null,
+      recoveryScope: RECOVERY_SCOPES.ROOM
+    }
+  );
 });

@@ -1,4 +1,4 @@
-const { getSessionFromRequest } = require("../../lib/auth");
+const { getSessionFromRequest, serializeSessionForClient } = require("../../lib/auth");
 const { methodNotAllowed } = require("../../lib/http");
 const {
   AUTH_SCOPES,
@@ -11,7 +11,7 @@ async function handler(req, res) {
     return methodNotAllowed(res, ["GET"]);
   }
 
-  const session = await getSessionFromRequest(req);
+  const session = serializeSessionForClient(await getSessionFromRequest(req));
   return res.status(200).json({
     user: session?.kind === "user" ? session : null,
     session
