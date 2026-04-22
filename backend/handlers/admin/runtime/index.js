@@ -6,10 +6,13 @@ const {
   createHandlerContract
 } = require("../../../../lib/shared/network-contract");
 const {
+  buildAvailabilityControlList,
   NEW_ROOM_SCOPE,
   buildRuntimeControlList,
+  getAvailabilityControls,
   getRuntimeControls,
   recordAdminLog,
+  updateAvailabilityControls,
   updateRuntimeControls
 } = require("../../../../lib/admin/control-plane");
 
@@ -20,32 +23,89 @@ async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    const state = await getRuntimeControls();
+    const [state, availabilityControls] = await Promise.all([
+      getRuntimeControls(),
+      getAvailabilityControls()
+    ]);
     return res.status(200).json({
-      controls: buildRuntimeControlList(state)
+      controls: buildRuntimeControlList(state),
+      availabilityControls,
+      availabilityControlList: buildAvailabilityControlList(availabilityControls)
     });
   }
 
   if (req.method === "PATCH") {
     try {
       const body = parseBody(req);
-      const { before, after, updates } = await updateRuntimeControls(body.updates);
+      const runtimeUpdates =
+        Array.isArray(body.updates) && body.updates.length > 0 ? body.updates : null;
+      const availabilityUpdates = Array.isArray(body.availabilityUpdates)
+        ? body.availabilityUpdates
+        : body.availabilityUpdate
+          ? [body.availabilityUpdate]
+          : null;
 
-      await recordAdminLog({
-        operatorUserId: admin.id,
-        action: "update-runtime",
-        detail: {
-          scope: "runtime",
-          target: updates.map((update) => update.key),
-          before,
-          after,
-          reason: updates.map((update) => update.reason).filter(Boolean).join(" | "),
-          appliesTo: NEW_ROOM_SCOPE
-        }
-      });
+      if (!runtimeUpdates && !availabilityUpdates) {
+        throw new Error("至少提供一項運行配置或降級模式更新");
+      }
+
+      const runtimeResult = runtimeUpdates
+        ? await updateRuntimeControls(runtimeUpdates)
+        : {
+            before: await getRuntimeControls(),
+            after: await getRuntimeControls(),
+            updates: []
+          };
+      const availabilityResult = availabilityUpdates
+        ? await updateAvailabilityControls(availabilityUpdates)
+        : {
+            before: await getAvailabilityControls(),
+            after: await getAvailabilityControls(),
+            updates: []
+          };
+
+      if (runtimeResult.updates.length > 0) {
+        await recordAdminLog({
+          operatorUserId: admin.id,
+          action: "update-runtime",
+          detail: {
+            scope: "runtime",
+            target: runtimeResult.updates.map((update) => update.key),
+            before: runtimeResult.before,
+            after: runtimeResult.after,
+            reason: runtimeResult.updates.map((update) => update.reason).filter(Boolean).join(" | "),
+            appliesTo: NEW_ROOM_SCOPE
+          }
+        });
+      }
+
+      if (availabilityResult.updates.length > 0) {
+        await recordAdminLog({
+          operatorUserId: admin.id,
+          action: "update-runtime",
+          detail: {
+            scope: "availability-controls",
+            target: availabilityResult.updates.map((update) =>
+              update.scope === "family"
+                ? `${update.familyKey}:${update.subsystem}`
+                : `global:${update.subsystem}`
+            ),
+            before: availabilityResult.before,
+            after: availabilityResult.after,
+            reason: availabilityResult.updates.map((update) => update.reason).filter(Boolean).join(" | "),
+            appliesTo: availabilityResult.updates.map((update) =>
+              update.scope === "family" ? `family:${update.familyKey}` : "global"
+            ),
+            subsystem: availabilityResult.updates.map((update) => update.subsystem),
+            state: availabilityResult.updates.map((update) => update.state)
+          }
+        });
+      }
 
       return res.status(200).json({
-        controls: buildRuntimeControlList(after)
+        controls: buildRuntimeControlList(runtimeResult.after),
+        availabilityControls: availabilityResult.after,
+        availabilityControlList: buildAvailabilityControlList(availabilityResult.after)
       });
     } catch (error) {
       return res.status(400).json({ error: error.message || "運行配置更新失敗" });

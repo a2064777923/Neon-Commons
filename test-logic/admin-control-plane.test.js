@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const path = require("node:path");
 
 const controlPlane = require("../lib/admin/control-plane");
+const { getDefaultAvailabilityControls } = require("../lib/shared/availability");
 const { __testing: roomTesting } = require("../lib/game/room-manager");
 
 test("default capability families cover all managed games with new-room-only scope", () => {
@@ -37,6 +38,35 @@ test("runtime control normalization keeps allowlisted values safe", () => {
   assert.equal(runtime.maintenanceMode, true);
 });
 
+test("availability control normalization keeps subsystem defaults and scoped overrides safe", () => {
+  const controls = getDefaultAvailabilityControls();
+  assert.equal(controls.global.entry.state, "healthy");
+  assert.equal(controls.families.party.voice.configured, false);
+
+  const updates = controlPlane.normalizeAvailabilityUpdates([
+    {
+      scope: "family",
+      familyKey: "party",
+      subsystem: "voice",
+      state: "blocked",
+      reason: "語音維護",
+      reasonCode: "party-voice-maintenance",
+      safeActions: ["continue-text-only", "wait"]
+    }
+  ]);
+
+  assert.deepEqual(updates[0], {
+    scope: "family",
+    familyKey: "party",
+    subsystem: "voice",
+    state: "blocked",
+    reasonCode: "party-voice-maintenance",
+    message: "",
+    safeActions: ["continue-text-only", "wait"],
+    reason: "語音維護"
+  });
+});
+
 test("capability update validation rejects unknown games", () => {
   assert.throws(
     () =>
@@ -62,6 +92,14 @@ test("runtime update validation rejects unknown keys and invalid values", () => 
         { key: "maxOpenRoomsPerUser", value: 0 }
       ]),
     /maxOpenRoomsPerUser/
+  );
+
+  assert.throws(
+    () =>
+      controlPlane.normalizeAvailabilityUpdates([
+        { scope: "family", familyKey: "solo", subsystem: "voice", state: "blocked" }
+      ]),
+    /未知降級範圍/
   );
 });
 
@@ -164,6 +202,9 @@ test("capabilities handler GET returns grouped families and PATCH validates payl
 
 test("runtime handler GET returns controls and PATCH validates keys", async () => {
   const recordedLogDetails = [];
+  const storedConfigs = new Map([
+    ["runtimeControls", { maxOpenRoomsPerUser: 5, maintenanceMode: true }]
+  ]);
   const handler = loadWithMocks(
     "./backend/handlers/admin/runtime/index.js",
     {
@@ -177,14 +218,19 @@ test("runtime handler GET returns controls and PATCH validates keys", async () =
             return { rows: [] };
           }
 
+          if (String(text).includes("INSERT INTO system_configs")) {
+            storedConfigs.set(params[0], JSON.parse(params[1]));
+            return { rows: [] };
+          }
+
           if (Array.isArray(params[0])) {
             return {
-              rows: [
-                {
-                  key: "runtimeControls",
-                  value: { maxOpenRoomsPerUser: 5, maintenanceMode: true }
-                }
-              ]
+              rows: params[0]
+                .filter((key) => storedConfigs.has(key))
+                .map((key) => ({
+                  key,
+                  value: storedConfigs.get(key)
+                }))
             };
           }
 
@@ -202,6 +248,8 @@ test("runtime handler GET returns controls and PATCH validates keys", async () =
     getResponse.jsonBody.controls.find((item) => item.key === "maxOpenRoomsPerUser").value,
     5
   );
+  assert.equal(getResponse.jsonBody.availabilityControls.global.entry.state, "healthy");
+  assert.equal(getResponse.jsonBody.availabilityControlList.length, 12);
 
   const validPatchResponse = createMockResponse();
   await handler(
@@ -222,6 +270,44 @@ test("runtime handler GET returns controls and PATCH validates keys", async () =
   assert.equal(recordedLogDetails[0].after.maintenanceMode, false);
   assert.equal(recordedLogDetails[0].reason, "結束維護");
   assert.equal(recordedLogDetails[0].appliesTo, "new-rooms-only");
+  assert.equal(validPatchResponse.jsonBody.availabilityControls.global.entry.state, "healthy");
+
+  const availabilityPatchResponse = createMockResponse();
+  await handler(
+    {
+      method: "PATCH",
+      body: {
+        availabilityUpdates: [
+          {
+            scope: "family",
+            familyKey: "party",
+            subsystem: "voice",
+            state: "blocked",
+            reason: "語音維護",
+            reasonCode: "party-voice-maintenance",
+            safeActions: ["continue-text-only", "wait"]
+          }
+        ]
+      },
+      headers: {}
+    },
+    availabilityPatchResponse
+  );
+
+  assert.equal(availabilityPatchResponse.statusCode, 200);
+  assert.equal(
+    availabilityPatchResponse.jsonBody.availabilityControls.families.party.voice.state,
+    "blocked"
+  );
+  assert.deepEqual(
+    availabilityPatchResponse.jsonBody.availabilityControls.families.party.voice.safeActions,
+    ["continue-text-only", "wait"]
+  );
+  assert.equal(recordedLogDetails[1].scope, "availability-controls");
+  assert.deepEqual(recordedLogDetails[1].target, ["party:voice"]);
+  assert.deepEqual(recordedLogDetails[1].appliesTo, ["family:party"]);
+  assert.deepEqual(recordedLogDetails[1].subsystem, ["voice"]);
+  assert.deepEqual(recordedLogDetails[1].state, ["blocked"]);
 
   const patchResponse = createMockResponse();
   await handler(
