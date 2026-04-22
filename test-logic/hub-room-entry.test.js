@@ -500,6 +500,70 @@ test("guest sockets are rejected outside their scoped room", async () => {
   assert.equal(socket.emitted.at(-1).payload.error, GUEST_SCOPE_ERROR);
 });
 
+test("scoped guest reconnect reuses the same party seat through the socket lifecycle", async () => {
+  resetLiveRoomState();
+
+  const partyManager = getPartyRoomManager();
+  partyManager.reconnectGraceMs = 25;
+
+  const owner = { id: 111, username: "owner111", displayName: "Owner 111" };
+  const guestUser = {
+    id: "guest_socket_recovery",
+    username: "guest_socket_recovery",
+    displayName: "Guest Recovery"
+  };
+  const room = partyManager.createRoom(owner, "werewolf", {
+    visibility: "private",
+    maxPlayers: 8
+  });
+  partyManager.joinRoom(room.roomNo, guestUser);
+
+  const { registerSocketHandlers } = loadWithMocks("./lib/socket-server.js", {});
+  const ioHarness = createIoHarness();
+  registerSocketHandlers(ioHarness.io);
+
+  const token = signGuestToken({
+    guestId: guestUser.id,
+    displayName: guestUser.displayName,
+    gameKey: "werewolf",
+    roomNo: room.roomNo
+  });
+
+  const socketOne = await ioHarness.connect(token);
+  socketOne.handlers[SOCKET_EVENTS.party.subscribe]({ roomNo: room.roomNo });
+
+  assert.equal(
+    partyManager.getRoom(room.roomNo).players.filter((player) => player.userId === guestUser.id).length,
+    1
+  );
+  assert.equal(
+    partyManager.serializeRoom(partyManager.getRoom(room.roomNo), guestUser.id).viewer.presenceState,
+    "connected"
+  );
+
+  socketOne.handlers.disconnect();
+  assert.equal(
+    partyManager.serializeRoom(partyManager.getRoom(room.roomNo), guestUser.id).viewer.presenceState,
+    "reconnecting"
+  );
+
+  const socketTwo = await ioHarness.connect(token);
+  socketTwo.handlers[SOCKET_EVENTS.party.subscribe]({ roomNo: room.roomNo });
+
+  assert.equal(
+    partyManager.getRoom(room.roomNo).players.filter((player) => player.userId === guestUser.id).length,
+    1
+  );
+  assert.equal(
+    partyManager.serializeRoom(partyManager.getRoom(room.roomNo), guestUser.id).viewer.presenceState,
+    "connected"
+  );
+  assert.equal(
+    resolveRoomEntry(room.roomNo).memberIds.filter((memberId) => memberId === guestUser.id).length,
+    1
+  );
+});
+
 test("/api/me exposes recovery metadata for user and scoped guest sessions", async () => {
   const userSession = {
     kind: "user",

@@ -475,3 +475,89 @@ test("bot bidding can escalate to the configured 4-point ceiling", () => {
 
   assert.deepEqual(submitted, [4]);
 });
+
+test("disconnecting the current-turn player keeps trustee behavior while presence moves from reconnecting to disconnected", async () => {
+  const { RoomManager } = __testing;
+  const manager = new RoomManager();
+  manager.reconnectGraceMs = 25;
+
+  let scheduledDelay = null;
+  manager.emitRoom = () => {};
+  manager.scheduleTurn = (_room, delay) => {
+    scheduledDelay = delay;
+  };
+
+  const room = {
+    roomNo: "910006",
+    state: "playing",
+    ownerId: "u0",
+    settings: {
+      baseScore: 50,
+      bidOptions: [0, 1, 2, 3],
+      countdownSeconds: 18,
+      autoTrusteeMinSeconds: 2,
+      autoTrusteeMaxSeconds: 5,
+      allowBomb: true,
+      allowRocket: true,
+      allowSpring: true
+    },
+    players: [
+      createSeat(0, "u0", "Lead", { socketIds: new Set(["card-socket-live"]) }),
+      createSeat(1, "u1", "Mid"),
+      createSeat(2, "u2", "Tail")
+    ],
+    round: {
+      stage: "playing",
+      currentTurn: 0,
+      hands: {
+        0: [createCard(3, "S"), createCard(4, "H")],
+        1: [createCard(5, "S")],
+        2: [createCard(6, "S")]
+      },
+      bottomCards: [],
+      multiplier: 1,
+      lastPlay: null,
+      lastActiveSeat: null,
+      passCount: 0,
+      playCountBySeat: { 0: 0, 1: 0, 2: 0 },
+      landlordSeat: 0,
+      winnerSeat: null,
+      winnerSide: null,
+      summary: null,
+      playSequence: 0,
+      turnEndsAt: null,
+      turnDurationMs: null,
+      turnMode: "manual"
+    },
+    turnTimer: null,
+    chatFeed: [],
+    lastResult: null
+  };
+
+  manager.rooms.set(room.roomNo, room);
+  manager.unregisterSocket("card-socket-live");
+
+  const reconnectingSeat = manager
+    .serializeRoom(room, "u0")
+    .players.find((player) => player.userId === "u0");
+
+  assert.equal(room.players[0].trustee, true);
+  assert.equal(reconnectingSeat.presenceState, "reconnecting");
+  assert.equal(reconnectingSeat.connected, false);
+  assert.match(room.players[0].reconnectGraceEndsAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(typeof scheduledDelay, "number");
+  assert.equal(scheduledDelay > 0, true);
+
+  await new Promise((resolve) => {
+    setTimeout(resolve, 40);
+  });
+
+  const disconnectedSeat = manager
+    .serializeRoom(room, "u0")
+    .players.find((player) => player.userId === "u0");
+
+  assert.equal(room.players[0].trustee, true);
+  assert.equal(disconnectedSeat.presenceState, "disconnected");
+  assert.equal(disconnectedSeat.connected, false);
+  assert.equal(disconnectedSeat.reconnectGraceEndsAt, null);
+});
