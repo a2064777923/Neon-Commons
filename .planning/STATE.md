@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.1
-milestone_name: live-ops-and-reliability
-status: active
-stopped_at: Phase 9 executed and redeployed
-last_updated: "2026-04-22T14:07:06Z"
-last_activity: 2026-04-22
+milestone_name: Live Ops & Reliability
+status: ready_for_closeout
+stopped_at: Phase 10 execution completed with release verification, docs sync, and roadmap reconciliation
+last_updated: "2026-04-23T00:22:30+08:00"
+last_activity: 2026-04-23 -- Phase 10 execution, verification, docs, and planning sync completed
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 12
-  completed_plans: 6
-  percent: 50
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -21,39 +21,39 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-22)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** v1.1 Live Ops & Reliability — Phase 9 complete, with Phase 8 room-ops work and Phase 10 release verification still pending
+**Current focus:** v1.1 Live Ops & Reliability is functionally complete. Phase 8 room-ops scope shipped inline during Phase 10-01, and the milestone is now ready for close-out or next-milestone planning.
 
 ## Current Position
 
-Phase: 9 (single-node-recovery-guardrails) — COMPLETE
+Phase: 10 (release-verification-for-live-ops) — COMPLETE
 Plan: 3 of 3
-Status: Phase 9 executed, verified, documented, and redeployed on the canonical 3100/3101 stack
-Last activity: 2026-04-22 — Phase 9 execution completed with node coverage and runtime health checks
+Status: Ready for milestone close-out
+Last activity: 2026-04-23 -- release gate green, docs refreshed, planning traceability reconciled
 
-Progress: [█████░░░░░] 50%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Last milestone plans completed: 21
-- Current milestone plans completed: 6
-- Average duration: 13 min
-- Total execution time: ~75 min
+- Current milestone plans completed: 9
+- Average duration: ~21 min
+- Total execution time: ~190 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 7 | 3/3 | ~51 min | ~17 min |
-| 8 | 0/3 | - | - |
+| 8 | delivered inline in 10-01 | see 10-01 summary | n/a |
 | 9 | 3/3 | ~24 min | ~8 min |
-| 10 | 0/3 | - | - |
+| 10 | 3/3 | ~115 min | ~38 min |
 
 **Recent Trend:**
 
-- Last completed plans: 07-02, 07-03, 09-01, 09-02, 09-03
-- Trend: Phase 7 and Phase 9 shipped; Phase 8 and Phase 10 remain for v1.1
+- Last completed plans: 09-02, 09-03, 10-01, 10-02, 10-03
+- Trend: all v1.1 requirements are now artifact-backed and the milestone is ready to archive
 
 ## Accumulated Context
 
@@ -80,6 +80,9 @@ Recent decisions affecting current work:
 - [09-01]: Persist shared room-directory snapshots in PostgreSQL and reload them at backend startup without fabricating live room-manager state
 - [09-02]: Use one cached `roomExpiryMinutes` policy for zero-human room cleanup across card, party, and board managers, after reconnect grace completes
 - [09-03]: Expose `live` / `snapshot-only` availability across hub and room-entry flows, and fail closed for snapshot-only guest/direct-entry paths
+- [10-01]: Absorb the minimum truthful Phase 8 room-ops surface into Phase 10 execution because release verification cannot prove operator interventions against nonexistent UI/API paths
+- [10-02]: Keep `npm run verify:release` as the single pre-ship command, and add narrow live-ops helpers only for post-failure diagnosis
+- [10-03]: Treat roadmap and requirement status as shipped-artifact traceability, not just original plan ordering
 
 ### Pending Todos
 
@@ -87,7 +90,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- v1.1 recovery work must preserve the shared room-entry contract and stay within the current single-node runtime model.
+- No active blockers on v1.1. Remaining concerns are deferred platform items, not milestone-completion risks.
 
 ## Deferred Items
 
@@ -99,10 +102,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-22T14:07:06Z
-Stopped at: Phase 9 executed and redeployed
-Resume file: None
+Last session: 2026-04-23T00:22:30+08:00
+Stopped at: Phase 10 execution completed with green release verification and docs sync
+Resume file: .planning/phases/10-release-verification-for-live-ops/10-03-SUMMARY.md
 
-**Last completed phase:** 9 (Single-Node Recovery Guardrails) — 3 plans — 2026-04-22T14:07:06Z
+**Last completed phase:** 10 (Release Verification for Live Ops) — 3 plans — 2026-04-23
 
-**Next recommended action:** Run `$gsd-next` or resume the remaining v1.1 work with Phase 8 or Phase 10 planning/execution
+**Next recommended action:** Run `$gsd-complete-milestone` to archive v1.1, or start the next milestone if scope has already shifted

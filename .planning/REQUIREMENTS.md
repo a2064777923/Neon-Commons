@@ -13,16 +13,16 @@
 
 ### Live Operations
 
-- [ ] **OPS-01**: Operator can view a live cross-family room directory with family, occupancy, and last-activity status.
-- [ ] **OPS-02**: Operator can inspect an active room's config, occupants, and runtime health without database access.
-- [ ] **OPS-03**: Operator can close or drain a stuck room through the admin surface without restarting the whole stack.
-- [ ] **OPS-04**: Operator can remove a disruptive guest or player from a room through an explicit admin action with auditability.
+- [x] **OPS-01**: Operator can view a live cross-family room directory with family, occupancy, and last-activity status.
+- [x] **OPS-02**: Operator can inspect an active room's config, occupants, and runtime health without database access.
+- [x] **OPS-03**: Operator can close or drain a stuck room through the admin surface without restarting the whole stack.
+- [x] **OPS-04**: Operator can remove a disruptive guest or player from a room through an explicit admin action with auditability.
 
 ### Single-Node Reliability
 
-- [ ] **RELY-01**: Runtime can persist enough room-directory metadata to repopulate active-room discovery after a single-node restart.
-- [ ] **RELY-02**: Runtime can expire stale rooms predictably when all occupants are gone or never return after disconnect.
-- [ ] **RELY-03**: Release verification proves reconnect, room intervention, and stale-room cleanup on the canonical `3100/3101` stack.
+- [x] **RELY-01**: Runtime can persist enough room-directory metadata to repopulate active-room discovery after a single-node restart.
+- [x] **RELY-02**: Runtime can expire stale rooms predictably when all occupants are gone or never return after disconnect.
+- [x] **RELY-03**: Release verification proves reconnect, room intervention, and stale-room cleanup on the canonical `3100/3101` stack.
 
 ## v2 Requirements
 
@@ -58,19 +58,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ROOM-01 | Phase 7 | Complete |
 | ROOM-02 | Phase 7 | Complete |
 | ROOM-03 | Phase 7 | Complete |
-| OPS-01 | Phase 8 | Pending |
-| OPS-02 | Phase 8 | Pending |
-| OPS-03 | Phase 8 | Pending |
-| OPS-04 | Phase 8 | Pending |
-| RELY-01 | Phase 9 | Pending |
-| RELY-02 | Phase 9 | Pending |
-| RELY-03 | Phase 10 | Pending |
+| OPS-01 | Phase 8 scope delivered via Phase 10-01 | Complete |
+| OPS-02 | Phase 8 scope delivered via Phase 10-01 | Complete |
+| OPS-03 | Phase 8 scope delivered via Phase 10-01 | Complete |
+| OPS-04 | Phase 8 scope delivered via Phase 10-01 | Complete |
+| RELY-01 | Phase 9 | Complete |
+| RELY-02 | Phase 9 | Complete |
+| RELY-03 | Phase 10 | Complete |
 
 **Coverage:**
 - v1 requirements: 10 total
 - Mapped to phases: 10
+- Complete: 10 / 10 ✓
 - Unmapped: 0 ✓
+
+**Traceability note:** the original standalone Phase 8 room-ops plan was absorbed into Phase 10-01 because truthful release verification required the operator surface to exist first. Requirement status follows shipped artifacts and summaries, not only the initial ordering.
 
 ---
 *Requirements defined: 2026-04-22*
-*Last updated: 2026-04-22 after roadmap creation*
+*Last updated: 2026-04-23 after Phase 10 release verification and docs sync*

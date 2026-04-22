@@ -4,13 +4,13 @@
 
 - [x] **v1.0 milestone** - shipped 2026-04-22. 7 phases, 21 plans, 50 tasks. Archives: [v1.0 roadmap](./milestones/v1.0-ROADMAP.md), [v1.0 requirements](./milestones/v1.0-REQUIREMENTS.md)
 
-## Active Milestone: v1.1 Live Ops & Reliability
+## Current Milestone: v1.1 Live Ops & Reliability
 
 **Goal:** Deepen live room operations and single-node recovery so players can survive transient disconnects and operators can manage active rooms without direct database edits.
 
-- **Status:** Requirements defined and roadmap initialized on 2026-04-22
+- **Status:** All v1.1 requirements delivered on 2026-04-23; milestone is ready for close-out
 - **Phases:** 4
-- **Requirements coverage:** 10 / 10 mapped
+- **Requirements coverage:** 10 / 10 complete
 
 ### Phase 7: Session Recovery & Presence
 
@@ -25,14 +25,18 @@
 
 **Plans:**
 
-- [ ] 07-01: Extend shared identity and room-entry recovery contracts
-- [ ] 07-02: Implement reconnect and rejoin handling across shipped room families
-- [ ] 07-03: Surface occupant presence and recovery state in clients and regression tests
+- [x] 07-01: Extend shared identity and room-entry recovery contracts
+- [x] 07-02: Implement reconnect and rejoin handling across shipped room families
+- [x] 07-03: Surface occupant presence and recovery state in clients and regression tests
+
+**Outcome:** Recovery metadata, reconnect handling, and room-page presence states are all shipped and verified across the canonical room families.
 
 ### Phase 8: Live Room Operations Surface
 
 **Goal:** Give operators a live room directory and targeted interventions without direct DB work or whole-stack restarts.
 **Requirements:** OPS-01, OPS-02, OPS-03, OPS-04
+
+**Delivery Note:** This scope was delivered inline during Phase 10-01 because release verification could not honestly cover operator interventions until the live room surface existed.
 
 **Success Criteria:**
 
@@ -42,9 +46,11 @@
 
 **Plans:**
 
-- [ ] 08-01: Add live room directory and room-detail admin APIs
-- [ ] 08-02: Ship room-ops UI workflows and intervention actions
-- [ ] 08-03: Cover room-ops permissions, audits, and regressions
+- [x] 08-01: Add live room directory and room-detail admin APIs (delivered inline in 10-01)
+- [x] 08-02: Ship room-ops UI workflows and intervention actions (delivered inline in 10-01)
+- [x] 08-03: Cover room-ops permissions, audits, and regressions (delivered inline in 10-01)
+
+**Outcome:** The admin console now ships live room directory/detail/action flows, occupant removal, audit hooks, and regression coverage even though the original standalone Phase 8 plan folder was never executed separately.
 
 ### Phase 9: Single-Node Recovery Guardrails
 
@@ -59,9 +65,11 @@
 
 **Plans:**
 
-- [ ] 09-01: Persist minimal room-directory snapshot state for restart recovery
-- [ ] 09-02: Add stale-room expiry and abandonment cleanup rules
-- [ ] 09-03: Validate compatibility against shipped room families and admin expectations
+- [x] 09-01: Persist minimal room-directory snapshot state for restart recovery
+- [x] 09-02: Add stale-room expiry and abandonment cleanup rules
+- [x] 09-03: Validate compatibility against shipped room families and admin expectations
+
+**Outcome:** Single-node restart recovery, snapshot-only discovery, and stale-room expiry are shipped and verified.
 
 ### Phase 10: Release Verification for Live Ops
 
@@ -76,24 +84,26 @@
 
 **Plans:**
 
-- [ ] 10-01: Expand logic and UI critical suites for live-ops scenarios
-- [ ] 10-02: Extend release verification scripts and smoke commands
-- [ ] 10-03: Refresh operator docs and planning traceability for v1.1
+- [x] 10-01: Expand logic and UI critical suites for live-ops scenarios
+- [x] 10-02: Extend release verification scripts and smoke commands
+- [x] 10-03: Refresh operator docs and planning traceability for v1.1
+
+**Outcome:** `verify:release` now proves reconnect, operator interventions, and stale-room cleanup on the canonical `3100/3101` runtime, and repo docs/traceability match that shipped contract.
 
 ## Requirement Coverage
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ROOM-01 | Phase 7 | Pending |
-| ROOM-02 | Phase 7 | Pending |
-| ROOM-03 | Phase 7 | Pending |
-| OPS-01 | Phase 8 | Pending |
-| OPS-02 | Phase 8 | Pending |
-| OPS-03 | Phase 8 | Pending |
-| OPS-04 | Phase 8 | Pending |
-| RELY-01 | Phase 9 | Pending |
-| RELY-02 | Phase 9 | Pending |
-| RELY-03 | Phase 10 | Pending |
+| ROOM-01 | Phase 7 | Complete |
+| ROOM-02 | Phase 7 | Complete |
+| ROOM-03 | Phase 7 | Complete |
+| OPS-01 | Phase 8 scope via Phase 10-01 | Complete |
+| OPS-02 | Phase 8 scope via Phase 10-01 | Complete |
+| OPS-03 | Phase 8 scope via Phase 10-01 | Complete |
+| OPS-04 | Phase 8 scope via Phase 10-01 | Complete |
+| RELY-01 | Phase 9 | Complete |
+| RELY-02 | Phase 9 | Complete |
+| RELY-03 | Phase 10 | Complete |
 
 ## Carry-Forward Themes
 
