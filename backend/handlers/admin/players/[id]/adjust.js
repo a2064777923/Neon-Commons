@@ -1,6 +1,7 @@
 const { requireAdmin } = require("../../../../../lib/auth");
 const { query } = require("../../../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../../../lib/http");
+const { recordAdminLog } = require("../../../../../lib/admin/control-plane");
 const {
   AUTH_SCOPES,
   API_ROUTE_PATTERNS,
@@ -44,31 +45,30 @@ async function handler(req, res) {
     [targetId, coinsDelta, rankDelta, status]
   );
 
-  await query(
-    `
-      INSERT INTO admin_logs (operator_user_id, target_user_id, action, detail)
-      VALUES ($1, $2, 'adjust-player', $3)
-    `,
-    [
-      admin.id,
-      targetId,
-      JSON.stringify({
-        before: {
-          coins: row.coins,
-          rankScore: row.rank_score,
-          status: row.status
-        },
-        delta: {
-          coinsDelta,
-          rankDelta,
-          status
-        },
-        reason
-      })
-    ]
-  );
+  const updated = result.rows[0];
+  await recordAdminLog({
+    operatorUserId: admin.id,
+    targetUserId: targetId,
+    action: "adjust-player",
+    detail: {
+      scope: "players",
+      target: [`user:${targetId}`],
+      before: {
+        coins: row.coins,
+        rankScore: row.rank_score,
+        status: row.status
+      },
+      after: {
+        coins: updated.coins,
+        rankScore: updated.rank_score,
+        status: updated.status
+      },
+      reason,
+      appliesTo: "immediate-player-state"
+    }
+  });
 
-  return res.status(200).json({ item: result.rows[0] });
+  return res.status(200).json({ item: updated });
 }
 
 handler.contract = createHandlerContract(

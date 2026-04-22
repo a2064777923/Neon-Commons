@@ -2,7 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { apiFetch } from "../lib/client/api";
+import { API_ROUTES, apiFetch } from "../lib/client/api";
 
 const BRAND_SIGNALS = ["NEON TABLES", "COIN LADDER", "VOICE ROOMS"];
 
@@ -35,7 +35,7 @@ export default function SiteLayout({ children, immersive = false, className = ""
   }, []);
 
   async function handleLogout() {
-    await apiFetch("/api/auth/logout", { method: "POST" });
+    await apiFetch(API_ROUTES.auth.logout(), { method: "POST" });
     setUser(null);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("session:user-updated", { detail: null }));
@@ -169,7 +169,7 @@ export default function SiteLayout({ children, immersive = false, className = ""
 
 async function loadSession(setUser) {
   try {
-    const response = await apiFetch("/api/me");
+    const response = await apiFetch(API_ROUTES.me());
     const data = await response.json();
     setUser(data.user || null);
   } catch (error) {

@@ -3,6 +3,10 @@ const { query } = require("../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../lib/http");
 const { getRoomManager } = require("../../../lib/game/room-manager");
 const {
+  getNewRoomBlockedReason,
+  getNewRoomControlSnapshot
+} = require("../../../lib/admin/control-plane");
+const {
   AUTH_SCOPES,
   API_ROUTE_PATTERNS,
   createHandlerContract
@@ -30,11 +34,14 @@ async function handler(req, res) {
     return res.status(400).json({ error: "缺少模板 ID" });
   }
 
+  const controlSnapshot = await getNewRoomControlSnapshot();
+  const blockedReason = getNewRoomBlockedReason("doudezhu", controlSnapshot);
+  if (blockedReason) {
+    return res.status(400).json({ error: blockedReason });
+  }
+
   const roomCount = roomManager.countOpenRoomsByOwner(user.id);
-  const config = await query(
-    "SELECT value FROM system_configs WHERE key = 'maxOpenRoomsPerUser' LIMIT 1"
-  );
-  const maxRooms = Number(config.rows[0]?.value || 3);
+  const maxRooms = Number(controlSnapshot.runtime.maxOpenRoomsPerUser || 3);
   if (roomCount >= maxRooms) {
     return res.status(400).json({ error: `單個玩家最多同時開 ${maxRooms} 個房間` });
   }

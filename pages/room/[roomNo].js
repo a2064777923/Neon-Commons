@@ -5,7 +5,7 @@ import CardArtwork from "../../components/game/CardArtwork";
 import MatchResultOverlay from "../../components/MatchResultOverlay";
 import SiteLayout from "../../components/SiteLayout";
 import { createGameAudio } from "../../lib/game-ui/audio";
-import { apiFetch, getSocketUrl } from "../../lib/client/api";
+import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import styles from "../../styles/GameRoom.module.css";
 
 const { evaluateCards, compareCombos, listSuggestedPlays } = require("../../lib/game/combo");
@@ -13,6 +13,7 @@ const { evaluateCards, compareCombos, listSuggestedPlays } = require("../../lib/
 let socket;
 const CHAT_PRESETS = ["要不起", "穩一手", "炸他", "這把看我", "別慌", "春天來了"];
 const EMOJI_PRESETS = ["😎", "😤", "🤯", "😂", "😈", "👏"];
+const ROOM_EVENTS = SOCKET_EVENTS.room;
 
 export default function RoomPage() {
   const router = useRouter();
@@ -353,7 +354,7 @@ export default function RoomPage() {
       });
     }
 
-    socket.emit("room:subscribe", { roomNo });
+    socket.emit(ROOM_EVENTS.subscribe, { roomNo });
 
     function onRoomUpdate({ room: nextRoom, notification }) {
       handleIncomingRoom(nextRoom, notification);
@@ -364,12 +365,12 @@ export default function RoomPage() {
       showMessage(error || "房間操作失敗");
     }
 
-    socket.on("room:update", onRoomUpdate);
-    socket.on("room:error", onRoomError);
+    socket.on(ROOM_EVENTS.update, onRoomUpdate);
+    socket.on(ROOM_EVENTS.error, onRoomError);
 
     return () => {
-      socket.off("room:update", onRoomUpdate);
-      socket.off("room:error", onRoomError);
+      socket.off(ROOM_EVENTS.update, onRoomUpdate);
+      socket.off(ROOM_EVENTS.error, onRoomError);
     };
   }, [me, roomNo]);
 
@@ -386,8 +387,8 @@ export default function RoomPage() {
     }
 
     const [meResponse, roomResponse] = await Promise.all([
-      apiFetch("/api/me"),
-      apiFetch(`/api/rooms/${roomNo}`)
+      apiFetch(API_ROUTES.me()),
+      apiFetch(API_ROUTES.cardRooms.detail(roomNo))
     ]);
 
     const [meData, roomData] = await Promise.all([
@@ -535,7 +536,7 @@ export default function RoomPage() {
 
   async function joinRoom() {
     setJoining(true);
-    const response = await apiFetch(`/api/rooms/${roomNo}/join`, { method: "POST" });
+    const response = await apiFetch(API_ROUTES.cardRooms.join(roomNo), { method: "POST" });
     const data = await response.json();
     setJoining(false);
 
@@ -546,7 +547,7 @@ export default function RoomPage() {
 
     roomRef.current = data.room;
     setRoom(data.room);
-    socket?.emit("room:subscribe", { roomNo });
+    socket?.emit(ROOM_EVENTS.subscribe, { roomNo });
   }
 
   function handleToggleCard(cardId) {
@@ -638,7 +639,7 @@ export default function RoomPage() {
       audioRef.current?.bid(value);
     }
     setPendingAction(`bid-${value}`);
-    socket?.emit("game:bid", { roomNo, value });
+    socket?.emit(ROOM_EVENTS.bid, { roomNo, value });
   }
 
   function emitPass() {
@@ -650,7 +651,7 @@ export default function RoomPage() {
       audioRef.current?.pass();
     }
     setPendingAction("pass");
-    socket?.emit("game:pass", { roomNo });
+    socket?.emit(ROOM_EVENTS.pass, { roomNo });
   }
 
   function emitPlay() {
@@ -683,7 +684,7 @@ export default function RoomPage() {
       cards: selectedHandCards
     });
     setPendingAction("play");
-    socket?.emit("game:play", {
+    socket?.emit(ROOM_EVENTS.play, {
       roomNo,
       cardIds: selectedHandCards.map((card) => card.id)
     });
@@ -707,12 +708,12 @@ export default function RoomPage() {
 
   function toggleTrustee() {
     unlockAudio();
-    socket?.emit("game:trustee", { roomNo, trustee: !mySeat?.trustee });
+    socket?.emit(ROOM_EVENTS.trustee, { roomNo, trustee: !mySeat?.trustee });
   }
 
   function sendQuickChat(type, text) {
     unlockAudio();
-    socket?.emit("room:chat", { roomNo, type, text });
+    socket?.emit(ROOM_EVENTS.chat, { roomNo, type, text });
   }
 
   function toggleFullscreen() {
@@ -1109,7 +1110,7 @@ export default function RoomPage() {
                       type="button"
                       onClick={() => {
                         unlockAudio();
-                        socket?.emit("room:ready", { roomNo, ready: true });
+                        socket?.emit(ROOM_EVENTS.ready, { roomNo, ready: true });
                       }}
                     >
                       準備開局
@@ -1122,7 +1123,7 @@ export default function RoomPage() {
                       type="button"
                       onClick={() => {
                         unlockAudio();
-                        socket?.emit("room:add-bot", { roomNo, count: 1 });
+                        socket?.emit(ROOM_EVENTS.addBot, { roomNo, count: 1 });
                       }}
                     >
                       補機器人
@@ -1206,7 +1207,7 @@ export default function RoomPage() {
                   onClick: () => {
                     if (!mySeat.ready) {
                       unlockAudio();
-                      socket?.emit("room:ready", { roomNo, ready: true });
+                      socket?.emit(ROOM_EVENTS.ready, { roomNo, ready: true });
                     }
                     setDismissedResultKey(resultKey);
                   }

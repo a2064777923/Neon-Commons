@@ -2,7 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import SiteLayout from "../components/SiteLayout";
-import { apiFetch } from "../lib/client/api";
+import { API_ROUTES, apiFetch } from "../lib/client/api";
 import styles from "../styles/UtilityPages.module.css";
 
 export default function RegisterPage() {
@@ -21,7 +21,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    const response = await apiFetch("/api/auth/register", {
+    const response = await apiFetch(API_ROUTES.auth.register(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form)

@@ -311,6 +311,10 @@ th {
   justify-content: flex-end;
 }
 
+.navRail > * {
+  flex: 0 0 auto;
+}
+
 .navAccount {
   justify-content: flex-end;
 }
@@ -337,6 +341,7 @@ th {
     border-color 0.18s ease,
     background 0.18s ease,
     color 0.18s ease;
+  white-space: nowrap;
 }
 
 .navLink::before,
@@ -795,6 +800,25 @@ pre {
   .brandMark {
     width: 48px;
     height: 48px;
+  }
+
+  .topbarBrand,
+  .topnav {
+    gap: 10px;
+  }
+
+  .brandSignals {
+    gap: 8px;
+  }
+
+  .brandSignals span {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+
+  .navRail {
+    justify-content: flex-start;
   }
 
   .profileHud {

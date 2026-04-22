@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import SiteLayout from "../components/SiteLayout";
 import GameIcon from "../components/game-hub/GameIcon";
-import { apiFetch } from "../lib/client/api";
+import { API_ROUTES, apiFetch } from "../lib/client/api";
 import styles from "../styles/Arcade.module.css";
 
 const { GAME_CATALOG } = require("../lib/games/catalog");
@@ -178,7 +178,7 @@ export default function HomePage() {
             <div className={styles.stageHead}>
               <div>
                 <span className={styles.panelEyebrow}>GAME STAGE</span>
-                <h2>中间只放游戏入口</h2>
+                <h2>遊戲入口</h2>
               </div>
               <Link href="/lobby" className="primary-link">
                 直进斗地主大厅
@@ -276,13 +276,13 @@ async function loadHubData() {
     gomokuResponse,
     chineseResponse
   ] = await Promise.all([
-    apiFetch("/api/me"),
-    apiFetch("/api/leaderboard"),
-    apiFetch("/api/rooms"),
-    apiFetch("/api/party/rooms?gameKey=werewolf"),
-    apiFetch("/api/party/rooms?gameKey=avalon"),
-    apiFetch("/api/board/rooms?gameKey=gomoku"),
-    apiFetch("/api/board/rooms?gameKey=chinesecheckers")
+    apiFetch(API_ROUTES.me()),
+    apiFetch(API_ROUTES.leaderboard()),
+    apiFetch(API_ROUTES.cardRooms.list()),
+    apiFetch(API_ROUTES.partyRooms.list("werewolf")),
+    apiFetch(API_ROUTES.partyRooms.list("avalon")),
+    apiFetch(API_ROUTES.boardRooms.list("gomoku")),
+    apiFetch(API_ROUTES.boardRooms.list("chinesecheckers"))
   ]);
 
   const [meData, leaderboardData, ddzData, werewolfData, avalonData, gomokuData, chineseData] =

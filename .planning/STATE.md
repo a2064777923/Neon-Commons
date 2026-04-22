@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Executing 01-02-PLAN.md
-last_updated: "2026-04-20T05:31:05Z"
-last_activity: 2026-04-20 — Completed 01-01 backend contract surface and started 01-02 frontend contract normalization
+status: ready_to_plan
+stopped_at: Phase 2 execution complete
+last_updated: "2026-04-22T02:18:59Z"
+last_activity: 2026-04-22 -- Phase 2 execution complete
 progress:
   total_phases: 6
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_phases: 2
+  total_plans: 17
+  completed_plans: 6
+  percent: 35
 ---
 
 # Project State
@@ -21,34 +21,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** Phase 1: Backend Contract Foundation
+**Current focus:** Phase 3 planning
 
 ## Current Position
 
-Phase: 1 of 6 (Backend Contract Foundation)
-Plan: 2 of 3 in current phase
-Status: Executing 01-02
-Last activity: 2026-04-20 — Completed 01-01 backend contract surface and started 01-02 frontend contract normalization
+Phase: 3 of 6 (Hub & Room Expansion Framework)
+Plan: Phase 2 complete, next phase ready for planning
+Status: Ready to plan
+Last activity: 2026-04-22 -- Phase 2 execution complete
 
-Progress: ░░░░░░░░░░ 0%
+Progress: [████░░░░░░] 35%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: 0 min
-- Total execution time: 0.0 hours
+- Total plans completed: 6
+- Average duration: n/a
+- Total execution time: n/a
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1 | 3 | n/a | n/a |
+| 2 | 3 | n/a | n/a |
 
 **Recent Trend:**
 
-- Last 5 plans: none
+- Last 5 plans: 01-02, 01-03, 02-01, 02-02, 02-03
 - Trend: Stable
 
 ## Accumulated Context
@@ -61,6 +62,8 @@ Recent decisions affecting current work:
 - [Init]: Use the current shipped game/admin capability as the validated baseline
 - [Init]: Keep the separated frontend/backend runtime in one repository for now
 - [Init]: Prioritize game/backend expansion over another platform rewrite
+- [01-03]: Use `docs/architecture/backend-contract.md` as the canonical split-runtime contract note
+- [01-03]: Treat same-origin reverse proxy deployment as the default production shape, with `NEXT_PUBLIC_*` overrides documented for split-port and isolated verification runs
 
 ### Pending Todos
 
@@ -68,7 +71,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- Concrete feature candidates inside each game family still need refinement during Phase 1 / Phase 2 planning.
+- Phase 3 should build on the new admin capability state instead of inventing a parallel room-capability source of truth.
 
 ## Deferred Items
 
@@ -80,8 +83,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-20 13:31 CST
-Stopped at: Executing 01-02-PLAN.md
-Resume file: None
+Last session: 2026-04-22T02:18:59Z
+Stopped at: Phase 2 execution complete
+Resume file: .planning/ROADMAP.md
 
-**Planned Phase:** 1 (Backend Contract Foundation) — 3 plans — 2026-04-20T04:22:03.398Z
+**Last completed phase:** 2 (Admin Control Plane Expansion) — 3 plans — 2026-04-22T02:18:59Z

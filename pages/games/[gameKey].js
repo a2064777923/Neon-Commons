@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
-import { apiFetch } from "../../lib/client/api";
+import { API_ROUTES, apiFetch } from "../../lib/client/api";
 import styles from "../../styles/GameLobby.module.css";
 
 const {
@@ -57,8 +57,8 @@ export default function GameLobbyPage() {
 
   async function loadData(activeGameKey, activeMode = gameMode) {
     const [meResponse, roomsResponse] = await Promise.all([
-      apiFetch("/api/me"),
-      apiFetch(`/${activeMode === "party" ? "api/party/rooms" : "api/board/rooms"}?gameKey=${activeGameKey}`)
+      apiFetch(API_ROUTES.me()),
+      apiFetch(getRoomsRoute(activeMode, activeGameKey))
     ]);
 
     const [meData, roomsData] = await Promise.all([meResponse.json(), roomsResponse.json()]);
@@ -71,7 +71,7 @@ export default function GameLobbyPage() {
     setLoading(true);
     setError("");
 
-    const response = await apiFetch(`/${gameMode === "party" ? "api/party/rooms" : "api/board/rooms"}?gameKey=${gameKey}`, {
+    const response = await apiFetch(getRoomsRoute(gameMode, gameKey), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -96,8 +96,7 @@ export default function GameLobbyPage() {
 
   async function joinRoom(roomNo) {
     setError("");
-    const base = gameMode === "party" ? "/api/party/rooms" : "/api/board/rooms";
-    const response = await apiFetch(`${base}/${roomNo}/join`, { method: "POST" });
+    const response = await apiFetch(getJoinRoute(gameMode, roomNo), { method: "POST" });
     const data = await response.json();
 
     if (!response.ok) {
@@ -437,6 +436,18 @@ export default function GameLobbyPage() {
 
 function capitalize(value) {
   return value ? `${value[0].toUpperCase()}${value.slice(1)}` : "";
+}
+
+function getRoomsRoute(gameMode, gameKey) {
+  return gameMode === "party"
+    ? API_ROUTES.partyRooms.list(gameKey)
+    : API_ROUTES.boardRooms.list(gameKey);
+}
+
+function getJoinRoute(gameMode, roomNo) {
+  return gameMode === "party"
+    ? API_ROUTES.partyRooms.join(roomNo)
+    : API_ROUTES.boardRooms.join(roomNo);
 }
 
 function getRealtimeCopy(gameKey) {

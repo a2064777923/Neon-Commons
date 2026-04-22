@@ -9,7 +9,7 @@ Requirements for the next active milestone. Each maps to exactly one roadmap pha
 
 ### Platform & Contracts
 
-- [ ] **PLAT-01**: Operator can evolve frontend/backend API and socket contracts through the dedicated backend service without re-coupling feature work to page-routed APIs.
+- [x] **PLAT-01**: Operator can evolve frontend/backend API and socket contracts through the dedicated backend service without re-coupling feature work to page-routed APIs.
 
 ### Hub & Room Entry
 
@@ -60,7 +60,7 @@ Requirements for the next active milestone. Each maps to exactly one roadmap pha
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLAT-01 | Phase 1 | Pending |
+| PLAT-01 | Phase 1 | Complete |
 | ADMIN-01 | Phase 2 | Pending |
 | ADMIN-02 | Phase 2 | Pending |
 | HUB-01 | Phase 3 | Pending |
@@ -78,4 +78,4 @@ Requirements for the next active milestone. Each maps to exactly one roadmap pha
 
 ---
 *Requirements defined: 2026-04-20*
-*Last updated: 2026-04-20 after initial definition*
+*Last updated: 2026-04-22 after Phase 1 completion*

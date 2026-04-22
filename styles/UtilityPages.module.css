@@ -39,6 +39,16 @@
   gap: 16px;
 }
 
+.loginHero {
+  grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+  align-items: stretch;
+  gap: 20px;
+}
+
+.loginHeroCopy {
+  align-content: start;
+}
+
 .heroBadge {
   display: inline-flex;
   width: fit-content;
@@ -115,6 +125,63 @@
   padding: 20px;
 }
 
+.loginHeroSide {
+  gap: 16px;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 240, 225, 0.84)),
+    radial-gradient(circle at top right, rgba(36, 64, 51, 0.08), transparent 28%);
+}
+
+.loginSideEyebrow {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(36, 64, 51, 0.08);
+  color: #51685a;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.loginSideTitle {
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1;
+  color: #22392f;
+}
+
+.loginUnlockList {
+  display: grid;
+  gap: 12px;
+}
+
+.loginUnlockItem {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(245, 236, 220, 0.92)),
+    radial-gradient(circle at top right, rgba(212, 164, 75, 0.12), transparent 32%);
+  box-shadow: 0 12px 28px rgba(57, 42, 18, 0.08);
+}
+
+.loginUnlockItem strong {
+  color: #284437;
+  font-size: 15px;
+}
+
+.loginUnlockItem span {
+  color: #60776b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .heroSide strong,
 .panelHead strong {
   color: #233f32;
@@ -141,6 +208,10 @@
   display: grid;
   grid-template-columns: minmax(0, 0.96fr) minmax(300px, 1.04fr);
   gap: 18px;
+}
+
+.loginAuthGrid {
+  align-items: stretch;
 }
 
 .adminGrid {
@@ -184,6 +255,11 @@
   background:
     radial-gradient(circle at top right, rgba(212, 164, 75, 0.14), transparent 24%),
     linear-gradient(180deg, rgba(255, 252, 247, 0.98), rgba(246, 236, 218, 0.88));
+}
+
+.loginAuthCard,
+.loginNoteCard {
+  align-content: start;
 }
 
 .noteCard,
@@ -258,10 +334,234 @@
   flex-wrap: wrap;
 }
 
+.panelSpan {
+  grid-column: 1 / -1;
+}
+
+.summaryCopy {
+  margin: 0;
+}
+
+.controlGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.controlFamily {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 240, 226, 0.84)),
+    radial-gradient(circle at top right, rgba(212, 164, 75, 0.14), transparent 28%);
+}
+
+.familyHead {
+  display: grid;
+  gap: 4px;
+}
+
+.familyHead h3 {
+  margin: 0;
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: 22px;
+  color: #22392f;
+}
+
+.familyHead p,
+.toggleMeta p,
+.auditReason {
+  margin: 0;
+}
+
+.toggleStack {
+  display: grid;
+  gap: 10px;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.toggleMeta {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.toggleMeta strong {
+  color: #264336;
+  font-size: 16px;
+}
+
+.toggleMeta span {
+  color: #60776b;
+  line-height: 1.5;
+}
+
+.scopeRow,
+.auditMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.scopeChip,
+.runtimeCode,
+.traceBadge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.scopeChip,
+.runtimeCode {
+  background: rgba(36, 64, 51, 0.08);
+  color: #395648;
+}
+
+.runtimeControl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.runtimeMeta {
+  display: grid;
+  gap: 6px;
+}
+
+.runtimeMeta strong {
+  color: #264336;
+}
+
+.runtimeMeta p {
+  margin: 0;
+  color: #60776b;
+}
+
+.runtimeAction {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.runtimeInput {
+  width: 112px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(36, 64, 51, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #22392f;
+  font: inherit;
+}
+
+.auditFeed {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auditRow {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.auditRowHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.auditSummary {
+  display: grid;
+  gap: 4px;
+}
+
+.auditSummary strong {
+  color: #264336;
+}
+
+.auditSummary span,
+.auditReason,
+.auditMeta time {
+  color: #60776b;
+}
+
+.traceBadge {
+  background: rgba(212, 164, 75, 0.18);
+  color: #714c12;
+}
+
+.advancedDetails {
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 14px 16px;
+}
+
+.advancedSummary {
+  cursor: pointer;
+  color: #264336;
+  font-weight: 600;
+  list-style: none;
+}
+
+.advancedSummary::-webkit-details-marker {
+  display: none;
+}
+
+.advancedBody {
+  display: grid;
+  gap: 14px;
+  padding-top: 14px;
+}
+
 @media (max-width: 1080px) {
   .hero,
   .authGrid,
   .adminGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .loginHero {
+    gap: 18px;
+  }
+
+  .controlGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -278,5 +578,36 @@
   .heroStats,
   .metricStrip {
     grid-template-columns: 1fr;
+  }
+
+  .loginHeroSide {
+    padding: 18px;
+  }
+
+  .loginSideTitle {
+    font-size: 24px;
+  }
+
+  .loginUnlockItem {
+    padding: 14px 16px;
+  }
+
+  .toggleRow,
+  .auditRowHead {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .runtimeControl {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .runtimeAction {
+    justify-content: flex-start;
+  }
+
+  .runtimeInput {
+    width: 100%;
   }
 }

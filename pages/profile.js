@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import SiteLayout from "../components/SiteLayout";
-import { apiFetch } from "../lib/client/api";
+import { API_ROUTES, apiFetch } from "../lib/client/api";
 import styles from "../styles/Profile.module.css";
 
 export default function ProfilePage() {
@@ -41,7 +41,7 @@ export default function ProfilePage() {
     setMessage("");
 
     try {
-      const response = await apiFetch("/api/profile", {
+      const response = await apiFetch(API_ROUTES.profile(), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -222,7 +222,7 @@ export default function ProfilePage() {
 }
 
 async function fetchProfile() {
-  const response = await apiFetch("/api/profile");
+  const response = await apiFetch(API_ROUTES.profile());
   const data = await response.json();
   if (!response.ok || !data.user) {
     throw new Error(data.error || "资料读取失败");

@@ -2,7 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import SiteLayout from "../components/SiteLayout";
-import { apiFetch } from "../lib/client/api";
+import { API_ROUTES, apiFetch } from "../lib/client/api";
 import styles from "../styles/UtilityPages.module.css";
 
 export default function LoginPage() {
@@ -10,13 +10,27 @@ export default function LoginPage() {
   const [form, setForm] = useState({ account: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const unlockItems = [
+    {
+      title: "大厅与快进房",
+      detail: "登录后可直接创建牌桌、输入房号，回到你刚离开的那一局。"
+    },
+    {
+      title: "实时状态同步",
+      detail: "排行榜、房间阶段与后台权限都会跟着同一份身份更新。"
+    },
+    {
+      title: "跨游戏共用账号",
+      detail: "斗地主、狼人杀、阿瓦隆、五子棋与跳棋都走同一入口。"
+    }
+  ];
 
   async function handleSubmit(event) {
     event.preventDefault();
     setLoading(true);
     setError("");
 
-    const response = await apiFetch("/api/auth/login", {
+    const response = await apiFetch(API_ROUTES.auth.login(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form)
@@ -35,8 +49,8 @@ export default function LoginPage() {
   return (
     <SiteLayout>
       <div className={styles.shell}>
-        <section className={styles.hero}>
-          <div className={styles.heroCopy}>
+        <section className={`${styles.hero} ${styles.loginHero}`.trim()}>
+          <div className={`${styles.heroCopy} ${styles.loginHeroCopy}`.trim()}>
             <span className={styles.heroBadge}>Account Access</span>
             <h1>回到牌桌之前，先把身份接上。</h1>
             <p>
@@ -58,18 +72,22 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <aside className={styles.heroSide}>
-            <strong>登录后会解锁</strong>
-            <div className={styles.heroList}>
-              <span>斗地主大厅、开桌和房号进房</span>
-              <span>狼人杀 / 阿瓦隆语音与实时房间</span>
-              <span>五子棋 / 跳棋对弈记录与排行榜</span>
+          <aside className={`${styles.heroSide} ${styles.loginHeroSide}`.trim()}>
+            <span className={styles.loginSideEyebrow}>SIGN-IN BENEFITS</span>
+            <strong className={styles.loginSideTitle}>登录后会解锁</strong>
+            <div className={styles.loginUnlockList}>
+              {unlockItems.map((item) => (
+                <article key={item.title} className={styles.loginUnlockItem}>
+                  <strong>{item.title}</strong>
+                  <span>{item.detail}</span>
+                </article>
+              ))}
             </div>
           </aside>
         </section>
 
-        <section className={styles.authGrid}>
-          <form className={styles.authCard} onSubmit={handleSubmit}>
+        <section className={`${styles.authGrid} ${styles.loginAuthGrid}`.trim()}>
+          <form className={`${styles.authCard} ${styles.loginAuthCard}`.trim()} onSubmit={handleSubmit}>
             <div className={styles.authMeta}>
               <span>统一账号</span>
               <span>实时状态</span>
@@ -102,7 +120,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <aside className={styles.noteCard}>
+          <aside className={`${styles.noteCard} ${styles.loginNoteCard}`.trim()}>
             <strong>还没有账号</strong>
             <div className={styles.noteList}>
               <span>注册后即可拥有独立昵称、胜负记录和段位分。</span>

@@ -12,8 +12,8 @@ This roadmap treats the current shipped arcade and admin stack as the protected 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Backend Contract Foundation** - Stabilize the dedicated backend service boundary and shared client contract
-- [ ] **Phase 2: Admin Control Plane Expansion** - Expand backend-facing admin capabilities and operational control
+- [x] **Phase 1: Backend Contract Foundation** - Stabilize the dedicated backend service boundary and shared client contract
+- [x] **Phase 2: Admin Control Plane Expansion** - Expand backend-facing admin capabilities and operational control
 - [ ] **Phase 3: Hub & Room Expansion Framework** - Prepare the hub and room lifecycle for additional game/variant surface area
 - [ ] **Phase 4: Card & Party Gameplay Expansion** - Extend Dou Dizhu, Werewolf, and Avalon gameplay safely
 - [ ] **Phase 5: Board Gameplay Expansion** - Extend Gomoku and Chinese Checkers capability safely
@@ -32,9 +32,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Audit and stabilize backend handler contract surface
-- [ ] 01-02: Normalize frontend API/socket entry points and shared config usage
-- [ ] 01-03: Refresh architecture, deployment, and planning docs around the split runtime
+- [x] 01-01: Audit and stabilize backend handler contract surface
+- [x] 01-02: Normalize frontend API/socket entry points and shared config usage
+- [x] 01-03: Refresh architecture, deployment, and planning docs around the split runtime
 
 ### Phase 2: Admin Control Plane Expansion
 **Goal**: Expand the admin/backend operating surface so live game capability can be controlled without database-level intervention.
@@ -47,9 +47,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Extend admin API surfaces for live capability/config management
-- [ ] 02-02: Upgrade admin console workflows for expansion-oriented operations
-- [ ] 02-03: Add guardrails and audit coverage for backend/admin changes
+- [x] 02-01: Extend admin API surfaces for live capability/config management
+- [x] 02-02: Upgrade admin console workflows for expansion-oriented operations
+- [x] 02-03: Add guardrails and audit coverage for backend/admin changes
 
 ### Phase 3: Hub & Room Expansion Framework
 **Goal**: Give the hub and room lifecycle enough structure to support more games, variants, and option surface without fracturing UX.
@@ -117,8 +117,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Backend Contract Foundation | 0/3 | Not started | - |
-| 2. Admin Control Plane Expansion | 0/3 | Not started | - |
+| 1. Backend Contract Foundation | 3/3 | Complete | 2026-04-22 |
+| 2. Admin Control Plane Expansion | 3/3 | Complete | 2026-04-22 |
 | 3. Hub & Room Expansion Framework | 0/3 | Not started | - |
 | 4. Card & Party Gameplay Expansion | 0/3 | Not started | - |
 | 5. Board Gameplay Expansion | 0/2 | Not started | - |

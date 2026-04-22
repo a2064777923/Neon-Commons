@@ -1,17 +1,22 @@
 const { test, expect } = require("playwright/test");
+const { API_ROUTES, apiUrl } = require("../lib/client/network-runtime");
+
+const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("desktop and landscape room ui smoke", async ({ page }) => {
   page.setDefaultTimeout(30000);
 
-  await page.goto("http://127.0.0.1:3100/login");
+  await page.goto(`${FRONTEND_BASE_URL}/login`);
   await page.getByLabel("帳號或郵箱").fill("smoke202604171508");
   await page.getByLabel("密碼").fill("Smoke123456");
   await page.getByRole("button", { name: "登入" }).click();
-  await expect(page).toHaveURL("http://127.0.0.1:3100/");
+  await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/`);
 
-  const roomNo = await page.evaluate(async () => {
-    const response = await fetch("/api/rooms", {
+  const createRoomUrl = apiUrl(API_ROUTES.cardRooms.create());
+  const roomNo = await page.evaluate(async ({ url }) => {
+    const response = await fetch(url, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json"
       },
@@ -33,9 +38,9 @@ test("desktop and landscape room ui smoke", async ({ page }) => {
     }
 
     return data.room.roomNo;
-  });
+  }, { url: createRoomUrl });
 
-  await page.goto(`http://127.0.0.1:3100/room/${roomNo}`);
+  await page.goto(`${FRONTEND_BASE_URL}/room/${roomNo}`);
   await page.getByRole("button", { name: "準備開局" }).click();
   await page.getByRole("button", { name: "補機器人" }).click();
   await page.getByRole("button", { name: "補機器人" }).click();

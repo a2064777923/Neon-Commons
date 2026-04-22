@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import SiteLayout from "../components/SiteLayout";
-import { apiFetch } from "../lib/client/api";
+import { API_ROUTES, apiFetch } from "../lib/client/api";
 import styles from "../styles/Leaderboard.module.css";
 
 export default function LeaderboardPage() {
@@ -8,7 +8,7 @@ export default function LeaderboardPage() {
   const [me, setMe] = useState(null);
 
   useEffect(() => {
-    Promise.all([apiFetch("/api/leaderboard"), apiFetch("/api/me")])
+    Promise.all([apiFetch(API_ROUTES.leaderboard()), apiFetch(API_ROUTES.me())])
       .then(async ([leaderboardResponse, meResponse]) => {
         const [leaderboardData, meData] = await Promise.all([
           leaderboardResponse.json(),

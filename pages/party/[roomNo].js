@@ -4,12 +4,14 @@ import { useRouter } from "next/router";
 import MatchResultOverlay from "../../components/MatchResultOverlay";
 import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
-import { apiFetch, getSocketUrl } from "../../lib/client/api";
+import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import styles from "../../styles/PartyRoom.module.css";
 
 const { getGameMeta, getGameLimits } = require("../../lib/games/catalog");
 
 let socket;
+const PARTY_EVENTS = SOCKET_EVENTS.party;
+const VOICE_EVENTS = SOCKET_EVENTS.voice;
 
 const QUICK_LINES = {
   werewolf: ["过麦", "先听发言", "这票我压", "给我一分钟", "别着急下结论"],
@@ -87,7 +89,7 @@ export default function PartyRoomPage() {
 
     function subscribeIfSeated() {
       if (roomRef.current?.viewer) {
-        socket.emit("party:subscribe", { roomNo });
+        socket.emit(PARTY_EVENTS.subscribe, { roomNo });
       }
     }
 
@@ -130,21 +132,21 @@ export default function PartyRoomPage() {
     }
 
     socket.on("connect", onConnect);
-    socket.on("party:update", onRoomUpdate);
-    socket.on("party:error", onRoomError);
-    socket.on("voice:peers", onVoicePeers);
-    socket.on("voice:user-left", onVoiceUserLeft);
-    socket.on("voice:signal", onVoiceSignal);
+    socket.on(PARTY_EVENTS.update, onRoomUpdate);
+    socket.on(PARTY_EVENTS.error, onRoomError);
+    socket.on(PARTY_EVENTS.voicePeers, onVoicePeers);
+    socket.on(PARTY_EVENTS.voiceUserLeft, onVoiceUserLeft);
+    socket.on(VOICE_EVENTS.signal, onVoiceSignal);
 
     subscribeIfSeated();
 
     return () => {
       socket.off("connect", onConnect);
-      socket.off("party:update", onRoomUpdate);
-      socket.off("party:error", onRoomError);
-      socket.off("voice:peers", onVoicePeers);
-      socket.off("voice:user-left", onVoiceUserLeft);
-      socket.off("voice:signal", onVoiceSignal);
+      socket.off(PARTY_EVENTS.update, onRoomUpdate);
+      socket.off(PARTY_EVENTS.error, onRoomError);
+      socket.off(PARTY_EVENTS.voicePeers, onVoicePeers);
+      socket.off(PARTY_EVENTS.voiceUserLeft, onVoiceUserLeft);
+      socket.off(VOICE_EVENTS.signal, onVoiceSignal);
     };
   }, [roomNo, me]);
 
@@ -153,7 +155,7 @@ export default function PartyRoomPage() {
       return;
     }
 
-    socket.emit("party:subscribe", { roomNo });
+    socket.emit(PARTY_EVENTS.subscribe, { roomNo });
   }, [roomNo, mySeat]);
 
   useEffect(() => {
@@ -185,8 +187,8 @@ export default function PartyRoomPage() {
     }
 
     const [meResponse, roomResponse] = await Promise.all([
-      apiFetch("/api/me"),
-      apiFetch(`/api/party/rooms/${roomNo}`)
+      apiFetch(API_ROUTES.me()),
+      apiFetch(API_ROUTES.partyRooms.detail(roomNo))
     ]);
 
     const [meData, roomData] = await Promise.all([meResponse.json(), roomResponse.json()]);
@@ -213,7 +215,7 @@ export default function PartyRoomPage() {
 
   async function joinRoom() {
     setJoining(true);
-    const response = await apiFetch(`/api/party/rooms/${roomNo}/join`, { method: "POST" });
+    const response = await apiFetch(API_ROUTES.partyRooms.join(roomNo), { method: "POST" });
     const data = await response.json();
     setJoining(false);
 
@@ -224,19 +226,19 @@ export default function PartyRoomPage() {
 
     roomRef.current = data.room;
     setRoom(data.room);
-    socket?.emit("party:subscribe", { roomNo });
+    socket?.emit(PARTY_EVENTS.subscribe, { roomNo });
   }
 
   function emitReady(ready) {
-    socket?.emit("party:ready", { roomNo, ready });
+    socket?.emit(PARTY_EVENTS.ready, { roomNo, ready });
   }
 
   function emitAddBot(count = 1) {
-    socket?.emit("party:add-bot", { roomNo, count });
+    socket?.emit(PARTY_EVENTS.addBot, { roomNo, count });
   }
 
   function emitAction(payload) {
-    socket?.emit("party:action", { roomNo, payload });
+    socket?.emit(PARTY_EVENTS.action, { roomNo, payload });
   }
 
   async function enableVoice() {
@@ -271,10 +273,10 @@ export default function PartyRoomPage() {
         track.enabled = !voiceMutedRef.current;
       });
 
-      socket.emit("party:subscribe", { roomNo });
+      socket.emit(PARTY_EVENTS.subscribe, { roomNo });
       joinedVoiceRef.current = true;
       setVoiceJoined(true);
-      socket.emit("voice:join", { roomNo, muted: voiceMutedRef.current });
+      socket.emit(VOICE_EVENTS.join, { roomNo, muted: voiceMutedRef.current });
     } catch (error) {
       setVoiceError("麦克风权限未开启或设备不可用");
     }
@@ -282,7 +284,7 @@ export default function PartyRoomPage() {
 
   function cleanupVoice(stopTracks = true, notifyServer = true) {
     if (notifyServer && joinedVoiceRef.current) {
-      socket?.emit("voice:leave", { roomNo });
+      socket?.emit(VOICE_EVENTS.leave, { roomNo });
     }
 
     joinedVoiceRef.current = false;
@@ -323,7 +325,7 @@ export default function PartyRoomPage() {
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        socket?.emit("voice:signal", {
+        socket?.emit(VOICE_EVENTS.signal, {
           roomNo,
           targetUserId: userId,
           data: {
@@ -380,7 +382,7 @@ export default function PartyRoomPage() {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket?.emit("voice:signal", {
+    socket?.emit(VOICE_EVENTS.signal, {
       roomNo,
       targetUserId,
       data: {
@@ -400,7 +402,7 @@ export default function PartyRoomPage() {
       await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      socket?.emit("voice:signal", {
+      socket?.emit(VOICE_EVENTS.signal, {
         roomNo,
         targetUserId: fromUserId,
         data: {
@@ -439,7 +441,7 @@ export default function PartyRoomPage() {
     }
 
     if (joinedVoiceRef.current) {
-      socket?.emit("voice:state", { roomNo, muted: nextMuted });
+      socket?.emit(VOICE_EVENTS.state, { roomNo, muted: nextMuted });
     }
   }
 
@@ -450,7 +452,7 @@ export default function PartyRoomPage() {
       return;
     }
 
-    socket?.emit("party:message", { roomNo, text });
+    socket?.emit(PARTY_EVENTS.message, { roomNo, text });
     setNoteText("");
   }
 
@@ -598,7 +600,7 @@ export default function PartyRoomPage() {
                     key={item}
                     type="button"
                     className={styles.quickLine}
-                    onClick={() => socket?.emit("party:message", { roomNo, text: item })}
+                    onClick={() => socket?.emit(PARTY_EVENTS.message, { roomNo, text: item })}
                   >
                     {item}
                   </button>

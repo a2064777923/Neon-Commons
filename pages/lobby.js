@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import SiteLayout from "../components/SiteLayout";
-import { apiFetch } from "../lib/client/api";
+import { API_ROUTES, apiFetch } from "../lib/client/api";
 import styles from "../styles/Lobby.module.css";
 
 const CHIP_PRESETS = [20, 50, 100, 300, 1000];
@@ -26,10 +26,10 @@ export default function LobbyPage() {
 
   async function loadData() {
     const [meResponse, roomsResponse, templatesResponse, leaderboardResponse] = await Promise.all([
-      apiFetch("/api/me"),
-      apiFetch("/api/rooms"),
-      apiFetch("/api/templates"),
-      apiFetch("/api/leaderboard")
+      apiFetch(API_ROUTES.me()),
+      apiFetch(API_ROUTES.cardRooms.list()),
+      apiFetch(API_ROUTES.templates()),
+      apiFetch(API_ROUTES.leaderboard())
     ]);
 
     const [meData, roomsData, templatesData, leaderboardData] = await Promise.all([
@@ -101,7 +101,7 @@ export default function LobbyPage() {
     event.preventDefault();
     setError("");
 
-    const response = await apiFetch("/api/rooms", {
+    const response = await apiFetch(API_ROUTES.cardRooms.create(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -132,7 +132,7 @@ export default function LobbyPage() {
       return;
     }
 
-    const response = await apiFetch(`/api/rooms/${normalizedRoomNo}/join`, { method: "POST" });
+    const response = await apiFetch(API_ROUTES.cardRooms.join(normalizedRoomNo), { method: "POST" });
     const data = await response.json();
 
     if (!response.ok) {

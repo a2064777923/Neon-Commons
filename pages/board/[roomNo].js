@@ -4,12 +4,13 @@ import { useRouter } from "next/router";
 import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
 import MatchResultOverlay from "../../components/MatchResultOverlay";
-import { apiFetch, getSocketUrl } from "../../lib/client/api";
+import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import styles from "../../styles/BoardRoom.module.css";
 
 const { getGameMeta } = require("../../lib/games/catalog");
 
 let socket;
+const BOARD_EVENTS = SOCKET_EVENTS.board;
 const GOMOKU_SIZE = 15;
 const CHINESE_CHECKERS_ROW_LENGTHS = [1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1];
 const CHINESE_VERTICAL_GAP = 0.8660254037844386;
@@ -58,7 +59,7 @@ export default function BoardRoomPage() {
       socket = io(getSocketUrl(), { withCredentials: true });
     }
 
-    socket.emit("board:subscribe", { roomNo });
+    socket.emit(BOARD_EVENTS.subscribe, { roomNo });
 
     function onRoomUpdate({ room: nextRoom }) {
       setRoom(nextRoom);
@@ -69,12 +70,12 @@ export default function BoardRoomPage() {
       showMessage(error || "房间操作失败");
     }
 
-    socket.on("board:update", onRoomUpdate);
-    socket.on("board:error", onRoomError);
+    socket.on(BOARD_EVENTS.update, onRoomUpdate);
+    socket.on(BOARD_EVENTS.error, onRoomError);
 
     return () => {
-      socket.off("board:update", onRoomUpdate);
-      socket.off("board:error", onRoomError);
+      socket.off(BOARD_EVENTS.update, onRoomUpdate);
+      socket.off(BOARD_EVENTS.error, onRoomError);
     };
   }, [roomNo, me, mySeat]);
 
@@ -112,8 +113,8 @@ export default function BoardRoomPage() {
     }
 
     const [meResponse, roomResponse] = await Promise.all([
-      apiFetch("/api/me"),
-      apiFetch(`/api/board/rooms/${roomNo}`)
+      apiFetch(API_ROUTES.me()),
+      apiFetch(API_ROUTES.boardRooms.detail(roomNo))
     ]);
 
     const [meData, roomData] = await Promise.all([meResponse.json(), roomResponse.json()]);
@@ -139,7 +140,7 @@ export default function BoardRoomPage() {
 
   async function joinRoom() {
     setJoining(true);
-    const response = await apiFetch(`/api/board/rooms/${roomNo}/join`, { method: "POST" });
+    const response = await apiFetch(API_ROUTES.boardRooms.join(roomNo), { method: "POST" });
     const data = await response.json();
     setJoining(false);
 
@@ -149,19 +150,19 @@ export default function BoardRoomPage() {
     }
 
     setRoom(data.room);
-    socket?.emit("board:subscribe", { roomNo });
+    socket?.emit(BOARD_EVENTS.subscribe, { roomNo });
   }
 
   function emitReady(ready) {
-    socket?.emit("board:ready", { roomNo, ready });
+    socket?.emit(BOARD_EVENTS.ready, { roomNo, ready });
   }
 
   function emitAddBot(count = 1) {
-    socket?.emit("board:add-bot", { roomNo, count });
+    socket?.emit(BOARD_EVENTS.addBot, { roomNo, count });
   }
 
   function emitMove(payload) {
-    socket?.emit("board:move", { roomNo, payload });
+    socket?.emit(BOARD_EVENTS.move, { roomNo, payload });
   }
 
   if (!room || !meta) {

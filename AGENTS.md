@@ -12,7 +12,7 @@ Hong's Neon-Commons is a browser-based real-time party arcade with live Dou Dizh
 - Realtime: Socket.IO on the dedicated backend, Socket.IO client in the frontend
 - Persistence: PostgreSQL via `lib/db`
 - Styling: CSS modules and `styles/globals.css`
-- Tests: `npm run check`, `npm run test:logic`, `npm run test:ui`
+- Tests: `npm run check`, `node --test test-logic/backend-contract.test.js test-logic/client-network-contract.test.js`, `npm run test:logic`, `npx playwright test tests/room-ui.spec.js --workers=1`
 - Runtime split: same repo, frontend on `3100`, backend on `3101`
 <!-- GSD:stack-end -->
 
@@ -21,9 +21,10 @@ Hong's Neon-Commons is a browser-based real-time party arcade with live Dou Dizh
 
 - Preserve the frontend/backend split. New backend features should land in `backend/handlers/*` or shared backend modules, not new `pages/api` endpoints.
 - Keep REST and socket access flowing through shared frontend client/config paths instead of ad hoc per-page URLs.
+- Treat `backend/server.js` as the owner of `/api/*` and `/socket.io/*`; deployments and docs should continue proxying both paths to the backend port instead of routing them through Next.js.
 - Protect shipped room-number join flow, unified hub entry, and live Socket.IO room behavior across all game families.
 - Prefer incremental expansion over re-platforming. This repo is brownfield and existing behavior is the compatibility target.
-- Run the smallest relevant verification for each change, and escalate to broader checks before shipping when game, room, or admin behavior changes.
+- Run the smallest relevant verification for each change, and escalate to `npm run check`, the backend/client contract node tests, and the room smoke test before shipping runtime-contract changes.
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->

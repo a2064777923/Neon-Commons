@@ -1,6 +1,9 @@
 const { requireUser } = require("../../../../lib/auth");
-const { query } = require("../../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../../lib/http");
+const {
+  getNewRoomBlockedReason,
+  getNewRoomControlSnapshot
+} = require("../../../../lib/admin/control-plane");
 const { BOARD_GAME_KEYS, getGameMeta } = require("../../../../lib/games/catalog");
 const { getBoardRoomManager } = require("../../../../lib/board/manager");
 const {
@@ -34,11 +37,14 @@ async function handler(req, res) {
     return res.status(400).json({ error: "缺少有效游戏类型" });
   }
 
+  const controlSnapshot = await getNewRoomControlSnapshot();
+  const blockedReason = getNewRoomBlockedReason(gameKey, controlSnapshot);
+  if (blockedReason) {
+    return res.status(400).json({ error: blockedReason });
+  }
+
   const roomCount = roomManager.countOpenRoomsByOwner(user.id, gameKey);
-  const config = await query(
-    "SELECT value FROM system_configs WHERE key = 'maxOpenRoomsPerUser' LIMIT 1"
-  );
-  const maxRooms = Number(config.rows[0]?.value || 3);
+  const maxRooms = Number(controlSnapshot.runtime.maxOpenRoomsPerUser || 3);
   if (roomCount >= maxRooms) {
     return res.status(400).json({ error: `单个玩家最多同时开 ${maxRooms} 个房间` });
   }
