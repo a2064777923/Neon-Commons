@@ -55,22 +55,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ROOM-01 | TBD | Pending roadmap |
-| ROOM-02 | TBD | Pending roadmap |
-| ROOM-03 | TBD | Pending roadmap |
-| OPS-01 | TBD | Pending roadmap |
-| OPS-02 | TBD | Pending roadmap |
-| OPS-03 | TBD | Pending roadmap |
-| OPS-04 | TBD | Pending roadmap |
-| RELY-01 | TBD | Pending roadmap |
-| RELY-02 | TBD | Pending roadmap |
-| RELY-03 | TBD | Pending roadmap |
+| ROOM-01 | Phase 7 | Pending |
+| ROOM-02 | Phase 7 | Pending |
+| ROOM-03 | Phase 7 | Pending |
+| OPS-01 | Phase 8 | Pending |
+| OPS-02 | Phase 8 | Pending |
+| OPS-03 | Phase 8 | Pending |
+| OPS-04 | Phase 8 | Pending |
+| RELY-01 | Phase 9 | Pending |
+| RELY-02 | Phase 9 | Pending |
+| RELY-03 | Phase 10 | Pending |
 
 **Coverage:**
 - v1 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 ⚠
+- Mapped to phases: 10
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-22*
-*Last updated: 2026-04-22 after initial definition*
+*Last updated: 2026-04-22 after roadmap creation*
