@@ -26,7 +26,7 @@
 
 **Plans:**
 
-- [ ] 11-01: Define shared availability and degraded-mode contracts across backend and client payloads
+- [x] 11-01: Define shared availability and degraded-mode contracts across backend and client payloads (completed 2026-04-23)
 - [ ] 11-02: Implement degraded-mode runtime controls, entry gating, and player-facing messaging
 - [ ] 11-03: Verify degraded-state behavior across critical room-entry and release flows
 
