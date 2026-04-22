@@ -1,9 +1,11 @@
 const { test, expect } = require("playwright/test");
 const { registerFreshUser } = require("./support/auth");
+const { waitForBoardRoomReady, waitForConnectedPresence } = require("./support/room-sync");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
+  test.slow();
   page.setDefaultTimeout(30000);
 
   await registerFreshUser(page, FRONTEND_BASE_URL, "boardsmoke");
@@ -17,6 +19,8 @@ test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
   await page.getByLabel("开局规则").selectOption("center-opening");
   await page.getByRole("button", { name: /立即开/ }).click();
   await expect(page).toHaveURL(/\/board\/\d{6}$/);
+  const gomokuRoomNo = page.url().match(/\/board\/(\d{6})$/)[1];
+  await waitForBoardRoomReady(page, gomokuRoomNo);
   await expect(page.locator('[data-board-chip="天元开局"]').first()).toBeVisible();
   await expect(page.getByRole("button", { name: "准备开局" })).toBeEnabled();
   await page.getByRole("button", { name: "准备开局" }).click();
@@ -24,16 +28,17 @@ test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
   await page.getByRole("button", { name: "补机器人" }).click();
   await expect(page.locator('[data-gomoku-cell="7-7"]')).toBeEnabled();
   await page.getByRole("button", { name: /^席位 \d/ }).click();
-  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
+  await waitForConnectedPresence(page);
   await page.getByRole("button", { name: "关闭" }).click();
   await page.locator('[data-gomoku-cell="0-0"]').click();
   await expect(page.locator('[data-gomoku-cell="0-0"][data-gomoku-piece="empty"]')).toBeVisible();
   await page.locator('[data-gomoku-cell="7-7"]').click();
   await expect(page.locator('[data-gomoku-cell="7-7"][data-gomoku-piece="black"]')).toBeVisible();
   await page.reload();
-  await expect(page).toHaveURL(/\/board\/\d{6}$/);
+  await expect(page).toHaveURL(new RegExp(`/board/${gomokuRoomNo}$`));
+  await waitForBoardRoomReady(page, gomokuRoomNo);
   await page.getByRole("button", { name: /^席位 \d/ }).click();
-  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
+  await waitForConnectedPresence(page);
   await page.getByRole("button", { name: "关闭" }).click();
 
   await page.goto(`${FRONTEND_BASE_URL}/games/chinesecheckers`);
@@ -42,6 +47,8 @@ test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
   await expect(page.getByRole("button", { name: "複製邀請" }).first()).toBeVisible();
   await page.getByRole("button", { name: /立即开/ }).click();
   await expect(page).toHaveURL(/\/board\/\d{6}$/);
+  const chineseCheckersRoomNo = page.url().match(/\/board\/(\d{6})$/)[1];
+  await waitForBoardRoomReady(page, chineseCheckersRoomNo);
   await expect(page.getByRole("button", { name: "准备开局" })).toBeEnabled();
   await page.getByRole("button", { name: "准备开局" }).click();
   await expect(page.getByRole("button", { name: "补机器人" })).toBeEnabled();

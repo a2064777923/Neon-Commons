@@ -1,9 +1,11 @@
 const { test, expect } = require("playwright/test");
 const { registerFreshUser } = require("./support/auth");
+const { waitForConnectedPresence, waitForPartyRoomReady } = require("./support/room-sync");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("arcade portal and party room creation smoke", async ({ page }) => {
+  test.slow();
   page.setDefaultTimeout(30000);
 
   await registerFreshUser(page, FRONTEND_BASE_URL, "partysmoke");
@@ -23,6 +25,8 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
   await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("村民 x3");
   await page.getByRole("button", { name: /立即开/ }).click();
   await expect(page).toHaveURL(/\/party\/\d{6}$/);
+  const werewolfRoomNo = page.url().match(/\/party\/(\d{6})$/)[1];
+  await waitForPartyRoomReady(page, werewolfRoomNo);
   await expect(page.locator('[data-party-config="true"]')).toContainText("輕量局");
   await expect(page.locator('[data-party-config="true"]')).toContainText("文字房");
   await expect(page.locator('[data-party-config="true"]')).toContainText("猎人反击 25s");
@@ -37,11 +41,12 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
   await expect(
     page.getByText(/夜色已落，神职与狼人开始行动|天亮发言，打开语音互相试探|公开投票阶段|猎人翻枪，局势正在瞬间改写/)
   ).toBeVisible();
-  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
+  await waitForConnectedPresence(page);
   await page.reload();
-  await expect(page).toHaveURL(/\/party\/\d{6}$/);
-  await expect(page.getByText("对局进行中")).toBeVisible();
-  await expect(page.locator('[data-presence-state="connected"]').first()).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/party/${werewolfRoomNo}$`));
+  await waitForPartyRoomReady(page, werewolfRoomNo);
+  await expect(page.getByText("对局进行中")).toBeVisible({ timeout: 15000 });
+  await waitForConnectedPresence(page);
 
   await page.goto(`${FRONTEND_BASE_URL}/games/avalon`);
   await expect(page.getByRole("heading", { name: "在线阿瓦隆", exact: true })).toBeVisible();
@@ -55,6 +60,8 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
   await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("文字房");
   await page.getByRole("button", { name: /立即开/ }).click();
   await expect(page).toHaveURL(/\/party\/\d{6}$/);
+  const avalonRoomNo = page.url().match(/\/party\/(\d{6})$/)[1];
+  await waitForPartyRoomReady(page, avalonRoomNo);
   await expect(page.locator('[data-party-config="true"]')).toContainText("經典局");
   await expect(page.locator('[data-party-config="true"]')).toContainText("爪牙");
   await expect(page.locator('[data-party-config="true"]')).toContainText("文字房");
@@ -64,7 +71,7 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
   for (let count = 0; count < 4; count += 1) {
     await page.getByRole("button", { name: "补机器人" }).click();
   }
-  await expect(page.getByText("对局进行中")).toBeVisible();
+  await expect(page.getByText("对局进行中")).toBeVisible({ timeout: 15000 });
   await expect(
     page.getByText(/队长正在组队|全员表决当前小队|任务成员暗投任务牌|刺客锁定梅林/)
   ).toBeVisible();

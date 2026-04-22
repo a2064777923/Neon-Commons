@@ -34,21 +34,34 @@ async function main() {
   }
 
   await waitForRuntimeReadiness();
-  logStage("Running structural check", "npm run check");
-  await runChecked(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "check"]);
-  logStage("Running critical logic suite", "npm run test:logic:critical");
-  await runChecked(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "test:logic:critical"]);
-  logStage("Running critical UI suite", `FRONTEND_BASE_URL=${frontendBaseUrl} npm run test:ui:critical`);
-  await runChecked(
-    process.platform === "win32" ? "npm.cmd" : "npm",
-    ["run", "test:ui:critical"],
-    {
-      env: {
-        ...process.env,
-        FRONTEND_BASE_URL: frontendBaseUrl
-      }
-    }
-  );
+  await runStage({
+    title: "Running structural check",
+    detail: "npm run check",
+    rerun: "npm run check",
+    run: () => runChecked(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "check"])
+  });
+  await runStage({
+    title: "Running live-ops and recovery logic gate",
+    detail: "npm run test:logic:critical",
+    rerun: "npm run test:logic:liveops",
+    run: () =>
+      runChecked(process.platform === "win32" ? "npm.cmd" : "npm", [
+        "run",
+        "test:logic:critical"
+      ])
+  });
+  await runStage({
+    title: "Running live-ops and recovery UI gate",
+    detail: `FRONTEND_BASE_URL=${frontendBaseUrl} npm run test:ui:critical`,
+    rerun: `FRONTEND_BASE_URL=${frontendBaseUrl} npm run test:ui:liveops`,
+    run: () =>
+      runChecked(process.platform === "win32" ? "npm.cmd" : "npm", ["run", "test:ui:critical"], {
+        env: {
+          ...process.env,
+          FRONTEND_BASE_URL: frontendBaseUrl
+        }
+      })
+  });
   logStage("Release verification passed", "all critical checks are green");
 }
 
@@ -96,6 +109,16 @@ async function assertUrlReady(url, expectedContentType) {
   const contentType = response.headers.get("content-type") || "";
   if (expectedContentType && !contentType.includes(expectedContentType)) {
     throw new Error(`${url} responded with unexpected content type: ${contentType || "unknown"}`);
+  }
+}
+
+async function runStage({ title, detail, rerun, run }) {
+  logStage(title, detail);
+
+  try {
+    await run();
+  } catch (error) {
+    throw new Error(`${title} failed. Rerun: ${rerun}. Root error: ${error.message}`);
   }
 }
 

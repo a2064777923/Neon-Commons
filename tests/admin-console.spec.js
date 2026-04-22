@@ -7,13 +7,12 @@ test("admin console exposes grouped family toggles and recent audit traces", asy
   page.setDefaultTimeout(30000);
 
   await loginAsAdmin(page);
-  const originalMaxOpenRooms = getRuntimeValue(await getAdminRuntime(page), "maxOpenRoomsPerUser", 3);
-  await updateRuntimeControl(page, "maxOpenRoomsPerUser", 10);
+  const originalMaxOpenRooms = await ensureAdminRoomCapacity(page, 2);
   await setGameEnabled(page, "doudezhu", true);
-
-  const existingRoomNo = await createCardRoom(page);
+  let existingRoomNo = "";
 
   try {
+    existingRoomNo = await createCardRoom(page);
     await page.goto(`${FRONTEND_BASE_URL}/admin`);
 
     await expect(page.locator('[data-admin-family="card"]')).toBeVisible();
@@ -38,6 +37,9 @@ test("admin console exposes grouped family toggles and recent audit traces", asy
     await page.goto(`${FRONTEND_BASE_URL}/room/${existingRoomNo}`);
     await expect(page.getByRole("button", { name: "準備開局" })).toBeVisible();
   } finally {
+    if (existingRoomNo) {
+      await closeAdminLiveRoom(page, existingRoomNo).catch(() => {});
+    }
     await setGameEnabled(page, "doudezhu", true).catch(() => {});
     await updateRuntimeControl(page, "maxOpenRoomsPerUser", originalMaxOpenRooms).catch(() => {});
   }
@@ -49,8 +51,8 @@ test("admin template editor surfaces normalized DDZ rules and room summary stays
   page.setDefaultTimeout(30000);
 
   await loginAsAdmin(page);
-  const originalMaxOpenRooms = getRuntimeValue(await getAdminRuntime(page), "maxOpenRoomsPerUser", 3);
-  await updateRuntimeControl(page, "maxOpenRoomsPerUser", 10);
+  const originalMaxOpenRooms = await ensureAdminRoomCapacity(page, 2);
+  let roomNo = "";
 
   const templates = await getAdminTemplates(page);
   const template = templates.find((item) => item.name === "classic-ranked") || templates[0];
@@ -92,7 +94,7 @@ test("admin template editor surfaces normalized DDZ rules and room summary stays
     await expect(templateCard).toContainText("春天關閉");
     await expect(templateCard).toContainText("私密桌");
 
-    const roomNo = await createCardRoom(page, template.id, {});
+    roomNo = await createCardRoom(page, template.id, {});
     await page.goto(`${FRONTEND_BASE_URL}/room/${roomNo}`);
 
     const roomRules = page.locator('[data-ddz-room-rules="true"]');
@@ -103,6 +105,9 @@ test("admin template editor surfaces normalized DDZ rules and room summary stays
     await expect(roomRules).toContainText("春天關閉");
     await expect(roomRules).toContainText("私密桌");
   } finally {
+    if (roomNo) {
+      await closeAdminLiveRoom(page, roomNo).catch(() => {});
+    }
     await updateTemplate(page, restorePayload).catch(() => {});
     await updateRuntimeControl(page, "maxOpenRoomsPerUser", originalMaxOpenRooms).catch(() => {});
   }
@@ -115,12 +120,12 @@ test("admin console drives live room inspect, remove, drain, and close workflows
   page.setDefaultTimeout(30000);
 
   await loginAsAdmin(page);
-  const originalMaxOpenRooms = getRuntimeValue(await getAdminRuntime(page), "maxOpenRoomsPerUser", 3);
-  await updateRuntimeControl(page, "maxOpenRoomsPerUser", 10);
+  const originalMaxOpenRooms = await ensureAdminRoomCapacity(page, 2);
   const guestContext = await browser.newContext();
+  let roomNo = "";
 
   try {
-    const roomNo = await createPrivatePartyRoom(page, "werewolf");
+    roomNo = await createPrivatePartyRoom(page, "werewolf");
     const guestPage = await guestContext.newPage();
     await guestPage.goto(`${FRONTEND_BASE_URL}/entry/werewolf/${roomNo}`);
     await guestPage.getByRole("button", { name: "以遊客進入" }).click();
@@ -162,6 +167,9 @@ test("admin console drives live room inspect, remove, drain, and close workflows
     await expect(page.locator("[data-audit-row]").first()).toContainText(roomNo);
   } finally {
     await guestContext.close().catch(() => {});
+    if (roomNo) {
+      await closeAdminLiveRoom(page, roomNo).catch(() => {});
+    }
     await updateRuntimeControl(page, "maxOpenRoomsPerUser", originalMaxOpenRooms).catch(() => {});
   }
 });
@@ -364,6 +372,44 @@ async function getAdminRuntime(page) {
   return data.controls || [];
 }
 
+async function getAdminLiveRooms(page) {
+  const url = API_ROUTES.admin.liveRooms.list();
+
+  const data = await page.evaluate(async ({ requestUrl }) => {
+    const response = await fetch(requestUrl, {
+      credentials: "include"
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "failed to load live rooms");
+    }
+
+    return payload;
+  }, { requestUrl: url });
+
+  return data.items || [];
+}
+
+async function getCurrentViewer(page) {
+  const url = API_ROUTES.me();
+
+  const data = await page.evaluate(async ({ requestUrl }) => {
+    const response = await fetch(requestUrl, {
+      credentials: "include"
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "failed to load viewer session");
+    }
+
+    return payload;
+  }, { requestUrl: url });
+
+  return data.user || data.session || null;
+}
+
 async function updateRuntimeControl(page, key, value) {
   const url = API_ROUTES.admin.runtime();
 
@@ -392,6 +438,48 @@ async function updateRuntimeControl(page, key, value) {
 
     return data;
   }, { requestUrl: url, nextKey: key, nextValue: value });
+}
+
+async function ensureAdminRoomCapacity(page, additionalRooms = 1) {
+  const [controls, viewer, liveRooms] = await Promise.all([
+    getAdminRuntime(page),
+    getCurrentViewer(page),
+    getAdminLiveRooms(page)
+  ]);
+  const originalMaxOpenRooms = getRuntimeValue(controls, "maxOpenRoomsPerUser", 3);
+  const viewerId = viewer?.id == null ? "" : String(viewer.id);
+  const ownedRoomCount = liveRooms.filter((room) => String(room.ownerId || "") === viewerId).length;
+  const nextMaxOpenRooms = Math.max(originalMaxOpenRooms, ownedRoomCount + additionalRooms + 1);
+
+  if (nextMaxOpenRooms !== originalMaxOpenRooms) {
+    await updateRuntimeControl(page, "maxOpenRoomsPerUser", nextMaxOpenRooms);
+  }
+
+  return originalMaxOpenRooms;
+}
+
+async function closeAdminLiveRoom(page, roomNo) {
+  const url = API_ROUTES.admin.liveRooms.action(roomNo);
+
+  return page.evaluate(async ({ requestUrl }) => {
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "close"
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "failed to close room");
+    }
+
+    return data;
+  }, { requestUrl: url });
 }
 
 function getRuntimeValue(controls, key, fallbackValue) {
