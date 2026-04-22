@@ -108,6 +108,64 @@ test("admin template editor surfaces normalized DDZ rules and room summary stays
   }
 });
 
+test("admin console drives live room inspect, remove, drain, and close workflows", async ({
+  page,
+  browser
+}) => {
+  page.setDefaultTimeout(30000);
+
+  await loginAsAdmin(page);
+  const originalMaxOpenRooms = getRuntimeValue(await getAdminRuntime(page), "maxOpenRoomsPerUser", 3);
+  await updateRuntimeControl(page, "maxOpenRoomsPerUser", 10);
+  const guestContext = await browser.newContext();
+
+  try {
+    const roomNo = await createPrivatePartyRoom(page, "werewolf");
+    const guestPage = await guestContext.newPage();
+    await guestPage.goto(`${FRONTEND_BASE_URL}/entry/werewolf/${roomNo}`);
+    await guestPage.getByRole("button", { name: "以遊客進入" }).click();
+    await expect(guestPage).toHaveURL(new RegExp(`/party/${roomNo}$`));
+    await guestContext.close();
+
+    await page.goto(`${FRONTEND_BASE_URL}/admin`);
+
+    const roomRow = page.locator(`[data-live-room-row="${roomNo}"]`);
+    await expect(roomRow).toBeVisible();
+    await expect(roomRow).toHaveAttribute("data-room-availability", "live");
+
+    await roomRow.getByRole("button", { name: "查看房間詳情" }).click();
+
+    const detail = page.locator(`[data-live-room-detail="${roomNo}"]`);
+    await expect(detail).toBeVisible();
+
+    const removableOccupant = detail.locator('[data-room-occupant]').nth(1);
+    await expect(removableOccupant).toBeVisible();
+    await removableOccupant.locator('[data-room-occupant-action="remove"]').click();
+    await expect(detail.locator('[data-room-action-confirm="remove-occupant"]')).toBeVisible();
+    await detail.getByRole("button", { name: "再次點擊移除玩家" }).click();
+    await expect(detail.locator('[data-room-occupant]')).toHaveCount(1, { timeout: 15000 });
+
+    await detail.locator('[data-room-action="drain"]').click();
+    await expect(detail.locator('[data-room-action-confirm="drain"]')).toBeVisible();
+    await detail.locator('[data-room-action-confirm="drain"] input').fill(roomNo);
+    await detail.getByRole("button", { name: "確認排空" }).click();
+    await expect(roomRow).toHaveAttribute("data-room-availability", "draining");
+
+    await detail.locator('[data-room-action="close"]').click();
+    await expect(detail.locator('[data-room-action-confirm="close"]')).toBeVisible();
+    await detail.locator('[data-room-action-confirm="close"] input').fill("CLOSE");
+    await detail.getByRole("button", { name: "立即關閉" }).click();
+    await expect(roomRow).toHaveAttribute("data-room-availability", "closed");
+    await expect(detail).toHaveAttribute("data-room-availability", "closed");
+
+    await expect(page.locator("[data-audit-row]").first()).toContainText("關閉房間");
+    await expect(page.locator("[data-audit-row]").first()).toContainText(roomNo);
+  } finally {
+    await guestContext.close().catch(() => {});
+    await updateRuntimeControl(page, "maxOpenRoomsPerUser", originalMaxOpenRooms).catch(() => {});
+  }
+});
+
 async function loginAsAdmin(page) {
   await page.goto(`${FRONTEND_BASE_URL}/login`);
   await page.getByLabel("帳號或郵箱").fill("admin");
@@ -144,6 +202,44 @@ async function createCardRoom(page, templateId = 1, overrides = null) {
 
     return data.room.roomNo;
   }, { requestUrl: url, nextTemplateId: templateId, nextOverrides: overrides });
+}
+
+async function createPrivatePartyRoom(page, gameKey) {
+  const url = API_ROUTES.partyRooms.create(gameKey);
+
+  return page.evaluate(
+    async ({ requestUrl, targetGameKey }) => {
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          gameKey: targetGameKey,
+          config: {
+            visibility: "private",
+            maxPlayers: 6,
+            nightSeconds: 45,
+            discussionSeconds: 70,
+            voteSeconds: 35,
+            voiceEnabled: true
+          }
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "failed to create party room");
+      }
+
+      return data.room.roomNo;
+    },
+    {
+      requestUrl: url,
+      targetGameKey: gameKey
+    }
+  );
 }
 
 async function createCardRoomExpectError(page) {

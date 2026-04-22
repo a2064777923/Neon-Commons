@@ -242,6 +242,8 @@ export default function HomePage() {
                       className={`${styles.feedItem} ${
                         room.availability === "snapshot-only" ? styles.feedItemRecovery : ""
                       }`.trim()}
+                      data-live-feed-room={room.roomNo}
+                      data-room-availability={room.availability || "live"}
                     >
                       <div>
                         <strong>{room.title}</strong>

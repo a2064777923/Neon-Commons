@@ -533,6 +533,170 @@
   list-style: none;
 }
 
+.liveRoomShell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(320px, 1.06fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.liveRoomDirectory,
+.liveRoomDetailPane {
+  display: grid;
+  gap: 12px;
+}
+
+.liveRoomRow,
+.liveRoomDetail,
+.liveRoomEmpty,
+.liveRoomConfirm,
+.liveRoomOccupant,
+.liveRoomConfigItem {
+  border-radius: 18px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.liveRoomRow {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.liveRoomRowSelected {
+  border-color: rgba(36, 64, 51, 0.22);
+  box-shadow: 0 14px 28px rgba(36, 64, 51, 0.08);
+}
+
+.liveRoomRowSelect {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.liveRoomRowHead,
+.liveRoomDetailHead,
+.liveRoomOccupantsHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.liveRoomRowHead strong,
+.liveRoomDetailHead h3,
+.liveRoomOccupantMeta strong,
+.liveRoomEmpty strong,
+.liveRoomConfirm strong,
+.liveRoomConfigItem strong {
+  color: #264336;
+}
+
+.liveRoomRowMeta,
+.liveRoomDetailHead p,
+.liveRoomOccupantMeta span,
+.liveRoomEmpty span,
+.liveRoomConfirm p,
+.liveRoomConfigItem span,
+.liveRoomOccupantsHead span {
+  color: #60776b;
+}
+
+.liveRoomRowMeta,
+.liveRoomConfigList,
+.liveRoomOccupants,
+.liveRoomOccupantActions {
+  display: grid;
+  gap: 10px;
+}
+
+.liveRoomRowActionBar,
+.liveRoomActionBarWide,
+.liveRoomInlineActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.liveRoomDetail,
+.liveRoomEmpty {
+  display: grid;
+  padding: 18px;
+}
+
+.liveRoomDetail {
+  gap: 16px;
+}
+
+.liveRoomStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.liveRoomStats > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.liveRoomStats strong {
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: 24px;
+  color: #234033;
+}
+
+.liveRoomStats span {
+  color: #60776b;
+}
+
+.liveRoomConfigList {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.liveRoomConfigItem {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.liveRoomConfirm {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.liveRoomConfirm input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(36, 64, 51, 0.14);
+  background: rgba(255, 255, 255, 0.92);
+  color: #22392f;
+  font: inherit;
+}
+
+.liveRoomOccupant {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.liveRoomOccupantMeta {
+  display: grid;
+  gap: 4px;
+}
+
 .auditRow {
   display: grid;
   gap: 8px;
@@ -608,6 +772,10 @@
   .controlGrid {
     grid-template-columns: 1fr;
   }
+
+  .liveRoomShell {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -637,7 +805,10 @@
   }
 
   .toggleRow,
-  .auditRowHead {
+  .auditRowHead,
+  .liveRoomRowHead,
+  .liveRoomDetailHead,
+  .liveRoomOccupantsHead {
     display: grid;
     grid-template-columns: 1fr;
   }
@@ -653,5 +824,10 @@
 
   .runtimeInput {
     width: 100%;
+  }
+
+  .liveRoomStats,
+  .liveRoomConfigList {
+    grid-template-columns: 1fr;
   }
 }

@@ -6,6 +6,10 @@ import styles from "../../styles/UtilityPages.module.css";
 const CAPABILITY_UPDATE_REASON = "管理控制台切換";
 const RUNTIME_UPDATE_REASON = "管理控制台調整";
 const PLAYER_UPDATE_REASON = "管理後台調整";
+const EMPTY_ROOM_CONFIRM = Object.freeze({
+  action: "",
+  value: ""
+});
 const TRACE_BADGES = {
   "new-rooms-only": "新房生效",
   "immediate-player-state": "即時生效"
@@ -15,7 +19,11 @@ const ACTION_LABELS = {
   "update-capabilities": "遊戲開關",
   "update-runtime": "運行配置",
   "update-template": "模板更新",
-  "update-config": "系統配置"
+  "update-config": "系統配置",
+  "inspect-live-room": "查看房間詳情",
+  "drain-live-room": "排空房間",
+  "close-live-room": "關閉房間",
+  "remove-live-room-occupant": "移除玩家"
 };
 
 export default function AdminPage() {
@@ -27,6 +35,11 @@ export default function AdminPage() {
   const [capabilityFamilies, setCapabilityFamilies] = useState([]);
   const [runtimeControls, setRuntimeControls] = useState([]);
   const [auditItems, setAuditItems] = useState([]);
+  const [liveRooms, setLiveRooms] = useState([]);
+  const [selectedLiveRoomNo, setSelectedLiveRoomNo] = useState("");
+  const [selectedLiveRoomDetail, setSelectedLiveRoomDetail] = useState(null);
+  const [roomConfirm, setRoomConfirm] = useState(EMPTY_ROOM_CONFIRM);
+  const [pendingOccupantRemoval, setPendingOccupantRemoval] = useState("");
   const [error, setError] = useState("");
   const [templateDraft, setTemplateDraft] = useState("");
   const [configDraft, setConfigDraft] = useState("");
@@ -44,7 +57,8 @@ export default function AdminPage() {
       apiFetch(API_ROUTES.admin.config()),
       apiFetch(API_ROUTES.admin.capabilities()),
       apiFetch(API_ROUTES.admin.runtime()),
-      apiFetch(API_ROUTES.admin.logs())
+      apiFetch(API_ROUTES.admin.logs()),
+      apiFetch(API_ROUTES.admin.liveRooms.list())
     ]);
 
     const payloads = await Promise.all(
@@ -64,10 +78,19 @@ export default function AdminPage() {
       configsResponse,
       capabilitiesResponse,
       runtimeResponse,
-      logsResponse
+      logsResponse,
+      liveRoomsResponse
     ] = responses;
-    const [meData, playersData, templatesData, configsData, capabilitiesData, runtimeData, logsData] =
-      payloads;
+    const [
+      meData,
+      playersData,
+      templatesData,
+      configsData,
+      capabilitiesData,
+      runtimeData,
+      logsData,
+      liveRoomsData
+    ] = payloads;
 
     if (!meResponse.ok || !meData.user || meData.user.role !== "admin") {
       setError(meData.error || "需要管理員權限");
@@ -80,7 +103,8 @@ export default function AdminPage() {
       [configsResponse, configsData],
       [capabilitiesResponse, capabilitiesData],
       [runtimeResponse, runtimeData],
-      [logsResponse, logsData]
+      [logsResponse, logsData],
+      [liveRoomsResponse, liveRoomsData]
     ].find(([response]) => !response.ok);
 
     if (failed) {
@@ -98,6 +122,27 @@ export default function AdminPage() {
     setRuntimeControls(runtimeData.controls || []);
     setRuntimeDraft(normalizeRuntimeDraft(runtimeData.controls || []));
     setAuditItems(logsData.items || []);
+    setLiveRooms(liveRoomsData.items || []);
+
+    const nextSelectedRoomNo = pickPreferredRoomNo(
+      liveRoomsData.items || [],
+      selectedLiveRoomNo
+    );
+    setSelectedLiveRoomNo(nextSelectedRoomNo);
+    setRoomConfirm(EMPTY_ROOM_CONFIRM);
+    setPendingOccupantRemoval("");
+
+    if (!nextSelectedRoomNo) {
+      setSelectedLiveRoomDetail(null);
+      return;
+    }
+
+    try {
+      setSelectedLiveRoomDetail(await fetchLiveRoomDetail(nextSelectedRoomNo));
+    } catch (detailError) {
+      setSelectedLiveRoomDetail(null);
+      setError(detailError.message || "房間資料同步失敗");
+    }
   }
 
   useEffect(() => {
@@ -231,6 +276,155 @@ export default function AdminPage() {
     }
   }
 
+  async function fetchLiveRoomDetail(roomNo) {
+    const response = await apiFetch(API_ROUTES.admin.liveRooms.detail(roomNo));
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "房間資料同步失敗");
+    }
+
+    return data.room || null;
+  }
+
+  async function refreshAuditItems() {
+    const response = await apiFetch(API_ROUTES.admin.logs());
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "最近變更同步失敗");
+    }
+
+    setAuditItems(data.items || []);
+  }
+
+  async function selectLiveRoom(roomNo) {
+    setSavingKey(`live-room:detail:${roomNo}`);
+    setSelectedLiveRoomNo(roomNo);
+    setRoomConfirm(EMPTY_ROOM_CONFIRM);
+    setPendingOccupantRemoval("");
+
+    try {
+      setSelectedLiveRoomDetail(await fetchLiveRoomDetail(roomNo));
+      setError("");
+    } catch (detailError) {
+      setError(detailError.message || "房間資料同步失敗");
+    } finally {
+      setSavingKey("");
+    }
+  }
+
+  async function inspectLiveRoom(roomNo, availability = "live") {
+    if (availability === "snapshot-only") {
+      await selectLiveRoom(roomNo);
+      return;
+    }
+
+    setSavingKey(`live-room:inspect:${roomNo}`);
+
+    try {
+      const response = await apiFetch(API_ROUTES.admin.liveRooms.action(roomNo), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "inspect" })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "房間資料同步失敗");
+        return;
+      }
+
+      applyLiveRoomUpdate(data.room);
+      await refreshAuditItems();
+      setError("");
+    } finally {
+      setSavingKey("");
+    }
+  }
+
+  function beginRoomAction(action) {
+    setRoomConfirm((current) =>
+      current.action === action ? EMPTY_ROOM_CONFIRM : { action, value: "" }
+    );
+    setPendingOccupantRemoval("");
+  }
+
+  async function submitRoomAction() {
+    if (!selectedLiveRoomDetail || !roomConfirm.action) {
+      return;
+    }
+
+    const normalizedValue = String(roomConfirm.value || "").trim();
+    if (
+      roomConfirm.action === "drain" &&
+      normalizedValue !== String(selectedLiveRoomDetail.roomNo || "")
+    ) {
+      setError("請輸入房號確認排空");
+      return;
+    }
+
+    if (roomConfirm.action === "close" && normalizedValue.toUpperCase() !== "CLOSE") {
+      setError("請輸入 CLOSE 確認關閉");
+      return;
+    }
+
+    setSavingKey(`live-room:${roomConfirm.action}:${selectedLiveRoomDetail.roomNo}`);
+    try {
+      const response = await apiFetch(
+        API_ROUTES.admin.liveRooms.action(selectedLiveRoomDetail.roomNo),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: roomConfirm.action })
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "房間操作失敗");
+        return;
+      }
+
+      applyLiveRoomUpdate(data.room);
+      await refreshAuditItems();
+      setError("");
+    } finally {
+      setSavingKey("");
+    }
+  }
+
+  async function submitOccupantRemoval(occupantId) {
+    if (!selectedLiveRoomDetail) {
+      return;
+    }
+
+    setSavingKey(`live-room:remove:${selectedLiveRoomDetail.roomNo}:${occupantId}`);
+    try {
+      const response = await apiFetch(
+        API_ROUTES.admin.liveRooms.occupantRemove(selectedLiveRoomDetail.roomNo, occupantId),
+        {
+          method: "POST"
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "移除玩家失敗");
+        return;
+      }
+
+      applyLiveRoomUpdate(data.room);
+      await refreshAuditItems();
+      setError("");
+    } finally {
+      setSavingKey("");
+    }
+  }
+
+  function applyLiveRoomUpdate(room) {
+    setSelectedLiveRoomNo(room.roomNo);
+    setSelectedLiveRoomDetail(room);
+    setLiveRooms((current) => upsertLiveRoomSummary(current, room));
+    setRoomConfirm(EMPTY_ROOM_CONFIRM);
+    setPendingOccupantRemoval("");
+  }
+
   const totalManagedGames = capabilityFamilies.reduce(
     (total, family) => total + (family.items?.length || 0),
     0
@@ -340,6 +534,327 @@ export default function AdminPage() {
                   </div>
                 </article>
               ))}
+            </div>
+          </section>
+
+          <section className={`${styles.panel} ${styles.panelSpan}`}>
+            <div className={styles.panelHead}>
+              <div>
+                <h2>Live 房間操作</h2>
+                <span>查看房況、排空、關閉與移除房內身份都在同一屏完成</span>
+              </div>
+              <strong>{liveRooms.length} 間可檢查</strong>
+            </div>
+            <p className={styles.summaryCopy}>
+              先看 live 房間目錄，再在右側檢查詳情與執行操作。每次介入都會寫回「最近變更」。
+            </p>
+
+            <div className={styles.liveRoomShell}>
+              <div className={styles.liveRoomDirectory} data-live-room-directory="true">
+                {liveRooms.length === 0 ? (
+                  <div className={styles.liveRoomEmpty}>
+                    <strong>目前沒有 live 房間</strong>
+                    <span>
+                      還沒有可檢查的房間。等待玩家開房，或先建立一個測試房後再重新整理。
+                    </span>
+                  </div>
+                ) : (
+                  liveRooms.map((room) => {
+                    const isSelected = room.roomNo === selectedLiveRoomNo;
+
+                    return (
+                      <article
+                        key={room.roomNo}
+                        className={`${styles.liveRoomRow} ${
+                          isSelected ? styles.liveRoomRowSelected : ""
+                        }`.trim()}
+                        data-live-room-row={room.roomNo}
+                        data-room-availability={room.availability}
+                      >
+                        <button
+                          type="button"
+                          className={styles.liveRoomRowSelect}
+                          onClick={() => selectLiveRoom(room.roomNo)}
+                        >
+                          <div className={styles.liveRoomRowHead}>
+                            <strong>{room.title}</strong>
+                            <span className={styles.scopeChip}>
+                              {getAvailabilityLabel(room.availability)}
+                            </span>
+                          </div>
+                          <div className={styles.liveRoomRowMeta}>
+                            <span>
+                              {room.roomNo} · {getFamilyLabel(room.familyKey)} ·{" "}
+                              {room.occupancy.humans}/{room.occupancy.total} 在房
+                            </span>
+                            <span>{formatTimestamp(room.lastActiveAt)}</span>
+                          </div>
+                        </button>
+                        <div className={styles.liveRoomRowActionBar}>
+                          <button
+                            className="ghost-button"
+                            type="button"
+                            data-room-action="inspect"
+                            disabled={savingKey === `live-room:inspect:${room.roomNo}`}
+                            onClick={() => inspectLiveRoom(room.roomNo, room.availability)}
+                          >
+                            {savingKey === `live-room:inspect:${room.roomNo}`
+                              ? "同步中..."
+                              : "查看房間詳情"}
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className={styles.liveRoomDetailPane}>
+                {selectedLiveRoomDetail ? (
+                  <div
+                    className={styles.liveRoomDetail}
+                    data-live-room-detail={selectedLiveRoomDetail.roomNo}
+                    data-room-availability={selectedLiveRoomDetail.availability}
+                  >
+                    <div className={styles.liveRoomDetailHead}>
+                      <div>
+                        <h3>{selectedLiveRoomDetail.title}</h3>
+                        <p>
+                          {selectedLiveRoomDetail.roomNo} ·{" "}
+                          {getFamilyLabel(selectedLiveRoomDetail.familyKey)} ·{" "}
+                          {selectedLiveRoomDetail.visibility === "private" ? "私密房" : "公開房"}
+                        </p>
+                      </div>
+                      <span className={styles.scopeChip}>
+                        {getAvailabilityLabel(selectedLiveRoomDetail.availability)}
+                      </span>
+                    </div>
+
+                    <div className={styles.liveRoomStats}>
+                      <div>
+                        <strong>{selectedLiveRoomDetail.runtimeHealth.humanOccupants}</strong>
+                        <span>真人</span>
+                      </div>
+                      <div>
+                        <strong>{selectedLiveRoomDetail.runtimeHealth.botOccupants}</strong>
+                        <span>AI</span>
+                      </div>
+                      <div>
+                        <strong>{selectedLiveRoomDetail.runtimeHealth.connectedHumans}</strong>
+                        <span>連線中</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.liveRoomConfigList}>
+                      {selectedLiveRoomDetail.configSummary.length > 0 ? (
+                        selectedLiveRoomDetail.configSummary.map((item) => (
+                          <div key={item.key} className={styles.liveRoomConfigItem}>
+                            <strong>{item.label}</strong>
+                            <span>{item.value}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.liveRoomConfigItem}>
+                          <strong>恢復狀態</strong>
+                          <span>目前只剩入口快照，暫無 live runtime 可檢查。</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={styles.liveRoomActionBarWide}>
+                      <button
+                        className="ghost-button"
+                        type="button"
+                        data-room-action="drain"
+                        disabled={
+                          !selectedLiveRoomDetail.actions.drain ||
+                          savingKey === `live-room:drain:${selectedLiveRoomDetail.roomNo}`
+                        }
+                        onClick={() => beginRoomAction("drain")}
+                      >
+                        排空房間
+                      </button>
+                      <button
+                        className="primary-button"
+                        type="button"
+                        data-room-action="close"
+                        disabled={
+                          !selectedLiveRoomDetail.actions.close ||
+                          savingKey === `live-room:close:${selectedLiveRoomDetail.roomNo}`
+                        }
+                        onClick={() => beginRoomAction("close")}
+                      >
+                        關閉房間
+                      </button>
+                    </div>
+
+                    {roomConfirm.action === "drain" ? (
+                      <div
+                        className={styles.liveRoomConfirm}
+                        data-room-action-confirm="drain"
+                      >
+                        <strong>排空房間</strong>
+                        <p>
+                          排空後會阻止新加入，並讓現有玩家走完離場流程。輸入房號確認。
+                        </p>
+                        <input
+                          value={roomConfirm.value}
+                          onChange={(event) =>
+                            setRoomConfirm((current) => ({
+                              ...current,
+                              value: event.target.value
+                            }))
+                          }
+                          placeholder={selectedLiveRoomDetail.roomNo}
+                        />
+                        <div className={styles.liveRoomInlineActions}>
+                          <button
+                            className="ghost-button"
+                            type="button"
+                            onClick={() => setRoomConfirm(EMPTY_ROOM_CONFIRM)}
+                          >
+                            取消
+                          </button>
+                          <button
+                            className="primary-button"
+                            type="button"
+                            onClick={submitRoomAction}
+                          >
+                            確認排空
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {roomConfirm.action === "close" ? (
+                      <div
+                        className={styles.liveRoomConfirm}
+                        data-room-action-confirm="close"
+                      >
+                        <strong>關閉房間</strong>
+                        <p>關閉會立即終止這個 live 房。輸入 CLOSE 確認。</p>
+                        <input
+                          value={roomConfirm.value}
+                          onChange={(event) =>
+                            setRoomConfirm((current) => ({
+                              ...current,
+                              value: event.target.value
+                            }))
+                          }
+                          placeholder="CLOSE"
+                        />
+                        <div className={styles.liveRoomInlineActions}>
+                          <button
+                            className="ghost-button"
+                            type="button"
+                            onClick={() => setRoomConfirm(EMPTY_ROOM_CONFIRM)}
+                          >
+                            取消
+                          </button>
+                          <button
+                            className="primary-button"
+                            type="button"
+                            onClick={submitRoomAction}
+                          >
+                            立即關閉
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className={styles.liveRoomOccupants}>
+                      <div className={styles.liveRoomOccupantsHead}>
+                        <strong>房內身份</strong>
+                        <span>
+                          {selectedLiveRoomDetail.occupants.length} 個席位可供檢查
+                        </span>
+                      </div>
+
+                      {selectedLiveRoomDetail.occupants.length === 0 ? (
+                        <div className={styles.liveRoomEmpty}>
+                          <strong>目前沒有可顯示的房內身份</strong>
+                          <span>房間已關閉，或目前只剩恢復快照。</span>
+                        </div>
+                      ) : (
+                        selectedLiveRoomDetail.occupants.map((occupant) => (
+                          <div
+                            key={occupant.occupantId}
+                            className={styles.liveRoomOccupant}
+                            data-room-occupant={occupant.occupantId}
+                          >
+                            <div className={styles.liveRoomOccupantMeta}>
+                              <strong>
+                                {occupant.displayName}
+                                {occupant.isOwner ? " · 房主" : ""}
+                                {occupant.isBot ? " · AI" : ""}
+                              </strong>
+                              <span>
+                                座位 {occupant.seatIndex + 1} ·{" "}
+                                {getPresenceLabel(occupant.presenceState)}
+                              </span>
+                            </div>
+
+                            {occupant.canRemove ? (
+                              <div className={styles.liveRoomOccupantActions}>
+                                <button
+                                  className="ghost-button"
+                                  type="button"
+                                  data-room-occupant-action="remove"
+                                  disabled={
+                                    savingKey ===
+                                    `live-room:remove:${selectedLiveRoomDetail.roomNo}:${occupant.occupantId}`
+                                  }
+                                  onClick={() =>
+                                    setPendingOccupantRemoval((current) =>
+                                      current === occupant.occupantId ? "" : occupant.occupantId
+                                    )
+                                  }
+                                >
+                                  移除玩家
+                                </button>
+                                {pendingOccupantRemoval === occupant.occupantId ? (
+                                  <div
+                                    className={styles.liveRoomConfirm}
+                                    data-room-action-confirm="remove-occupant"
+                                  >
+                                    <strong>移除玩家</strong>
+                                    <p>
+                                      移除後該身份會離開目前房間；遊客必須重新透過有效邀請入場。
+                                    </p>
+                                    <div className={styles.liveRoomInlineActions}>
+                                      <button
+                                        className="ghost-button"
+                                        type="button"
+                                        onClick={() => setPendingOccupantRemoval("")}
+                                      >
+                                        取消
+                                      </button>
+                                      <button
+                                        className="primary-button"
+                                        type="button"
+                                        onClick={() =>
+                                          submitOccupantRemoval(occupant.occupantId)
+                                        }
+                                      >
+                                        再次點擊移除玩家
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.liveRoomEmpty}>
+                    <strong>先選一個房間</strong>
+                    <span>選取左側房間後，這裡會顯示 config、runtime 與房內身份。</span>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
 
@@ -622,9 +1137,94 @@ function normalizeRuntimeDraft(controls) {
   };
 }
 
+function pickPreferredRoomNo(items, currentRoomNo) {
+  if (items.some((item) => item.roomNo === currentRoomNo)) {
+    return currentRoomNo;
+  }
+
+  return items[0]?.roomNo || "";
+}
+
+function summarizeLiveRoom(room) {
+  return {
+    roomNo: room.roomNo,
+    familyKey: room.familyKey,
+    gameKey: room.gameKey,
+    title: room.title,
+    strapline: room.strapline,
+    availability: room.availability,
+    roomState: room.roomState,
+    visibility: room.visibility,
+    detailRoute: room.detailRoute,
+    lastActiveAt: room.lastActiveAt,
+    ownerId: room.ownerId,
+    occupancy: {
+      total: room.runtimeHealth?.totalOccupants || room.occupancy?.total || 0,
+      humans: room.runtimeHealth?.humanOccupants || room.occupancy?.humans || 0,
+      bots: room.runtimeHealth?.botOccupants || room.occupancy?.bots || 0,
+      connectedHumans:
+        room.runtimeHealth?.connectedHumans || room.occupancy?.connectedHumans || 0
+    }
+  };
+}
+
+function upsertLiveRoomSummary(currentItems, room) {
+  const summary = summarizeLiveRoom(room);
+  const existingIndex = currentItems.findIndex((item) => item.roomNo === room.roomNo);
+  if (existingIndex === -1) {
+    return [summary, ...currentItems];
+  }
+
+  return currentItems.map((item) => (item.roomNo === room.roomNo ? summary : item));
+}
+
 function getRuntimeValue(controls, key, fallbackValue) {
   const match = controls.find((item) => item.key === key);
   return match ? match.value : fallbackValue;
+}
+
+function getFamilyLabel(familyKey) {
+  if (familyKey === "card") {
+    return "牌桌";
+  }
+
+  if (familyKey === "party") {
+    return "派對";
+  }
+
+  if (familyKey === "board") {
+    return "棋盤";
+  }
+
+  return familyKey || "未知";
+}
+
+function getAvailabilityLabel(availability) {
+  if (availability === "snapshot-only") {
+    return "恢復快照";
+  }
+
+  if (availability === "draining") {
+    return "排空中";
+  }
+
+  if (availability === "closed") {
+    return "已關閉";
+  }
+
+  return "Live";
+}
+
+function getPresenceLabel(presenceState) {
+  if (presenceState === "reconnecting") {
+    return "恢復中";
+  }
+
+  if (presenceState === "disconnected") {
+    return "已離線";
+  }
+
+  return "連線中";
 }
 
 function formatAuditOperator(item) {

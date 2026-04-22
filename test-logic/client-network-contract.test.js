@@ -149,6 +149,7 @@ test("route builders cover representative auth, room, board, and admin endpoints
   assert.equal(API_ROUTES.cardRooms.detail("830512"), "/api/rooms/830512");
   assert.equal(API_ROUTES.boardRooms.join("B-204"), "/api/board/rooms/B-204/join");
   assert.equal(API_ROUTES.admin.config(), "/api/admin/config");
+  assert.equal(API_ROUTES.admin.liveRooms.detail("830512"), "/api/admin/live-rooms/830512");
 });
 
 test("frontend origin detection matches any split-port frontend host", () => {

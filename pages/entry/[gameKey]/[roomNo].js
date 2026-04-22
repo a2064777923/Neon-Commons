@@ -16,7 +16,7 @@ export default function RoomEntryPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const isSnapshotOnly = entry?.availability === "snapshot-only";
-  const canAutoEnterLiveRoom = entry?.availability !== "snapshot-only";
+  const canAutoEnterLiveRoom = !entry?.availability || entry.availability === "live";
 
   useEffect(() => {
     if (!gameKey || !roomNo) {
@@ -142,7 +142,10 @@ export default function RoomEntryPage() {
               {loading ? "正在解析邀請" : entry?.title || "遊戲入口"}
             </strong>
             {entry ? (
-              <div className={styles.loginUnlockList}>
+              <div
+                className={styles.loginUnlockList}
+                data-room-availability={entry.availability || "live"}
+              >
                 <article className={styles.loginUnlockItem}>
                   <strong>房號</strong>
                   <span>{entry.roomNo}</span>
@@ -199,10 +202,11 @@ export default function RoomEntryPage() {
                 <button
                   type="button"
                   className="primary-button"
-                  disabled={busy || loading || isSnapshotOnly}
+                  data-entry-action="guest"
+                  disabled={busy || loading || !canAutoEnterLiveRoom}
                   onClick={enterAsGuest}
                 >
-                  {isSnapshotOnly ? "房間恢復中" : busy ? "入場中..." : "以遊客進入"}
+                  {getGuestEntryLabel({ busy, canAutoEnterLiveRoom, isSnapshotOnly })}
                 </button>
               ) : (
                 <button type="button" className="secondary-button" disabled>
@@ -213,21 +217,28 @@ export default function RoomEntryPage() {
               <button
                 type="button"
                 className="primary-button"
-                disabled={busy || loading || isSnapshotOnly}
+                data-entry-action="login"
+                disabled={busy || loading || !canAutoEnterLiveRoom}
                 onClick={enterWithLogin}
               >
-                {isSnapshotOnly ? "等待房間恢復" : "登入後進入"}
+                {getLoginEntryLabel({ canAutoEnterLiveRoom, isSnapshotOnly })}
               </button>
             </div>
 
             {isSnapshotOnly ? (
-              <p className={styles.entryNotice}>房間恢復完成前，這個入口只會顯示狀態，不會自動進房或補發遊客身份。</p>
+              <p className={styles.entryNotice} data-entry-notice="snapshot-only">
+                房間恢復完成前，這個入口只會顯示狀態，不會自動進房或補發遊客身份。
+              </p>
             ) : null}
             {!isSnapshotOnly && session?.kind === "user" ? (
-              <p className={styles.entryNotice}>已檢測到可恢復的登入身份，系統會自動帶你回到房內。</p>
+              <p className={styles.entryNotice} data-entry-notice="recovery">
+                已檢測到可恢復的登入身份，系統會自動帶你回到房內。
+              </p>
             ) : null}
             {!isSnapshotOnly && session?.kind === "guest" ? (
-              <p className={styles.entryNotice}>你已經持有這個房間的遊客身份，正在恢復這個席位。</p>
+              <p className={styles.entryNotice} data-entry-notice="guest-recovery">
+                你已經持有這個房間的遊客身份，正在恢復這個席位。
+              </p>
             ) : null}
             {error ? <p className="error-text">{error}</p> : null}
           </article>
@@ -252,5 +263,25 @@ export default function RoomEntryPage() {
 }
 
 function canEnterLiveRoom(entry) {
-  return entry?.availability !== "snapshot-only";
+  return !entry?.availability || entry.availability === "live";
+}
+
+function getGuestEntryLabel({ busy, canAutoEnterLiveRoom, isSnapshotOnly }) {
+  if (busy) {
+    return "入場中...";
+  }
+
+  if (!canAutoEnterLiveRoom) {
+    return isSnapshotOnly ? "房間恢復中" : "房間暫停進場";
+  }
+
+  return "以遊客進入";
+}
+
+function getLoginEntryLabel({ canAutoEnterLiveRoom, isSnapshotOnly }) {
+  if (!canAutoEnterLiveRoom) {
+    return isSnapshotOnly ? "等待房間恢復" : "等待重新開放";
+  }
+
+  return "登入後進入";
 }
