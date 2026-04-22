@@ -4,6 +4,7 @@ const { Server } = require("socket.io");
 const { isAllowedSocketOrigin, resolveCorsOrigin } = require("./cors");
 const { initializeDatabase } = require("../lib/db");
 const { loadRoomDirectorySnapshots } = require("../lib/rooms/directory");
+const { loadSystemConfigCache, getRoomExpiryMs } = require("../lib/system-config");
 const { registerSocketHandlers } = require("../lib/socket-server");
 const { createRouter } = require("./router");
 
@@ -27,7 +28,8 @@ start()
 
 async function start() {
   await initializeDatabaseWithRetry();
-  await loadRoomDirectorySnapshots();
+  await loadSystemConfigCache();
+  await loadRoomDirectorySnapshots({ pruneOlderThanMs: getRoomExpiryMs() });
 
   const server = http.createServer((req, res) => {
     applyCors(req, res);

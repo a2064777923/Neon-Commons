@@ -1,6 +1,7 @@
 const { requireAdmin } = require("../../../../lib/auth");
 const { query } = require("../../../../lib/db");
 const { methodNotAllowed, parseBody } = require("../../../../lib/http");
+const { setSystemConfigValue } = require("../../../../lib/system-config");
 const {
   AUTH_SCOPES,
   API_ROUTE_PATTERNS,
@@ -45,6 +46,7 @@ async function handler(req, res) {
       `,
       [body.key, JSON.stringify(body.value)]
     );
+    setSystemConfigValue(body.key, body.value);
 
     await query(
       `

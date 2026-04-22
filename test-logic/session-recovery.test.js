@@ -49,10 +49,24 @@ function clearReconnectTimers(manager) {
   manager.reconnectTimers.clear();
 }
 
+function clearRoomExpiryTimers(manager) {
+  if (!manager?.roomExpiryTimers) {
+    return;
+  }
+
+  for (const timer of manager.roomExpiryTimers.values()) {
+    clearTimeout(timer);
+  }
+  manager.roomExpiryTimers.clear();
+}
+
 function resetLiveRoomState() {
   clearReconnectTimers(global.ddzRoomManager);
   clearReconnectTimers(global.partyRoomManager);
   clearReconnectTimers(global.boardRoomManager);
+  clearRoomExpiryTimers(global.ddzRoomManager);
+  clearRoomExpiryTimers(global.partyRoomManager);
+  clearRoomExpiryTimers(global.boardRoomManager);
   directoryTesting.resetRoomDirectory();
   delete global.ddzRoomManager;
   delete global.partyRoomManager;
