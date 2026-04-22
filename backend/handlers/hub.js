@@ -4,6 +4,10 @@ const { getRoomManager } = require("../../lib/game/room-manager");
 const { getPartyRoomManager } = require("../../lib/party/manager");
 const { getBoardRoomManager } = require("../../lib/board/manager");
 const {
+  getRoomEntryAvailability,
+  listPublicRoomEntries
+} = require("../../lib/rooms/directory");
+const {
   buildCapabilitySummary,
   buildHubFamilies,
   getCapabilityState
@@ -105,7 +109,7 @@ async function getLeaderboardPreview() {
 }
 
 async function loadPublicRoomGroups() {
-  const cardRooms = normalizeRoomGroup(
+  const cardRooms = normalizeLiveRoomGroup(
     getRoomManager()
       .listPublicRooms()
       .map((room) => ({
@@ -119,18 +123,24 @@ async function loadPublicRoomGroups() {
         createdAt: room.createdAt
       }))
   );
-  const partyRooms = normalizeRoomGroup(getPartyRoomManager().listPublicRooms());
-  const boardRooms = normalizeRoomGroup(getBoardRoomManager().listPublicRooms());
+  const partyRooms = normalizeLiveRoomGroup(getPartyRoomManager().listPublicRooms());
+  const boardRooms = normalizeLiveRoomGroup(getBoardRoomManager().listPublicRooms());
+  const snapshotGroups = groupSnapshotOnlyRoomEntries(listPublicRoomEntries());
 
-  return [cardRooms, partyRooms, boardRooms];
+  return [
+    mergeRoomGroups(cardRooms, snapshotGroups.card),
+    mergeRoomGroups(partyRooms, snapshotGroups.party),
+    mergeRoomGroups(boardRooms, snapshotGroups.board)
+  ];
 }
 
-function normalizeRoomGroup(rooms = []) {
+function normalizeLiveRoomGroup(rooms = []) {
   return rooms
     .filter((room) => (room.visibility || room.config?.visibility || "public") !== "private")
     .map((room) => {
       const gameKey = room.gameKey || "doudezhu";
       const meta = getGameMeta(gameKey) || {};
+      const entryRoute = getGameSharePath(gameKey, room.roomNo);
       const detailRoute = `${meta.detailRoutePrefix || "/"}${meta.detailRoutePrefix ? "/" : ""}${room.roomNo}`.replace(
         /\/+/g,
         "/"
@@ -146,13 +156,78 @@ function normalizeRoomGroup(rooms = []) {
         visibility: room.visibility || room.config?.visibility || "public",
         playerCount: Number(room.playerCount || room.players?.length || 0),
         createdAt: room.createdAt || null,
+        availability: "live",
         detailRoute,
+        entryRoute,
         sharePath: meta.supportsShareLink ? getGameSharePath(gameKey, room.roomNo) : ""
       };
     });
 }
 
+function groupSnapshotOnlyRoomEntries(entries = []) {
+  const grouped = {
+    card: [],
+    party: [],
+    board: []
+  };
+
+  for (const entry of entries) {
+    const availability = getRoomEntryAvailability(entry);
+    if (availability !== "snapshot-only") {
+      continue;
+    }
+
+    const gameKey = entry.gameKey || "doudezhu";
+    const meta = getGameMeta(gameKey) || {};
+    const familyKey = entry.familyKey || getGameMode(gameKey);
+    if (!grouped[familyKey]) {
+      continue;
+    }
+
+    const entryRoute = getGameSharePath(gameKey, entry.roomNo);
+    grouped[familyKey].push({
+      roomNo: entry.roomNo,
+      gameKey,
+      familyKey,
+      title: entry.title || meta.title || "公開房",
+      strapline: entry.strapline || meta.strapline || "",
+      roomState: entry.state || "waiting",
+      visibility: entry.visibility || "public",
+      playerCount: Array.isArray(entry.memberIds) ? entry.memberIds.length : 0,
+      createdAt: entry.restoredAt || entry.updatedAt || null,
+      availability,
+      detailRoute: entry.detailRoute,
+      entryRoute,
+      sharePath: entry.supportsShareLink ? entryRoute : ""
+    });
+  }
+
+  return grouped;
+}
+
+function mergeRoomGroups(liveRooms = [], snapshotRooms = []) {
+  const merged = new Map();
+
+  for (const room of liveRooms) {
+    merged.set(room.roomNo, room);
+  }
+
+  for (const room of snapshotRooms) {
+    if (!merged.has(room.roomNo)) {
+      merged.set(room.roomNo, room);
+    }
+  }
+
+  return [...merged.values()];
+}
+
 function compareLiveRooms(left, right) {
+  const leftLive = left.availability === "live" ? 1 : 0;
+  const rightLive = right.availability === "live" ? 1 : 0;
+  if (leftLive !== rightLive) {
+    return rightLive - leftLive;
+  }
+
   const leftActive = left.roomState === "playing" ? 1 : 0;
   const rightActive = right.roomState === "playing" ? 1 : 0;
   if (leftActive !== rightActive) {
@@ -167,6 +242,12 @@ function compareLiveRooms(left, right) {
 }
 
 function compareFeaturedRooms(left, right) {
+  const leftLive = left.availability === "live" ? 1 : 0;
+  const rightLive = right.availability === "live" ? 1 : 0;
+  if (leftLive !== rightLive) {
+    return rightLive - leftLive;
+  }
+
   if (left.playerCount !== right.playerCount) {
     return right.playerCount - left.playerCount;
   }

@@ -238,16 +238,19 @@ export default function HomePage() {
                   liveFeed.map((room) => (
                     <Link
                       key={`${room.gameKey}-${room.roomNo}`}
-                      href={room.sharePath || room.detailRoute}
-                      className={styles.feedItem}
+                      href={getFeedHref(room)}
+                      className={`${styles.feedItem} ${
+                        room.availability === "snapshot-only" ? styles.feedItemRecovery : ""
+                      }`.trim()}
                     >
                       <div>
                         <strong>{room.title}</strong>
                         <span>
                           {room.roomNo} · {room.playerCount} 人
+                          {room.availability === "snapshot-only" ? " · 重啟恢復中" : ""}
                         </span>
                       </div>
-                      <em>{room.roomState === "playing" ? "對局中" : "待開局"}</em>
+                      <em>{getFeedStatusLabel(room)}</em>
                     </Link>
                   ))
                 ) : (
@@ -335,6 +338,7 @@ export default function HomePage() {
                         shareRooms.map((room) => (
                           <option key={room.roomNo} value={room.roomNo}>
                             {room.title} · {room.roomNo}
+                            {room.availability === "snapshot-only" ? " · 恢復中" : ""}
                           </option>
                         ))
                       ) : (
@@ -573,6 +577,18 @@ function buildAbsoluteUrl(path) {
   }
 
   return new URL(path, window.location.origin).toString();
+}
+
+function getFeedHref(room) {
+  return room.entryRoute || room.sharePath || room.detailRoute;
+}
+
+function getFeedStatusLabel(room) {
+  if (room.availability === "snapshot-only") {
+    return "恢復中";
+  }
+
+  return room.roomState === "playing" ? "對局中" : "待開局";
 }
 
 function formatNumber(value) {

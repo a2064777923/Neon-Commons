@@ -15,6 +15,8 @@ export default function RoomEntryPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const isSnapshotOnly = entry?.availability === "snapshot-only";
+  const canAutoEnterLiveRoom = entry?.availability !== "snapshot-only";
 
   useEffect(() => {
     if (!gameKey || !roomNo) {
@@ -48,12 +50,16 @@ export default function RoomEntryPage() {
       setSession(nextSession);
       setLoading(false);
 
-      if (nextSession?.kind === "user") {
+      if (canEnterLiveRoom(entryData) && nextSession?.kind === "user") {
         await autoEnter(entryData.joinRoute, entryData.detailRoute);
         return;
       }
 
-      if (nextSession?.kind === "guest" && canRecoverRoomSession(nextSession, entryData)) {
+      if (
+        canEnterLiveRoom(entryData) &&
+        nextSession?.kind === "guest" &&
+        canRecoverRoomSession(nextSession, entryData)
+      ) {
         router.replace(entryData.detailRoute);
       }
     }
@@ -85,7 +91,7 @@ export default function RoomEntryPage() {
   }
 
   async function enterAsGuest() {
-    if (!entry) {
+    if (!entry || !canAutoEnterLiveRoom) {
       return;
     }
 
@@ -111,6 +117,10 @@ export default function RoomEntryPage() {
   }
 
   function enterWithLogin() {
+    if (!canAutoEnterLiveRoom) {
+      return;
+    }
+
     router.push(`/login?returnTo=${encodeURIComponent(`/entry/${gameKey}/${roomNo}`)}`);
   }
 
@@ -138,12 +148,22 @@ export default function RoomEntryPage() {
                   <span>{entry.roomNo}</span>
                 </article>
                 <article className={styles.loginUnlockItem}>
+                  <strong>房間狀態</strong>
+                  <span>{isSnapshotOnly ? "重啟恢復中" : "可直接進場"}</span>
+                </article>
+                <article className={styles.loginUnlockItem}>
                   <strong>房間類型</strong>
                   <span>{entry.visibility === "private" ? "私密房" : "公開房"}</span>
                 </article>
                 <article className={styles.loginUnlockItem}>
                   <strong>進場方式</strong>
-                  <span>{entry.guestAllowed ? "可選遊客或登入" : "僅限登入玩家"}</span>
+                  <span>
+                    {isSnapshotOnly
+                      ? "恢復快照可見，但暫停進場"
+                      : entry.guestAllowed
+                        ? "可選遊客或登入"
+                        : "僅限登入玩家"}
+                  </span>
                 </article>
               </div>
             ) : null}
@@ -165,7 +185,9 @@ export default function RoomEntryPage() {
                 <p>
                   {error
                     ? error
-                    : entry?.guestAllowed
+                    : isSnapshotOnly
+                      ? "這個房間目前只恢復了單機重啟後的入口快照。你可以先保留邀請，但要等 live 房重新建立後才能真正進場。"
+                      : entry?.guestAllowed
                       ? "這是一個可遊客進入的私密房，你可以先遊玩，結束後再選擇登入同步紀錄。"
                       : "這個入口需要先登入帳號，系統會把你直接帶回這個房間。"}
                 </p>
@@ -177,10 +199,10 @@ export default function RoomEntryPage() {
                 <button
                   type="button"
                   className="primary-button"
-                  disabled={busy || loading}
+                  disabled={busy || loading || isSnapshotOnly}
                   onClick={enterAsGuest}
                 >
-                  {busy ? "入場中..." : "以遊客進入"}
+                  {isSnapshotOnly ? "房間恢復中" : busy ? "入場中..." : "以遊客進入"}
                 </button>
               ) : (
                 <button type="button" className="secondary-button" disabled>
@@ -188,15 +210,23 @@ export default function RoomEntryPage() {
                 </button>
               )}
 
-              <button type="button" className="primary-button" disabled={busy || loading} onClick={enterWithLogin}>
-                登入後進入
+              <button
+                type="button"
+                className="primary-button"
+                disabled={busy || loading || isSnapshotOnly}
+                onClick={enterWithLogin}
+              >
+                {isSnapshotOnly ? "等待房間恢復" : "登入後進入"}
               </button>
             </div>
 
-            {session?.kind === "user" ? (
+            {isSnapshotOnly ? (
+              <p className={styles.entryNotice}>房間恢復完成前，這個入口只會顯示狀態，不會自動進房或補發遊客身份。</p>
+            ) : null}
+            {!isSnapshotOnly && session?.kind === "user" ? (
               <p className={styles.entryNotice}>已檢測到可恢復的登入身份，系統會自動帶你回到房內。</p>
             ) : null}
-            {session?.kind === "guest" ? (
+            {!isSnapshotOnly && session?.kind === "guest" ? (
               <p className={styles.entryNotice}>你已經持有這個房間的遊客身份，正在恢復這個席位。</p>
             ) : null}
             {error ? <p className="error-text">{error}</p> : null}
@@ -205,9 +235,9 @@ export default function RoomEntryPage() {
           <aside className={`${styles.noteCard} ${styles.loginNoteCard}`.trim()}>
             <strong>這個入口會怎麼處理</strong>
             <div className={styles.noteList}>
-              <span>已登入玩家會直接進入對應遊戲與房間。</span>
+              <span>{isSnapshotOnly ? "恢復中的房間會先停在這個入口頁，不會直接帶你進 live 房。" : "已登入玩家會直接進入對應遊戲與房間。"}</span>
               <span>遊客只限私密邀請與非排行榜流程，不能拿來開房或進後台。</span>
-              <span>遊戲結束後可選擇登入並同步本局紀錄。</span>
+              <span>{isSnapshotOnly ? "等房主或玩家把 live 房重新開起來後，再回到這個入口即可。" : "遊戲結束後可選擇登入並同步本局紀錄。"}</span>
             </div>
             <div className={styles.ctaRow}>
               <Link href="/" className="secondary-link">
@@ -219,4 +249,8 @@ export default function RoomEntryPage() {
       </div>
     </SiteLayout>
   );
+}
+
+function canEnterLiveRoom(entry) {
+  return entry?.availability !== "snapshot-only";
 }

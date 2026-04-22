@@ -5,7 +5,10 @@ const {
   signGuestToken
 } = require("../../../lib/auth");
 const { methodNotAllowed, parseBody } = require("../../../lib/http");
-const { resolveRoomEntry } = require("../../../lib/rooms/directory");
+const {
+  getRoomEntryAvailability,
+  resolveRoomEntry
+} = require("../../../lib/rooms/directory");
 const { getRoomManager } = require("../../../lib/game/room-manager");
 const { getPartyRoomManager } = require("../../../lib/party/manager");
 const { getBoardRoomManager } = require("../../../lib/board/manager");
@@ -14,6 +17,7 @@ const {
   API_ROUTE_PATTERNS,
   createHandlerContract
 } = require("../../../lib/shared/network-contract");
+const { createSnapshotOnlyRoomPayload } = require("./resolve");
 
 async function handler(req, res) {
   if (req.method !== "POST") {
@@ -31,6 +35,12 @@ async function handler(req, res) {
   const entry = resolveRoomEntry(roomNo, { gameKeyHint });
   if (!entry) {
     return res.status(404).json({ error: "找不到這個房間" });
+  }
+
+  if (getRoomEntryAvailability(entry) !== "live") {
+    return res.status(409).json(
+      createSnapshotOnlyRoomPayload(entry, "房間正在從單機重啟中恢復，暫時不能建立遊客席位。")
+    );
   }
 
   if (entry.gameKey === "doudezhu") {

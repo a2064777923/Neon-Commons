@@ -10,8 +10,10 @@ const {
 } = require("../lib/auth");
 const controlPlane = require("../lib/admin/control-plane");
 const {
+  ROOM_DIRECTORY_SNAPSHOT_SOURCES,
   __testing: directoryTesting,
   listShareableRoomsForUser,
+  registerRoomEntry,
   resolveRoomEntry
 } = require("../lib/rooms/directory");
 const { getRoomManager } = require("../lib/game/room-manager");
@@ -215,12 +217,13 @@ test("room-entry resolve and shareable handlers return exact deep-link payloads"
   );
 
   assert.equal(resolveResponse.statusCode, 200);
-  assert.deepEqual(Object.keys(resolveResponse.jsonBody).slice(0, 8), [
+  assert.deepEqual(Object.keys(resolveResponse.jsonBody).slice(0, 9), [
     "familyKey",
     "gameKey",
     "roomNo",
     "detailRoute",
     "joinRoute",
+    "availability",
     "roomState",
     "visibility",
     "guestAllowed"
@@ -789,7 +792,215 @@ test("room detail handlers expose one aligned recovery contract across card, par
   );
 });
 
+test("snapshot-only discovery and detail flows expose one recovery-aware availability contract", async () => {
+  resetLiveRoomState();
+
+  registerRoomEntry({
+    roomNo: "410001",
+    familyKey: "card",
+    gameKey: "doudezhu",
+    title: "恢復中的牌桌",
+    strapline: "等待 live 房恢復",
+    detailRoute: "/room/410001",
+    joinRoute: "/api/rooms/410001/join",
+    visibility: "public",
+    ownerId: 141,
+    state: "waiting",
+    supportsShareLink: true,
+    guestAllowed: false,
+    memberIds: [141],
+    source: ROOM_DIRECTORY_SNAPSHOT_SOURCES.SNAPSHOT,
+    restoredAt: "2026-04-22T13:20:00.000Z"
+  });
+  registerRoomEntry({
+    roomNo: "410002",
+    familyKey: "party",
+    gameKey: "werewolf",
+    title: "恢復中的狼人房",
+    strapline: "等待 live 房恢復",
+    detailRoute: "/party/410002",
+    joinRoute: "/api/party/rooms/410002/join",
+    visibility: "private",
+    ownerId: 141,
+    state: "waiting",
+    supportsShareLink: true,
+    guestAllowed: true,
+    memberIds: [141, "guest_party_snapshot"],
+    source: ROOM_DIRECTORY_SNAPSHOT_SOURCES.SNAPSHOT,
+    restoredAt: "2026-04-22T13:21:00.000Z"
+  });
+  registerRoomEntry({
+    roomNo: "410003",
+    familyKey: "board",
+    gameKey: "gomoku",
+    title: "恢復中的棋盤房",
+    strapline: "等待 live 房恢復",
+    detailRoute: "/board/410003",
+    joinRoute: "/api/board/rooms/410003/join",
+    visibility: "private",
+    ownerId: 141,
+    state: "waiting",
+    supportsShareLink: true,
+    guestAllowed: true,
+    memberIds: [141],
+    source: ROOM_DIRECTORY_SNAPSHOT_SOURCES.SNAPSHOT,
+    restoredAt: "2026-04-22T13:22:00.000Z"
+  });
+
+  const hubHandler = loadWithMocks("./backend/handlers/hub.js", {
+    "./lib/db": {
+      query: async (text) => {
+        if (String(text).includes("FROM users")) {
+          return { rows: [] };
+        }
+
+        if (String(text).includes("FROM system_configs")) {
+          return { rows: [] };
+        }
+
+        return { rows: [] };
+      }
+    }
+  });
+  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {});
+  const shareableHandler = loadWithMocks("./backend/handlers/room-entry/shareable.js", {
+    "./lib/auth": {
+      requireUser: async () => ({ id: 141 })
+    }
+  });
+  const guestHandler = loadWithMocks("./backend/handlers/room-entry/guest.js", {});
+  const cardHandler = loadWithMocks("./backend/handlers/rooms/[roomNo]/index.js", {
+    "./lib/auth": {
+      getSessionFromRequest: async () => null
+    }
+  });
+  const partyHandler = loadWithMocks("./backend/handlers/party/rooms/[roomNo]/index.js", {
+    "./lib/auth": {
+      getSessionFromRequest: async () => null
+    }
+  });
+  const boardHandler = loadWithMocks("./backend/handlers/board/rooms/[roomNo]/index.js", {
+    "./lib/auth": {
+      getSessionFromRequest: async () => null
+    }
+  });
+
+  const hubResponse = createMockResponse();
+  await hubHandler({ method: "GET", headers: {} }, hubResponse);
+  assert.equal(hubResponse.statusCode, 200);
+  const hubSnapshot = hubResponse.jsonBody.liveFeed.find((room) => room.roomNo === "410001");
+  assert.ok(hubSnapshot);
+  assert.equal(hubSnapshot.availability, "snapshot-only");
+  assert.equal(hubSnapshot.entryRoute, "/entry/doudezhu/410001");
+
+  const resolveResponse = createMockResponse();
+  await resolveHandler(
+    {
+      method: "GET",
+      query: { roomNo: "410002", gameKeyHint: "werewolf" },
+      headers: {}
+    },
+    resolveResponse
+  );
+  assert.equal(resolveResponse.statusCode, 200);
+  assert.equal(resolveResponse.jsonBody.availability, "snapshot-only");
+  assert.equal(resolveResponse.jsonBody.shareUrl, "/entry/werewolf/410002");
+
+  const shareableResponse = createMockResponse();
+  await shareableHandler({ method: "GET", headers: {} }, shareableResponse);
+  assert.equal(shareableResponse.statusCode, 200);
+  const shareableSnapshot = shareableResponse.jsonBody.items.find((item) => item.roomNo === "410002");
+  assert.ok(shareableSnapshot);
+  assert.equal(shareableSnapshot.availability, "snapshot-only");
+
+  const guestResponse = createMockResponse();
+  await guestHandler(
+    {
+      method: "POST",
+      body: {
+        roomNo: "410003",
+        gameKey: "gomoku",
+        displayName: "恢復中遊客"
+      },
+      headers: {}
+    },
+    guestResponse
+  );
+  assert.equal(guestResponse.statusCode, 409);
+  assert.deepEqual(guestResponse.jsonBody, {
+    error: "房間正在從單機重啟中恢復，暫時不能建立遊客席位。",
+    availability: "snapshot-only",
+    roomNo: "410003",
+    gameKey: "gomoku"
+  });
+
+  const cardResponse = createMockResponse();
+  await cardHandler(
+    {
+      method: "GET",
+      query: { roomNo: "410001" },
+      headers: {}
+    },
+    cardResponse
+  );
+  assert.equal(cardResponse.statusCode, 409);
+  assert.deepEqual(cardResponse.jsonBody, {
+    error: "房間正在從單機重啟中恢復，暫時不能直接進入。",
+    availability: "snapshot-only",
+    roomNo: "410001",
+    gameKey: "doudezhu"
+  });
+
+  const partyResponse = createMockResponse();
+  await partyHandler(
+    {
+      method: "GET",
+      query: { roomNo: "410002" },
+      headers: {}
+    },
+    partyResponse
+  );
+  assert.equal(partyResponse.statusCode, 409);
+  assert.deepEqual(partyResponse.jsonBody, {
+    error: "房間正在從單機重啟中恢復，暫時不能直接進入。",
+    availability: "snapshot-only",
+    roomNo: "410002",
+    gameKey: "werewolf"
+  });
+
+  const boardResponse = createMockResponse();
+  await boardHandler(
+    {
+      method: "GET",
+      query: { roomNo: "410003" },
+      headers: {}
+    },
+    boardResponse
+  );
+  assert.equal(boardResponse.statusCode, 409);
+  assert.deepEqual(boardResponse.jsonBody, {
+    error: "房間正在從單機重啟中恢復，暫時不能直接進入。",
+    availability: "snapshot-only",
+    roomNo: "410003",
+    gameKey: "gomoku"
+  });
+
+  const missingResponse = createMockResponse();
+  await cardHandler(
+    {
+      method: "GET",
+      query: { roomNo: "419999" },
+      headers: {}
+    },
+    missingResponse
+  );
+  assert.equal(missingResponse.statusCode, 404);
+  assert.equal(missingResponse.jsonBody.error, "房間不存在");
+});
+
 test("/api/hub returns unified family discovery payload without hiding paused live rooms", async () => {
+  resetLiveRoomState();
+
   const handler = loadWithMocks("./backend/handlers/hub.js", {
     "./lib/db": {
       query: async (text, params = []) => {

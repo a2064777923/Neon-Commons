@@ -1,11 +1,16 @@
 const { methodNotAllowed } = require("../../../lib/http");
 const { getGameSharePath } = require("../../../lib/games/catalog");
-const { resolveRoomEntry } = require("../../../lib/rooms/directory");
+const {
+  getRoomEntryAvailability,
+  resolveRoomEntry
+} = require("../../../lib/rooms/directory");
 const {
   AUTH_SCOPES,
   API_ROUTE_PATTERNS,
   createHandlerContract
 } = require("../../../lib/shared/network-contract");
+
+const SNAPSHOT_ONLY_ROOM_ERROR = "房間正在從單機重啟中恢復，暫時不能直接進入。";
 
 async function handler(req, res) {
   if (req.method !== "GET") {
@@ -33,12 +38,22 @@ function serializeRoomEntry(entry) {
     roomNo: entry.roomNo,
     detailRoute: entry.detailRoute,
     joinRoute: entry.joinRoute,
+    availability: getRoomEntryAvailability(entry),
     roomState: entry.state,
     visibility: entry.visibility,
     guestAllowed: entry.guestAllowed,
     shareUrl: getGameSharePath(entry.gameKey, entry.roomNo),
     title: entry.title,
     strapline: entry.strapline
+  };
+}
+
+function createSnapshotOnlyRoomPayload(entry, error = SNAPSHOT_ONLY_ROOM_ERROR) {
+  return {
+    error,
+    availability: getRoomEntryAvailability(entry),
+    roomNo: entry.roomNo,
+    gameKey: entry.gameKey
   };
 }
 
@@ -53,3 +68,5 @@ module.exports = handler;
 module.exports.default = handler;
 module.exports.contract = handler.contract;
 module.exports.serializeRoomEntry = serializeRoomEntry;
+module.exports.createSnapshotOnlyRoomPayload = createSnapshotOnlyRoomPayload;
+module.exports.SNAPSHOT_ONLY_ROOM_ERROR = SNAPSHOT_ONLY_ROOM_ERROR;

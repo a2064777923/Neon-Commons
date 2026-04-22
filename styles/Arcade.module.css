@@ -308,6 +308,11 @@
   padding: 14px;
 }
 
+.feedItemRecovery {
+  border-style: dashed;
+  background: rgba(14, 18, 28, 0.78);
+}
+
 .feedItem strong,
 .rankItem span,
 .compactHead h3 {
@@ -323,6 +328,10 @@
   color: #ffd898;
   font-style: normal;
   font-weight: 700;
+}
+
+.feedItemRecovery em {
+  color: #ffb37b;
 }
 
 .emptyFeed {
