@@ -19,7 +19,15 @@ const {
 const { getRoomManager } = require("../lib/game/room-manager");
 const { getBoardRoomManager } = require("../lib/board/manager");
 const { getPartyRoomManager } = require("../lib/party/manager");
+const { getDefaultAvailabilityControls } = require("../lib/shared/availability");
 const { SOCKET_EVENTS } = require("../lib/shared/network-contract");
+
+function createAvailabilityControlPlaneMock(overrides = {}) {
+  return {
+    getAvailabilityControls: async () => getDefaultAvailabilityControls(),
+    ...overrides
+  };
+}
 
 test("discovery catalog surfaces approved upcoming games and exact hub card states", () => {
   const capabilities = controlPlane.normalizeCapabilityState({ werewolf: false });
@@ -205,7 +213,9 @@ test("room-entry resolve and shareable handlers return exact deep-link payloads"
   });
   partyManager.joinRoom(partyRoom.roomNo, joiner);
 
-  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {});
+  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
+  });
   const resolveResponse = createMockResponse();
   await resolveHandler(
     {
@@ -255,7 +265,9 @@ test("paused-new-room games keep existing rooms joinable while new creation stay
     maxPlayers: 8
   });
 
-  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {});
+  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
+  });
   const resolveResponse = createMockResponse();
   await resolveHandler(
     {
@@ -689,7 +701,8 @@ test("room detail handlers expose one aligned recovery contract across card, par
   const cardHandler = loadWithMocks("./backend/handlers/rooms/[roomNo]/index.js", {
     "./lib/auth": {
       getSessionFromRequest: async () => owner
-    }
+    },
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
   });
   const partyHandler = loadWithMocks("./backend/handlers/party/rooms/[roomNo]/index.js", {
     "./lib/auth": {
@@ -701,7 +714,8 @@ test("room detail handlers expose one aligned recovery contract across card, par
         gameKey: "werewolf",
         roomNo: partyRoom.roomNo
       })
-    }
+    },
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
   });
   const boardHandler = loadWithMocks("./backend/handlers/board/rooms/[roomNo]/index.js", {
     "./lib/auth": {
@@ -713,7 +727,8 @@ test("room detail handlers expose one aligned recovery contract across card, par
         gameKey: "gomoku",
         roomNo: boardRoom.roomNo
       })
-    }
+    },
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
   });
 
   const cardResponse = createMockResponse();
@@ -862,7 +877,9 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
       }
     }
   });
-  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {});
+  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
+  });
   const shareableHandler = loadWithMocks("./backend/handlers/room-entry/shareable.js", {
     "./lib/auth": {
       requireUser: async () => ({ id: 141 })
@@ -872,17 +889,20 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
   const cardHandler = loadWithMocks("./backend/handlers/rooms/[roomNo]/index.js", {
     "./lib/auth": {
       getSessionFromRequest: async () => null
-    }
+    },
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
   });
   const partyHandler = loadWithMocks("./backend/handlers/party/rooms/[roomNo]/index.js", {
     "./lib/auth": {
       getSessionFromRequest: async () => null
-    }
+    },
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
   });
   const boardHandler = loadWithMocks("./backend/handlers/board/rooms/[roomNo]/index.js", {
     "./lib/auth": {
       getSessionFromRequest: async () => null
-    }
+    },
+    "./lib/admin/control-plane": createAvailabilityControlPlaneMock()
   });
 
   const hubResponse = createMockResponse();
@@ -892,6 +912,8 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
   assert.ok(hubSnapshot);
   assert.equal(hubSnapshot.availability, "snapshot-only");
   assert.equal(hubSnapshot.entryRoute, "/entry/doudezhu/410001");
+  assert.equal(hubSnapshot.degradedState.state, "healthy");
+  assert.equal(hubSnapshot.degradedState.subsystems.entry.state, "healthy");
 
   const resolveResponse = createMockResponse();
   await resolveHandler(
@@ -905,6 +927,7 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
   assert.equal(resolveResponse.statusCode, 200);
   assert.equal(resolveResponse.jsonBody.availability, "snapshot-only");
   assert.equal(resolveResponse.jsonBody.shareUrl, "/entry/werewolf/410002");
+  assert.equal(resolveResponse.jsonBody.degradedState.subsystems.voice.state, "healthy");
 
   const shareableResponse = createMockResponse();
   await shareableHandler({ method: "GET", headers: {} }, shareableResponse);
@@ -948,7 +971,49 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
     error: "房間正在從單機重啟中恢復，暫時不能直接進入。",
     availability: "snapshot-only",
     roomNo: "410001",
-    gameKey: "doudezhu"
+    gameKey: "doudezhu",
+    degradedState: {
+      state: "healthy",
+      label: "正常",
+      familyKey: "card",
+      roomAvailability: "snapshot-only",
+      subsystems: {
+        entry: {
+          subsystem: "entry",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false
+        },
+        realtime: {
+          subsystem: "realtime",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false
+        },
+        voice: {
+          subsystem: "voice",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false,
+          supported: false
+        }
+      }
+    }
   });
 
   const partyResponse = createMockResponse();
@@ -965,7 +1030,48 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
     error: "房間正在從單機重啟中恢復，暫時不能直接進入。",
     availability: "snapshot-only",
     roomNo: "410002",
-    gameKey: "werewolf"
+    gameKey: "werewolf",
+    degradedState: {
+      state: "healthy",
+      label: "正常",
+      familyKey: "party",
+      roomAvailability: "snapshot-only",
+      subsystems: {
+        entry: {
+          subsystem: "entry",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false
+        },
+        realtime: {
+          subsystem: "realtime",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false
+        },
+        voice: {
+          subsystem: "voice",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false
+        }
+      }
+    }
   });
 
   const boardResponse = createMockResponse();
@@ -982,7 +1088,49 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
     error: "房間正在從單機重啟中恢復，暫時不能直接進入。",
     availability: "snapshot-only",
     roomNo: "410003",
-    gameKey: "gomoku"
+    gameKey: "gomoku",
+    degradedState: {
+      state: "healthy",
+      label: "正常",
+      familyKey: "board",
+      roomAvailability: "snapshot-only",
+      subsystems: {
+        entry: {
+          subsystem: "entry",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false
+        },
+        realtime: {
+          subsystem: "realtime",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false
+        },
+        voice: {
+          subsystem: "voice",
+          state: "healthy",
+          label: "正常",
+          reasonCode: "",
+          message: "",
+          safeActions: [],
+          scope: "global",
+          familyKey: "",
+          configured: false,
+          supported: false
+        }
+      }
+    }
   });
 
   const missingResponse = createMockResponse();
@@ -996,6 +1144,86 @@ test("snapshot-only discovery and detail flows expose one recovery-aware availab
   );
   assert.equal(missingResponse.statusCode, 404);
   assert.equal(missingResponse.jsonBody.error, "房間不存在");
+});
+
+test("availability controls attach an additive degraded-state envelope without overwriting room availability truth", async () => {
+  resetLiveRoomState();
+
+  registerRoomEntry({
+    roomNo: "510002",
+    familyKey: "party",
+    gameKey: "werewolf",
+    title: "受控狼人房",
+    strapline: "入口受控",
+    detailRoute: "/party/510002",
+    joinRoute: "/api/party/rooms/510002/join",
+    visibility: "private",
+    ownerId: 141,
+    state: "waiting",
+    supportsShareLink: true,
+    guestAllowed: true,
+    memberIds: [141]
+  });
+
+  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {
+    "./lib/db": {
+      query: async (_text, params = []) => {
+        if (Array.isArray(params[0])) {
+          return {
+            rows: [
+              {
+                key: "availabilityControls",
+                value: {
+                  families: {
+                    party: {
+                      entry: {
+                        state: "blocked",
+                        reasonCode: "party-entry-drain",
+                        message: "派對房入口維護中，請先保留邀請。",
+                        safeActions: ["wait", "share-link"],
+                        configured: true
+                      },
+                      voice: {
+                        state: "degraded",
+                        reasonCode: "party-voice-unstable",
+                        message: "派對語音不穩定，可先文字溝通。",
+                        safeActions: ["retry", "continue-text-only"],
+                        configured: true
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          };
+        }
+
+        return { rows: [] };
+      }
+    }
+  });
+
+  const resolveResponse = createMockResponse();
+  await resolveHandler(
+    {
+      method: "GET",
+      query: { roomNo: "510002", gameKeyHint: "werewolf" },
+      headers: {}
+    },
+    resolveResponse
+  );
+
+  assert.equal(resolveResponse.statusCode, 200);
+  assert.equal(resolveResponse.jsonBody.availability, "live");
+  assert.equal(resolveResponse.jsonBody.degradedState.state, "blocked");
+  assert.equal(resolveResponse.jsonBody.degradedState.subsystems.entry.state, "blocked");
+  assert.equal(resolveResponse.jsonBody.degradedState.subsystems.entry.scope, "family");
+  assert.equal(resolveResponse.jsonBody.degradedState.subsystems.entry.familyKey, "party");
+  assert.equal(resolveResponse.jsonBody.degradedState.subsystems.voice.state, "degraded");
+  assert.deepEqual(resolveResponse.jsonBody.degradedState.subsystems.voice.safeActions, [
+    "retry",
+    "continue-text-only"
+  ]);
 });
 
 test("/api/hub returns unified family discovery payload without hiding paused live rooms", async () => {

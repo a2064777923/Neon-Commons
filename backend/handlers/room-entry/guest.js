@@ -17,7 +17,6 @@ const {
   API_ROUTE_PATTERNS,
   createHandlerContract
 } = require("../../../lib/shared/network-contract");
-const { createSnapshotOnlyRoomPayload } = require("./resolve");
 
 async function handler(req, res) {
   if (req.method !== "POST") {
@@ -38,9 +37,12 @@ async function handler(req, res) {
   }
 
   if (getRoomEntryAvailability(entry) !== "live") {
-    return res.status(409).json(
-      createSnapshotOnlyRoomPayload(entry, "房間正在從單機重啟中恢復，暫時不能建立遊客席位。")
-    );
+    return res.status(409).json({
+      error: "房間正在從單機重啟中恢復，暫時不能建立遊客席位。",
+      availability: getRoomEntryAvailability(entry),
+      roomNo: entry.roomNo,
+      gameKey: entry.gameKey
+    });
   }
 
   if (entry.gameKey === "doudezhu") {

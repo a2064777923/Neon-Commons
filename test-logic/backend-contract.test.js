@@ -11,6 +11,7 @@ const {
   SOCKET_EVENTS,
   getContractAuthScope
 } = require("../lib/shared/network-contract");
+const { getDefaultAvailabilityControls } = require("../lib/shared/availability");
 
 const HANDLERS_DIR = path.join(__dirname, "..", "backend", "handlers");
 
@@ -92,6 +93,49 @@ test("representative public, user, and admin routes keep expected method/auth be
   });
   assert.equal(adminResult.statusCode, 401);
   assert.match(adminResult.json.error, /未登入|登录已失效/);
+});
+
+test("runtime and room-entry handlers keep additive degraded-state payloads without changing route contracts", async () => {
+  const availabilityControls = getDefaultAvailabilityControls();
+  availabilityControls.families.party.voice = {
+    state: "blocked",
+    reasonCode: "party-voice-maintenance",
+    message: "語音維護中，請先文字溝通。",
+    safeActions: ["continue-text-only", "wait"],
+    configured: true
+  };
+
+  await withPatchedModuleExports(
+    [
+      [
+        "../lib/auth",
+        {
+          requireAdmin: async () => ({ id: 9, role: "admin" })
+        }
+      ],
+      [
+        "../lib/admin/control-plane",
+        {
+          getRuntimeControls: async () => ({
+            maxOpenRoomsPerUser: 3,
+            maintenanceMode: false
+          }),
+          getAvailabilityControls: async () => availabilityControls
+        }
+      ]
+    ],
+    async () => {
+      const runtimeHandler = loadFreshModule("../backend/handlers/admin/runtime/index.js");
+      const runtimeResponse = createHandlerResponse();
+
+      await runtimeHandler({ method: "GET", headers: {} }, runtimeResponse);
+
+      assert.equal(runtimeResponse.statusCode, 200);
+      assert.ok(runtimeResponse.payload.availabilityControls);
+      assert.ok(Array.isArray(runtimeResponse.payload.availabilityControlList));
+      assert.equal(runtimeResponse.payload.availabilityControls.families.party.voice.state, "blocked");
+    }
+  );
 });
 
 test("admin template updates reject unsupported LAIZI activation before persistence", async () => {

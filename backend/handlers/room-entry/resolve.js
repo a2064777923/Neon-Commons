@@ -1,9 +1,11 @@
 const { methodNotAllowed } = require("../../../lib/http");
 const { getGameSharePath } = require("../../../lib/games/catalog");
+const { getAvailabilityControls } = require("../../../lib/admin/control-plane");
 const {
   getRoomEntryAvailability,
   resolveRoomEntry
 } = require("../../../lib/rooms/directory");
+const { buildAvailabilityEnvelope } = require("../../../lib/shared/availability");
 const {
   AUTH_SCOPES,
   API_ROUTE_PATTERNS,
@@ -28,32 +30,51 @@ async function handler(req, res) {
     return res.status(404).json({ error: "找不到這個房間" });
   }
 
-  return res.status(200).json(serializeRoomEntry(entry));
+  const availabilityControls = await getAvailabilityControls();
+  return res.status(200).json(serializeRoomEntry(entry, availabilityControls));
 }
 
-function serializeRoomEntry(entry) {
+function serializeRoomEntry(entry, availabilityControls = {}) {
+  const availability = getRoomEntryAvailability(entry);
   return {
     familyKey: entry.familyKey,
     gameKey: entry.gameKey,
     roomNo: entry.roomNo,
     detailRoute: entry.detailRoute,
     joinRoute: entry.joinRoute,
-    availability: getRoomEntryAvailability(entry),
+    availability,
     roomState: entry.state,
     visibility: entry.visibility,
     guestAllowed: entry.guestAllowed,
     shareUrl: getGameSharePath(entry.gameKey, entry.roomNo),
     title: entry.title,
-    strapline: entry.strapline
+    strapline: entry.strapline,
+    degradedState: buildAvailabilityEnvelope({
+      controls: availabilityControls,
+      familyKey: entry.familyKey,
+      roomAvailability: availability,
+      supportsVoice: entry.familyKey === "party"
+    })
   };
 }
 
-function createSnapshotOnlyRoomPayload(entry, error = SNAPSHOT_ONLY_ROOM_ERROR) {
+function createSnapshotOnlyRoomPayload(
+  entry,
+  error = SNAPSHOT_ONLY_ROOM_ERROR,
+  availabilityControls = {}
+) {
+  const availability = getRoomEntryAvailability(entry);
   return {
     error,
-    availability: getRoomEntryAvailability(entry),
+    availability,
     roomNo: entry.roomNo,
-    gameKey: entry.gameKey
+    gameKey: entry.gameKey,
+    degradedState: buildAvailabilityEnvelope({
+      controls: availabilityControls,
+      familyKey: entry.familyKey,
+      roomAvailability: availability,
+      supportsVoice: entry.familyKey === "party"
+    })
   };
 }
 

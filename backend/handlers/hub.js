@@ -8,6 +8,7 @@ const {
   listPublicRoomEntries
 } = require("../../lib/rooms/directory");
 const {
+  getAvailabilityControls,
   buildCapabilitySummary,
   buildHubFamilies,
   getCapabilityState
@@ -17,6 +18,7 @@ const {
   getGameMode,
   getGameSharePath
 } = require("../../lib/games/catalog");
+const { buildAvailabilityEnvelope } = require("../../lib/shared/availability");
 const {
   AUTH_SCOPES,
   API_ROUTE_PATTERNS,
@@ -28,8 +30,9 @@ async function handler(req, res) {
     return methodNotAllowed(res, ["GET"]);
   }
 
-  const [capabilities, leaderboardPreview, roomGroups] = await Promise.all([
+  const [capabilities, availabilityControls, leaderboardPreview, roomGroups] = await Promise.all([
     getCapabilityState(),
+    getAvailabilityControls(),
     getLeaderboardPreview(),
     loadPublicRoomGroups()
   ]);
@@ -45,11 +48,13 @@ async function handler(req, res) {
     liveFeed: publicRooms
       .slice()
       .sort(compareLiveRooms)
-      .slice(0, 6),
+      .slice(0, 6)
+      .map((room) => attachDegradedState(room, availabilityControls)),
     featuredRooms: publicRooms
       .slice()
       .sort(compareFeaturedRooms)
-      .slice(0, 6),
+      .slice(0, 6)
+      .map((room) => attachDegradedState(room, availabilityControls)),
     leaderboardPreview,
     universalEntry: {
       heading: "遊戲入口",
@@ -219,6 +224,18 @@ function mergeRoomGroups(liveRooms = [], snapshotRooms = []) {
   }
 
   return [...merged.values()];
+}
+
+function attachDegradedState(room, availabilityControls) {
+  return {
+    ...room,
+    degradedState: buildAvailabilityEnvelope({
+      controls: availabilityControls,
+      familyKey: room.familyKey,
+      roomAvailability: room.availability,
+      supportsVoice: room.familyKey === "party"
+    })
+  };
 }
 
 function compareLiveRooms(left, right) {
