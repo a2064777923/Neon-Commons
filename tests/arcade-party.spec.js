@@ -18,74 +18,81 @@ test.afterEach(async () => {
 test("arcade portal and party room creation smoke", async ({ page }) => {
   test.slow();
   page.setDefaultTimeout(30000);
+  let werewolfRoomNo = "";
+  let avalonRoomNo = "";
 
-  await registerFreshUser(page, FRONTEND_BASE_URL, "partysmoke");
+  try {
+    await registerFreshUser(page, FRONTEND_BASE_URL, "partysmoke");
 
-  await expect(page.getByRole("heading", { name: "遊戲入口", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "遊戲家族", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "遊戲入口", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "遊戲家族", exact: true })).toBeVisible();
 
-  await page.goto(`${FRONTEND_BASE_URL}/games/werewolf`);
-  await expect(page.getByRole("heading", { name: "在线狼人杀", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "返回遊戲家族" }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "複製邀請" }).first()).toBeVisible();
-  await page.getByLabel("角色預設").selectOption("casual");
-  await page.getByLabel("房内沟通").selectOption("text");
-  await page.getByLabel("猎人反击秒数").fill("25");
-  await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("輕量局");
-  await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("文字房");
-  await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("村民 x3");
-  await page.getByRole("button", { name: /立即开/ }).click();
-  await expect(page).toHaveURL(/\/party\/\d{6}$/);
-  const werewolfRoomNo = page.url().match(/\/party\/(\d{6})$/)[1];
-  await waitForPartyRoomReady(page, werewolfRoomNo);
-  await expect(page.locator('[data-party-config="true"]')).toContainText("輕量局");
-  await expect(page.locator('[data-party-config="true"]')).toContainText("文字房");
-  await expect(page.locator('[data-party-config="true"]')).toContainText("猎人反击 25s");
-  await expect(page.locator('[data-party-config="true"]')).toContainText("村民 x3");
-  await expect(page.getByRole("button", { name: "接通语音" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "准备开局" })).toBeVisible();
-  await page.getByRole("button", { name: "准备开局" }).click();
-  for (let count = 0; count < 5; count += 1) {
-    await page.getByRole("button", { name: "补机器人" }).click();
+    await page.goto(`${FRONTEND_BASE_URL}/games/werewolf`);
+    await expect(page.getByRole("heading", { name: "在线狼人杀", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "返回遊戲家族" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "複製邀請" }).first()).toBeVisible();
+    await page.getByLabel("角色預設").selectOption("casual");
+    await page.getByLabel("房内沟通").selectOption("text");
+    await page.getByLabel("猎人反击秒数").fill("25");
+    await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("輕量局");
+    await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("文字房");
+    await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("村民 x3");
+    werewolfRoomNo = await createPrivatePartyRoom(page, "werewolf", { navigate: false });
+    await waitForPartyRoomReady(page, werewolfRoomNo);
+    await expect(page.locator('[data-party-config="true"]')).toContainText("輕量局");
+    await expect(page.locator('[data-party-config="true"]')).toContainText("文字房");
+    await expect(page.locator('[data-party-config="true"]')).toContainText("猎人反击 25s");
+    await expect(page.locator('[data-party-config="true"]')).toContainText("村民 x3");
+    await expect(page.getByRole("button", { name: "接通语音" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "准备开局" })).toBeVisible();
+    await page.getByRole("button", { name: "准备开局" }).click();
+    for (let count = 0; count < 5; count += 1) {
+      await page.getByRole("button", { name: "补机器人" }).click();
+    }
+    await expect(page.getByText("对局进行中")).toBeVisible();
+    await expect(
+      page.getByText(/夜色已落，神职与狼人开始行动|天亮发言，打开语音互相试探|公开投票阶段|猎人翻枪，局势正在瞬间改写/)
+    ).toBeVisible();
+    await waitForConnectedPresence(page);
+    await page.reload();
+    await expect(page).toHaveURL(new RegExp(`/party/${werewolfRoomNo}$`));
+    await waitForPartyRoomReady(page, werewolfRoomNo);
+    await expect(page.getByText("对局进行中")).toBeVisible({ timeout: 15000 });
+    await waitForConnectedPresence(page);
+
+    await page.goto(`${FRONTEND_BASE_URL}/games/avalon`);
+    await expect(page.getByRole("heading", { name: "在线阿瓦隆", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "返回遊戲家族" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "複製邀請" }).first()).toBeVisible();
+    await page.getByLabel("人数上限").fill("8");
+    await page.getByLabel("角色預設").selectOption("classic");
+    await page.getByLabel("房内沟通").selectOption("text");
+    await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("經典局");
+    await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("爪牙");
+    await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("文字房");
+    avalonRoomNo = await createPrivatePartyRoom(page, "avalon", { navigate: false });
+    await waitForPartyRoomReady(page, avalonRoomNo);
+    await expect(page.locator('[data-party-config="true"]')).toContainText("經典局");
+    await expect(page.locator('[data-party-config="true"]')).toContainText("爪牙");
+    await expect(page.locator('[data-party-config="true"]')).toContainText("文字房");
+    await expect(page.getByRole("button", { name: "接通语音" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "准备开局" })).toBeVisible();
+    await page.getByRole("button", { name: "准备开局" }).click();
+    for (let count = 0; count < 4; count += 1) {
+      await page.getByRole("button", { name: "补机器人" }).click();
+    }
+    await expect(page.getByText("对局进行中")).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByText(/队长正在组队|全员表决当前小队|任务成员暗投任务牌|刺客锁定梅林/)
+    ).toBeVisible();
+  } finally {
+    if (avalonRoomNo) {
+      await closeAdminLiveRoom(avalonRoomNo).catch(() => {});
+    }
+    if (werewolfRoomNo) {
+      await closeAdminLiveRoom(werewolfRoomNo).catch(() => {});
+    }
   }
-  await expect(page.getByText("对局进行中")).toBeVisible();
-  await expect(
-    page.getByText(/夜色已落，神职与狼人开始行动|天亮发言，打开语音互相试探|公开投票阶段|猎人翻枪，局势正在瞬间改写/)
-  ).toBeVisible();
-  await waitForConnectedPresence(page);
-  await page.reload();
-  await expect(page).toHaveURL(new RegExp(`/party/${werewolfRoomNo}$`));
-  await waitForPartyRoomReady(page, werewolfRoomNo);
-  await expect(page.getByText("对局进行中")).toBeVisible({ timeout: 15000 });
-  await waitForConnectedPresence(page);
-
-  await page.goto(`${FRONTEND_BASE_URL}/games/avalon`);
-  await expect(page.getByRole("heading", { name: "在线阿瓦隆", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "返回遊戲家族" }).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "複製邀請" }).first()).toBeVisible();
-  await page.getByLabel("人数上限").fill("8");
-  await page.getByLabel("角色預設").selectOption("classic");
-  await page.getByLabel("房内沟通").selectOption("text");
-  await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("經典局");
-  await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("爪牙");
-  await expect(page.locator('[data-party-role-pack="selected"]')).toContainText("文字房");
-  await page.getByRole("button", { name: /立即开/ }).click();
-  await expect(page).toHaveURL(/\/party\/\d{6}$/);
-  const avalonRoomNo = page.url().match(/\/party\/(\d{6})$/)[1];
-  await waitForPartyRoomReady(page, avalonRoomNo);
-  await expect(page.locator('[data-party-config="true"]')).toContainText("經典局");
-  await expect(page.locator('[data-party-config="true"]')).toContainText("爪牙");
-  await expect(page.locator('[data-party-config="true"]')).toContainText("文字房");
-  await expect(page.getByRole("button", { name: "接通语音" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "准备开局" })).toBeVisible();
-  await page.getByRole("button", { name: "准备开局" }).click();
-  for (let count = 0; count < 4; count += 1) {
-    await page.getByRole("button", { name: "补机器人" }).click();
-  }
-  await expect(page.getByText("对局进行中")).toBeVisible({ timeout: 15000 });
-  await expect(
-    page.getByText(/队长正在组队|全员表决当前小队|任务成员暗投任务牌|刺客锁定梅林/)
-  ).toBeVisible();
 });
 
 test("party room surfaces blocked voice guidance without freezing gameplay", async ({ page }) => {
@@ -231,8 +238,10 @@ test("party room surfaces blocked voice guidance without freezing gameplay", asy
   await expect(page.getByRole("button", { name: "准备开局" })).toBeVisible();
 });
 
-async function createPrivatePartyRoom(page, gameKey) {
-  await page.goto(`${FRONTEND_BASE_URL}/games/${gameKey}`);
+async function createPrivatePartyRoom(page, gameKey, options = {}) {
+  if (options.navigate !== false) {
+    await page.goto(`${FRONTEND_BASE_URL}/games/${gameKey}`);
+  }
   await expect(page.getByRole("button", { name: /立即开/ })).toBeVisible();
   const createResponsePromise = page.waitForResponse(
     (response) =>
@@ -275,7 +284,8 @@ async function setPartyVoiceAvailability(state) {
         }
       ]
     },
-    timeout: 15000
+    timeout: 12000,
+    attempts: 1
   });
 }
 
@@ -285,6 +295,7 @@ async function closeAdminLiveRoom(roomNo) {
     data: {
       action: "close"
     },
-    timeout: 15000
+    timeout: 12000,
+    attempts: 1
   });
 }

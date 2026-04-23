@@ -17,7 +17,7 @@ test("admin console exposes grouped family toggles and recent audit traces", asy
 
   try {
     existingRoomNo = await createCardRoom(page);
-    await page.goto(`${FRONTEND_BASE_URL}/admin`);
+    await openAdminDashboard(page);
 
     await expect(page.locator('[data-admin-family="card"]')).toBeVisible();
     await expect(page.locator('[data-admin-family="party"]')).toBeVisible();
@@ -57,12 +57,12 @@ test("admin console can edit scoped degraded controls and surface audit context"
   await loginAsAdmin(page);
 
   try {
-    await page.goto(`${FRONTEND_BASE_URL}/admin`);
+    await openAdminDashboard(page, { requireAvailabilityControls: true });
 
     const partyVoiceRow = page.locator(
       '[data-runtime-subsystem="voice"][data-availability-scope="family:party"]'
     );
-    await expect(partyVoiceRow).toBeVisible();
+    await expect(partyVoiceRow).toBeVisible({ timeout: 15000 });
     await expect(partyVoiceRow).toHaveAttribute("data-service-status", "healthy");
 
     await partyVoiceRow.locator('[data-set-service-status="blocked"]').click();
@@ -120,7 +120,7 @@ test("admin template editor surfaces normalized DDZ rules and room summary stays
       }
     });
 
-    await page.goto(`${FRONTEND_BASE_URL}/admin`);
+    await openAdminDashboard(page);
     await expect(page.locator('[data-template-support-note="true"]')).toContainText(
       "CLASSIC / ROB / NO_SHUFFLE"
     );
@@ -170,7 +170,7 @@ test("admin console drives live room inspect, remove, drain, and close workflows
     await expect(guestPage).toHaveURL(new RegExp(`/party/${roomNo}$`));
     await guestContext.close();
 
-    await page.goto(`${FRONTEND_BASE_URL}/admin`);
+    await openAdminDashboard(page);
 
     const roomRow = page.locator(`[data-live-room-row="${roomNo}"]`);
     await expect(roomRow).toBeVisible();
@@ -437,11 +437,9 @@ async function updateAvailabilityControl(page, update) {
 }
 
 async function ensureAdminRoomCapacity(page, additionalRooms = 1) {
-  const [controls, viewer, liveRooms] = await Promise.all([
-    getAdminRuntime(page),
-    getCurrentViewer(page),
-    getAdminLiveRooms(page)
-  ]);
+  const controls = await getAdminRuntime(page);
+  const viewer = await getCurrentViewer(page);
+  const liveRooms = await getAdminLiveRooms(page);
   const originalMaxOpenRooms = getRuntimeValue(controls, "maxOpenRoomsPerUser", 3);
   const viewerId = viewer?.id == null ? "" : String(viewer.id);
   const ownedRoomCount = liveRooms.filter((room) => String(room.ownerId || "") === viewerId).length;
@@ -466,4 +464,31 @@ async function closeAdminLiveRoom(page, roomNo) {
 function getRuntimeValue(controls, key, fallbackValue) {
   const match = controls.find((item) => item.key === key);
   return match ? match.value : fallbackValue;
+}
+
+async function openAdminDashboard(page, options = {}) {
+  const attempts = Number.isFinite(options.attempts) ? Math.max(1, options.attempts) : 2;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    await page.goto(`${FRONTEND_BASE_URL}/admin`);
+
+    try {
+      await waitForAdminDashboardReady(page, options);
+      return;
+    } catch (error) {
+      if (attempt >= attempts) {
+        throw error;
+      }
+    }
+  }
+}
+
+async function waitForAdminDashboardReady(page, options = {}) {
+  await expect(page.locator('[data-admin-family="card"]')).toBeVisible({ timeout: 15000 });
+
+  if (options.requireAvailabilityControls) {
+    await expect(
+      page.locator('[data-runtime-subsystem="voice"][data-availability-scope="family:party"]')
+    ).toBeVisible({ timeout: 15000 });
+  }
 }

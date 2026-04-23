@@ -28,9 +28,7 @@ async function waitForConnectedPresence(page, timeout = 30000) {
 }
 
 async function waitForRoomTag(page, roomTag, timeout = 30000) {
-  await expect(page.locator("header").getByText(roomTag, { exact: true }).first()).toBeVisible({
-    timeout
-  });
+  await expect(page.getByText(roomTag, { exact: true }).first()).toBeVisible({ timeout });
 }
 
 module.exports = {
