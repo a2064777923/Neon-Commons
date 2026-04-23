@@ -1,12 +1,12 @@
 ---
-status: complete
+status: diagnosed
 phase: 11-availability-signals-degraded-modes
 source:
   - 11-01-SUMMARY.md
   - 11-02-SUMMARY.md
   - 11-03-SUMMARY.md
 started: 2026-04-23T10:22:30+08:00
-updated: 2026-04-23T11:56:33+08:00
+updated: 2026-04-23T12:02:23+08:00
 ---
 
 ## Current Test
@@ -45,9 +45,21 @@ blocked: 0
 ## Gaps
 
 - truth: "When a family or subsystem is degraded/blocked, the hub card and `/entry/[gameKey]/[roomNo]` should use the same degraded vocabulary, show safe actions, and prevent risky auto-enter behavior instead of failing silently."
-  status: failed
+  status: diagnosed
   reason: "User reported: 誰是臥底不要單純用打字交流吧，应該對应到該人時可以開咪講話也對"
   severity: major
   test: 2
-  artifacts: []
-  missing: []
+  root_cause: "Phase 11 currently models party-family voice degradation with one generic fallback that can steer players toward `continue-text-only`, but `undercover` ships on a dedicated room route that advertises `voiceEnabled: true` while exposing no voice join/mute affordance or turn-scoped mic guidance. The backend already serializes party voice status for Undercover rooms, yet the dedicated UI ignores it, so the degraded contract and the actual room behavior drift apart."
+  artifacts:
+    - lib/shared/availability.js
+    - lib/games/catalog.js
+    - lib/party/manager.js
+    - backend/handlers/party/rooms/[roomNo]/index.js
+    - pages/undercover/[roomNo].js
+    - test-logic/hub-room-entry.test.js
+    - test-logic/backend-contract.test.js
+    - tests/undercover.spec.js
+  missing:
+    - "Make party voice safe-action guidance game-aware so `undercover` is not represented as text-only when `voiceEnabled` is true."
+    - "Expose truthful voice status and turn-scoped microphone affordances on `/undercover/[roomNo]`, reusing the existing party voice signaling instead of leaving the dedicated route without any mic path."
+    - "Add backend and browser coverage proving Undercover entry/room messaging stays aligned with the dedicated voice behavior."
