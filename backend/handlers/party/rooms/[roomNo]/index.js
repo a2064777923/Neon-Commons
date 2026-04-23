@@ -41,7 +41,8 @@ async function handler(req, res) {
         familyKey: "party",
         gameKey: serializedRoom.gameKey,
         roomAvailability: serializedRoom.availability,
-        supportsVoice: true
+        supportsVoice: true,
+        runtimeVoiceState: room.runtimeVoiceState
       })
     }
   });

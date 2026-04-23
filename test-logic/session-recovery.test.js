@@ -157,6 +157,14 @@ test("party room reconnect grace applies only to human seats and reconnect resto
   );
   const botSeat = serializedAfterDisconnect.players.find((player) => player.isBot);
 
+  assert.equal(serializedAfterDisconnect.voiceTransport.mode, "direct-preferred");
+  assert.equal(serializedAfterDisconnect.voiceTransport.reconnectGraceSeconds, 45);
+  assert.deepEqual(serializedAfterDisconnect.viewer.voiceRecovery, {
+    autoResumeEligible: false,
+    resumeMuted: true,
+    rejoinBy: null,
+    lastMode: "direct-preferred"
+  });
   assert.deepEqual(pickRecoveryFields(guestSeatAfterDisconnect), {
     connected: false,
     presenceState: "reconnecting",
@@ -180,6 +188,12 @@ test("party room reconnect grace applies only to human seats and reconnect resto
       reconnectGraceEndsAt: null
     }
   );
+  assert.deepEqual(manager.serializeRoom(room, guest.id).viewer.voiceRecovery, {
+    autoResumeEligible: false,
+    resumeMuted: true,
+    rejoinBy: null,
+    lastMode: "direct-preferred"
+  });
 });
 
 test("board room seats expire from reconnecting to disconnected after the grace window", async (t) => {

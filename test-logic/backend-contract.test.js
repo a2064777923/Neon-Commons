@@ -11,6 +11,8 @@ const {
   SOCKET_EVENTS,
   getContractAuthScope
 } = require("../lib/shared/network-contract");
+const { getPartyRoomManager } = require("../lib/party/manager");
+const { __testing: directoryTesting } = require("../lib/rooms/directory");
 const {
   buildAvailabilityEnvelope,
   getDefaultAvailabilityControls
@@ -175,6 +177,125 @@ test("shared availability contract keeps undercover voice guidance turn-aware", 
     "retry",
     "continue-text-only"
   ]);
+});
+
+test("runtime voice degradation can elevate availability without weakening operator blocks", () => {
+  const degradedEnvelope = buildAvailabilityEnvelope({
+    controls: getDefaultAvailabilityControls(),
+    familyKey: "party",
+    gameKey: "werewolf",
+    roomAvailability: "live",
+    supportsVoice: true,
+    runtimeVoiceState: {
+      state: "degraded",
+      reasonCode: "voice-relay-required",
+      message: "語音已切換為穩定模式。"
+    }
+  });
+  assert.equal(degradedEnvelope.subsystems.voice.state, "degraded");
+  assert.equal(degradedEnvelope.subsystems.voice.reasonCode, "voice-relay-required");
+  assert.match(degradedEnvelope.subsystems.voice.message, /穩定模式/);
+
+  const blockedControls = getDefaultAvailabilityControls();
+  blockedControls.families.party.voice = {
+    state: "blocked",
+    reasonCode: "party-voice-maintenance",
+    message: "語音維護中，請先文字溝通。",
+    safeActions: ["continue-text-only", "wait"],
+    configured: true
+  };
+  const blockedEnvelope = buildAvailabilityEnvelope({
+    controls: blockedControls,
+    familyKey: "party",
+    gameKey: "werewolf",
+    roomAvailability: "live",
+    supportsVoice: true,
+    runtimeVoiceState: {
+      state: "degraded",
+      reasonCode: "voice-relay-required",
+      message: "語音已切換為穩定模式。"
+    }
+  });
+
+  assert.equal(blockedEnvelope.subsystems.voice.state, "blocked");
+  assert.equal(blockedEnvelope.subsystems.voice.reasonCode, "party-voice-maintenance");
+  assert.match(blockedEnvelope.subsystems.voice.message, /文字溝通/);
+});
+
+test("party room detail keeps additive voice transport and recovery fields", async (t) => {
+  resetPartyRoomState();
+  t.after(resetPartyRoomState);
+
+  const manager = getPartyRoomManager();
+  const owner = { id: 901, username: "owner901", displayName: "Owner 901" };
+  const guest = { id: 902, username: "guest902", displayName: "Guest 902" };
+  const room = manager.createRoom(owner, "werewolf", {
+    visibility: "private",
+    maxPlayers: 8
+  });
+  manager.joinRoom(room.roomNo, guest);
+  room.runtimeVoiceState = {
+    state: "degraded",
+    reasonCode: "voice-relay-required",
+    message: "語音已切換為穩定模式。"
+  };
+
+  await withPatchedModuleExports(
+    [
+      [
+        "../lib/auth",
+        {
+          getSessionFromRequest: async () => ({ id: guest.id, kind: "user" })
+        }
+      ],
+      [
+        "../lib/admin/control-plane",
+        {
+          getAvailabilityControls: async () => getDefaultAvailabilityControls()
+        }
+      ]
+    ],
+    async () => {
+      const handler = loadFreshModule("../backend/handlers/party/rooms/[roomNo]/index.js");
+      const res = createHandlerResponse();
+
+      await handler(
+        {
+          method: "GET",
+          query: { roomNo: room.roomNo },
+          headers: {}
+        },
+        res
+      );
+
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.payload.room.roomNo, room.roomNo);
+      assert.ok(Array.isArray(res.payload.room.players));
+      assert.equal(res.payload.room.voiceTransport.mode, "direct-preferred");
+      assert.equal(res.payload.room.voiceTransport.runtimeState, "degraded");
+      assert.equal(res.payload.room.voiceTransport.stickyRelay, true);
+      assert.equal(res.payload.room.voiceTransport.startupProbeMs, 4000);
+      assert.equal(res.payload.room.voiceTransport.persistentFailureMs, 6000);
+      assert.equal(res.payload.room.voiceTransport.reconnectGraceSeconds, 45);
+      assert.equal(res.payload.room.voiceTransport.resumeMutedOnRecovery, true);
+      assert.deepEqual(res.payload.room.voiceTransport.iceServers, [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" }
+      ]);
+      assert.deepEqual(res.payload.room.viewer.voiceRecovery, {
+        autoResumeEligible: false,
+        resumeMuted: true,
+        rejoinBy: null,
+        lastMode: "direct-preferred"
+      });
+      assert.ok(res.payload.room.degradedState);
+      assert.equal(res.payload.room.degradedState.subsystems.voice.state, "degraded");
+      assert.equal(
+        res.payload.room.degradedState.subsystems.voice.reasonCode,
+        "voice-relay-required"
+      );
+    }
+  );
 });
 
 test("admin template updates reject unsupported LAIZI activation before persistence", async () => {
@@ -428,6 +549,24 @@ function createMockResponse() {
       this.writableEnded = true;
     }
   };
+}
+
+function clearTimerMap(timerMap) {
+  if (!timerMap) {
+    return;
+  }
+
+  for (const timer of timerMap.values()) {
+    clearTimeout(timer);
+  }
+  timerMap.clear();
+}
+
+function resetPartyRoomState() {
+  clearTimerMap(global.partyRoomManager?.reconnectTimers);
+  clearTimerMap(global.partyRoomManager?.roomExpiryTimers);
+  directoryTesting.resetRoomDirectory();
+  delete global.partyRoomManager;
 }
 
 function createHandlerResponse() {

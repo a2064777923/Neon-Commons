@@ -2,8 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const {
+  SOCKET_EVENTS,
   PRESENCE_STATES,
   RECOVERY_SCOPES,
+  VOICE_REPORT_REASONS,
+  VOICE_TRANSPORT_MODES,
   buildSeatRecoveryState,
   buildSessionRecoveryState
 } = require("../lib/shared/network-contract");
@@ -149,6 +152,20 @@ test("route builders cover representative auth, room, board, and admin endpoints
   assert.equal(API_ROUTES.boardRooms.join("B-204"), "/api/board/rooms/B-204/join");
   assert.equal(API_ROUTES.admin.config(), "/api/admin/config");
   assert.equal(API_ROUTES.admin.liveRooms.detail("830512"), "/api/admin/live-rooms/830512");
+});
+
+test("shared voice transport contract exposes stable fallback enums and report event", () => {
+  assert.deepEqual(VOICE_TRANSPORT_MODES, {
+    directPreferred: "direct-preferred",
+    relayRequired: "relay-required"
+  });
+  assert.deepEqual(VOICE_REPORT_REASONS, {
+    startupTimeout: "startup-timeout",
+    persistentDisconnect: "persistent-disconnect",
+    iceFailed: "ice-failed",
+    recovered: "recovered"
+  });
+  assert.equal(SOCKET_EVENTS.voice.report, "voice:report");
 });
 
 test("frontend origin detection matches any split-port frontend host", () => {
