@@ -11,7 +11,10 @@ const {
   SOCKET_EVENTS,
   getContractAuthScope
 } = require("../lib/shared/network-contract");
-const { getDefaultAvailabilityControls } = require("../lib/shared/availability");
+const {
+  buildAvailabilityEnvelope,
+  getDefaultAvailabilityControls
+} = require("../lib/shared/availability");
 
 const HANDLERS_DIR = path.join(__dirname, "..", "backend", "handlers");
 
@@ -136,6 +139,42 @@ test("runtime and room-entry handlers keep additive degraded-state payloads with
       assert.equal(runtimeResponse.payload.availabilityControls.families.party.voice.state, "blocked");
     }
   );
+});
+
+test("shared availability contract keeps undercover voice guidance turn-aware", () => {
+  const availabilityControls = getDefaultAvailabilityControls();
+  availabilityControls.families.party.voice = {
+    state: "degraded",
+    reasonCode: "party-voice-unstable",
+    message: "",
+    safeActions: [],
+    configured: true
+  };
+
+  const undercoverEnvelope = buildAvailabilityEnvelope({
+    controls: availabilityControls,
+    familyKey: "party",
+    gameKey: "undercover",
+    roomAvailability: "live",
+    supportsVoice: true
+  });
+  const werewolfEnvelope = buildAvailabilityEnvelope({
+    controls: availabilityControls,
+    familyKey: "party",
+    gameKey: "werewolf",
+    roomAvailability: "live",
+    supportsVoice: true
+  });
+
+  assert.deepEqual(undercoverEnvelope.subsystems.voice.safeActions, [
+    "retry",
+    "active-speaker-only"
+  ]);
+  assert.match(undercoverEnvelope.subsystems.voice.message, /輪到描述者再開咪/);
+  assert.deepEqual(werewolfEnvelope.subsystems.voice.safeActions, [
+    "retry",
+    "continue-text-only"
+  ]);
 });
 
 test("admin template updates reject unsupported LAIZI activation before persistence", async () => {

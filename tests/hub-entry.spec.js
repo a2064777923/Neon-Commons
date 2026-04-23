@@ -639,3 +639,174 @@ test("hub and room-entry render blocked entry guidance from the shared degraded 
   await expect(page.locator('[data-safe-action="share-link"]')).toContainText("保留邀請");
   await expect(page.locator('[data-entry-notice="blocked-entry"]')).toBeVisible();
 });
+
+test("hub and room-entry keep undercover voice guidance aligned with turn-based mic flow", async ({
+  page
+}) => {
+  page.setDefaultTimeout(30000);
+
+  await page.route("**/api/hub", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        families: [],
+        liveFeed: [
+          {
+            roomNo: "845613",
+            familyKey: "party",
+            gameKey: "undercover",
+            title: "誰是臥底局",
+            strapline: "輪流描述",
+            roomState: "playing",
+            visibility: "private",
+            playerCount: 6,
+            availability: "live",
+            detailRoute: "/undercover/845613",
+            entryRoute: "/entry/undercover/845613",
+            sharePath: "/entry/undercover/845613",
+            degradedState: {
+              state: "degraded",
+              label: "降級中",
+              familyKey: "party",
+              roomAvailability: "live",
+              subsystems: {
+                entry: {
+                  subsystem: "entry",
+                  state: "healthy",
+                  label: "正常",
+                  reasonCode: "",
+                  message: "",
+                  safeActions: [],
+                  scope: "global",
+                  familyKey: "",
+                  configured: false
+                },
+                realtime: {
+                  subsystem: "realtime",
+                  state: "healthy",
+                  label: "正常",
+                  reasonCode: "",
+                  message: "",
+                  safeActions: [],
+                  scope: "global",
+                  familyKey: "",
+                  configured: false
+                },
+                voice: {
+                  subsystem: "voice",
+                  state: "degraded",
+                  label: "降級中",
+                  reasonCode: "party-voice-unstable",
+                  message: "誰是臥底語音波動中，輪到描述者再開咪；若接通失敗可稍後重試。",
+                  safeActions: ["retry", "active-speaker-only"],
+                  scope: "family",
+                  familyKey: "party",
+                  configured: true
+                }
+              }
+            }
+          }
+        ],
+        featuredRooms: [],
+        leaderboardPreview: [],
+        universalEntry: {
+          heading: "遊戲入口",
+          defaultMode: "room-no",
+          modes: []
+        },
+        capabilitySummary: {
+          totalPublicRooms: 1
+        }
+      })
+    });
+  });
+
+  await page.route("**/api/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: null,
+        session: null
+      })
+    });
+  });
+
+  await page.route("**/api/room-entry/resolve?*", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        familyKey: "party",
+        gameKey: "undercover",
+        roomNo: "845613",
+        detailRoute: "/undercover/845613",
+        joinRoute: "/api/party/rooms/845613/join",
+        availability: "live",
+        roomState: "playing",
+        visibility: "private",
+        guestAllowed: true,
+        shareUrl: "/entry/undercover/845613",
+        title: "誰是臥底局",
+        strapline: "輪流描述",
+        degradedState: {
+          state: "degraded",
+          label: "降級中",
+          familyKey: "party",
+          roomAvailability: "live",
+          subsystems: {
+            entry: {
+              subsystem: "entry",
+              state: "healthy",
+              label: "正常",
+              reasonCode: "",
+              message: "",
+              safeActions: [],
+              scope: "global",
+              familyKey: "",
+              configured: false
+            },
+            realtime: {
+              subsystem: "realtime",
+              state: "healthy",
+              label: "正常",
+              reasonCode: "",
+              message: "",
+              safeActions: [],
+              scope: "global",
+              familyKey: "",
+              configured: false
+            },
+            voice: {
+              subsystem: "voice",
+              state: "degraded",
+              label: "降級中",
+              reasonCode: "party-voice-unstable",
+              message: "誰是臥底語音波動中，輪到描述者再開咪；若接通失敗可稍後重試。",
+              safeActions: ["retry", "active-speaker-only"],
+              scope: "family",
+              familyKey: "party",
+              configured: true
+            }
+          }
+        }
+      })
+    });
+  });
+
+  await page.goto(`${FRONTEND_BASE_URL}/`);
+
+  const liveFeedCard = page.locator('[data-live-feed-room="845613"]');
+  await expect(liveFeedCard).toBeVisible();
+  await expect(liveFeedCard.locator('[data-voice-status="degraded"]').first()).toBeVisible();
+  await expect(liveFeedCard).toContainText("輪到描述者再開咪");
+  await expect(liveFeedCard).toContainText("語音降級");
+
+  await page.goto(`${FRONTEND_BASE_URL}/entry/undercover/845613`);
+
+  await expect(page.locator('[data-voice-status="degraded"]').first()).toBeVisible();
+  await expect(page.locator('[data-safe-action="active-speaker-only"]')).toContainText(
+    "輪到描述者再開咪"
+  );
+  await expect(page.locator('[data-entry-notice="undercover-voice"]')).toBeVisible();
+  await expect(page.locator('[data-entry-action="guest"]')).toBeEnabled();
+  await expect(page.locator('[data-entry-action="login"]')).toBeEnabled();
+});

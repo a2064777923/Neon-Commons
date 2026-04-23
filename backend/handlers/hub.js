@@ -232,6 +232,7 @@ function attachDegradedState(room, availabilityControls) {
     degradedState: buildAvailabilityEnvelope({
       controls: availabilityControls,
       familyKey: room.familyKey,
+      gameKey: room.gameKey,
       roomAvailability: room.availability,
       supportsVoice: room.familyKey === "party"
     })

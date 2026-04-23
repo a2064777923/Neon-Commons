@@ -52,6 +52,7 @@ function serializeRoomEntry(entry, availabilityControls = {}) {
     degradedState: buildAvailabilityEnvelope({
       controls: availabilityControls,
       familyKey: entry.familyKey,
+      gameKey: entry.gameKey,
       roomAvailability: availability,
       supportsVoice: entry.familyKey === "party"
     })
@@ -72,6 +73,7 @@ function createSnapshotOnlyRoomPayload(
     degradedState: buildAvailabilityEnvelope({
       controls: availabilityControls,
       familyKey: entry.familyKey,
+      gameKey: entry.gameKey,
       roomAvailability: availability,
       supportsVoice: entry.familyKey === "party"
     })

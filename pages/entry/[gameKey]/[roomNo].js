@@ -23,9 +23,13 @@ export default function RoomEntryPage() {
   const [error, setError] = useState("");
   const isSnapshotOnly = entry?.availability === "snapshot-only";
   const entryStatus = getDegradedSubsystem(entry, "entry");
+  const voiceStatus = getDegradedSubsystem(entry, "voice");
   const entryBlocked = isSubsystemBlocked(entry, "entry");
   const entryDegraded = isSubsystemDegraded(entry, "entry");
+  const showUndercoverVoiceNotice =
+    entry?.gameKey === "undercover" && isSubsystemDegraded(entry, "voice");
   const entrySafeActionLabels = getSafeActionLabels(entryStatus.safeActions);
+  const voiceSafeActionLabels = getSafeActionLabels(voiceStatus.safeActions);
   const canAutoEnterLiveRoom = canEnterLiveRoom(entry) && !entryBlocked;
 
   useEffect(() => {
@@ -269,6 +273,23 @@ export default function RoomEntryPage() {
                 ))}
               </div>
             ) : null}
+            {showUndercoverVoiceNotice ? (
+              <div
+                className={styles.noteList}
+                data-voice-status={voiceStatus.state}
+                data-availability-reason={voiceStatus.reasonCode || `voice:${voiceStatus.state}`}
+              >
+                <span>{voiceStatus.message}</span>
+                {voiceSafeActionLabels.map((label, index) => (
+                  <span
+                    key={`${voiceStatus.subsystem}:${voiceStatus.safeActions[index] || label}`}
+                    data-safe-action={voiceStatus.safeActions[index] || ""}
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
             {isSnapshotOnly ? (
               <p className={styles.entryNotice} data-entry-notice="snapshot-only">
                 房間恢復完成前，這個入口只會顯示狀態，不會自動進房或補發遊客身份。
@@ -282,6 +303,11 @@ export default function RoomEntryPage() {
             {!isSnapshotOnly && !entryBlocked && entryDegraded ? (
               <p className={styles.entryNotice} data-entry-notice="degraded-entry">
                 入口仍可嘗試進場，但目前處於受控降級模式；如失敗請依照安全指引重試。
+              </p>
+            ) : null}
+            {!isSnapshotOnly && !entryBlocked && showUndercoverVoiceNotice ? (
+              <p className={styles.entryNotice} data-entry-notice="undercover-voice">
+                進房後請按描述順序開咪，其餘玩家先接入旁聽，等待輪到自己再發言。
               </p>
             ) : null}
             {!isSnapshotOnly && !entryBlocked && session?.kind === "user" ? (
@@ -305,6 +331,8 @@ export default function RoomEntryPage() {
                   ? "恢復中的房間會先停在這個入口頁，不會直接帶你進 live 房。"
                   : entryBlocked
                     ? "入口暫停時，已登入或已持有遊客身份的玩家都會先停在這一頁。"
+                    : showUndercoverVoiceNotice
+                      ? "誰是臥底維持輪流開咪；進房後請先接入旁聽，輪到你描述時再開咪。"
                     : "已登入玩家會直接進入對應遊戲與房間。"}
               </span>
               <span>遊客只限私密邀請與非排行榜流程，不能拿來開房或進後台。</span>

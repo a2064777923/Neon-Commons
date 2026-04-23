@@ -1226,6 +1226,73 @@ test("availability controls attach an additive degraded-state envelope without o
   ]);
 });
 
+test("undercover room-entry specializes party voice guidance for turn-based mic flow", async () => {
+  resetLiveRoomState();
+
+  registerRoomEntry({
+    roomNo: "510003",
+    familyKey: "party",
+    gameKey: "undercover",
+    title: "受控臥底房",
+    strapline: "輪流描述",
+    detailRoute: "/undercover/510003",
+    joinRoute: "/api/party/rooms/510003/join",
+    visibility: "private",
+    ownerId: 142,
+    state: "waiting",
+    supportsShareLink: true,
+    guestAllowed: true,
+    memberIds: [142]
+  });
+
+  const resolveHandler = loadWithMocks("./backend/handlers/room-entry/resolve.js", {
+    "./lib/db": {
+      query: async (_text, params = []) => {
+        if (Array.isArray(params[0])) {
+          return {
+            rows: [
+              {
+                key: "availabilityControls",
+                value: {
+                  families: {
+                    party: {
+                      voice: {
+                        state: "degraded",
+                        reasonCode: "party-voice-unstable",
+                        configured: true
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          };
+        }
+
+        return { rows: [] };
+      }
+    }
+  });
+
+  const resolveResponse = createMockResponse();
+  await resolveHandler(
+    {
+      method: "GET",
+      query: { roomNo: "510003", gameKeyHint: "undercover" },
+      headers: {}
+    },
+    resolveResponse
+  );
+
+  assert.equal(resolveResponse.statusCode, 200);
+  assert.equal(resolveResponse.jsonBody.degradedState.subsystems.voice.state, "degraded");
+  assert.deepEqual(resolveResponse.jsonBody.degradedState.subsystems.voice.safeActions, [
+    "retry",
+    "active-speaker-only"
+  ]);
+  assert.match(resolveResponse.jsonBody.degradedState.subsystems.voice.message, /輪到描述者再開咪/);
+});
+
 test("/api/hub returns unified family discovery payload without hiding paused live rooms", async () => {
   resetLiveRoomState();
 

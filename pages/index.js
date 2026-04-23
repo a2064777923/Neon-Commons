@@ -244,7 +244,13 @@ export default function HomePage() {
                   liveFeed.map((room) => (
                     (() => {
                       const entryStatus = getDegradedSubsystem(room, "entry");
+                      const voiceStatus = getDegradedSubsystem(room, "voice");
                       const entrySafeActions = getSafeActionLabels(entryStatus.safeActions);
+                      const voiceSafeActions = getSafeActionLabels(voiceStatus.safeActions);
+                      const showUndercoverVoiceNotice =
+                        room.gameKey === "undercover" &&
+                        !isSubsystemDegraded(room, "entry") &&
+                        isSubsystemDegraded(room, "voice");
 
                       return (
                         <Link
@@ -287,8 +293,31 @@ export default function HomePage() {
                                 ))}
                               </span>
                             ) : null}
+                            {showUndercoverVoiceNotice ? (
+                              <span
+                                data-voice-status={voiceStatus.state}
+                                data-availability-reason={
+                                  voiceStatus.reasonCode || `voice:${voiceStatus.state}`
+                                }
+                              >
+                                {voiceStatus.message}
+                              </span>
+                            ) : null}
+                            {showUndercoverVoiceNotice && voiceSafeActions.length > 0 ? (
+                              <span data-voice-status={voiceStatus.state}>
+                                {voiceSafeActions.map((label, index) => (
+                                  <span
+                                    key={`${room.roomNo}:voice:${label}`}
+                                    data-safe-action={voiceStatus.safeActions[index]}
+                                  >
+                                    {index > 0 ? " / " : ""}
+                                    {label}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : null}
                           </div>
-                          <em>{getFeedStatusLabel(room, entryStatus)}</em>
+                          <em>{getFeedStatusLabel(room, entryStatus, voiceStatus)}</em>
                         </Link>
                       );
                     })()
@@ -623,7 +652,11 @@ function getFeedHref(room) {
   return room.entryRoute || room.sharePath || room.detailRoute;
 }
 
-function getFeedStatusLabel(room, entryStatus = getDegradedSubsystem(room, "entry")) {
+function getFeedStatusLabel(
+  room,
+  entryStatus = getDegradedSubsystem(room, "entry"),
+  voiceStatus = getDegradedSubsystem(room, "voice")
+) {
   if (room.availability === "snapshot-only") {
     return "恢復中";
   }
@@ -634,6 +667,14 @@ function getFeedStatusLabel(room, entryStatus = getDegradedSubsystem(room, "entr
 
   if (entryStatus.state === "degraded") {
     return "入口降級";
+  }
+
+  if (room.gameKey === "undercover" && voiceStatus.state === "blocked") {
+    return "語音暫停";
+  }
+
+  if (room.gameKey === "undercover" && voiceStatus.state === "degraded") {
+    return "語音降級";
   }
 
   return room.roomState === "playing" ? "對局中" : "待開局";
