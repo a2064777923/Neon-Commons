@@ -87,25 +87,20 @@ test("API origin falls back to NEXT_PUBLIC_BACKEND_URL alias", () => {
   );
 });
 
-test("API origin maps split-port frontend origins onto the backend port", () => {
+test("API origin stays same-origin for proxied local and deployed browser runtimes", () => {
   withPublicEnv({}, () => {
     assert.equal(
       getApiBaseUrl(makeWindow("http://127.0.0.1:3100")),
-      "http://127.0.0.1:3101"
+      "http://127.0.0.1:3100"
     );
     assert.equal(
       getApiBaseUrl(makeWindow("http://localhost:3100")),
-      "http://localhost:3101"
+      "http://localhost:3100"
     );
     assert.equal(
       getApiBaseUrl(makeWindow("http://192.168.4.11:3100")),
-      "http://192.168.4.11:3101"
+      "http://192.168.4.11:3100"
     );
-  });
-});
-
-test("API origin stays same-origin for proxied deployments", () => {
-  withPublicEnv({}, () => {
     assert.equal(
       getApiBaseUrl(makeWindow("https://play.neon-commons.test")),
       "https://play.neon-commons.test"
@@ -136,6 +131,10 @@ test("Socket origin prefers NEXT_PUBLIC_SOCKET_URL and otherwise follows API ori
   );
 
   withPublicEnv({}, () => {
+    assert.equal(
+      getSocketUrl(makeWindow("http://127.0.0.1:3100")),
+      "http://127.0.0.1:3101"
+    );
     assert.equal(
       getSocketUrl(makeWindow("https://play.neon-commons.test")),
       "https://play.neon-commons.test"

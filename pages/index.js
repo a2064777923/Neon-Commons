@@ -4,6 +4,12 @@ import { useRouter } from "next/router";
 import SiteLayout from "../components/SiteLayout";
 import GameIcon from "../components/game-hub/GameIcon";
 import { API_ROUTES, apiFetch } from "../lib/client/api";
+import {
+  getDegradedSubsystem,
+  getSafeActionLabels,
+  isSubsystemBlocked,
+  isSubsystemDegraded
+} from "../lib/client/room-entry";
 import styles from "../styles/Arcade.module.css";
 
 const ROOM_NOT_FOUND_COPY =
@@ -236,24 +242,56 @@ export default function HomePage() {
               <div className={styles.feedList}>
                 {liveFeed.length > 0 ? (
                   liveFeed.map((room) => (
-                    <Link
-                      key={`${room.gameKey}-${room.roomNo}`}
-                      href={getFeedHref(room)}
-                      className={`${styles.feedItem} ${
-                        room.availability === "snapshot-only" ? styles.feedItemRecovery : ""
-                      }`.trim()}
-                      data-live-feed-room={room.roomNo}
-                      data-room-availability={room.availability || "live"}
-                    >
-                      <div>
-                        <strong>{room.title}</strong>
-                        <span>
-                          {room.roomNo} · {room.playerCount} 人
-                          {room.availability === "snapshot-only" ? " · 重啟恢復中" : ""}
-                        </span>
-                      </div>
-                      <em>{getFeedStatusLabel(room)}</em>
-                    </Link>
+                    (() => {
+                      const entryStatus = getDegradedSubsystem(room, "entry");
+                      const entrySafeActions = getSafeActionLabels(entryStatus.safeActions);
+
+                      return (
+                        <Link
+                          key={`${room.gameKey}-${room.roomNo}`}
+                          href={getFeedHref(room)}
+                          className={`${styles.feedItem} ${
+                            room.availability === "snapshot-only" || isSubsystemBlocked(room, "entry")
+                              ? styles.feedItemRecovery
+                              : ""
+                          }`.trim()}
+                          data-live-feed-room={room.roomNo}
+                          data-room-availability={room.availability || "live"}
+                          data-entry-status={entryStatus.state}
+                        >
+                          <div>
+                            <strong>{room.title}</strong>
+                            <span>
+                              {room.roomNo} · {room.playerCount} 人
+                              {room.availability === "snapshot-only" ? " · 重啟恢復中" : ""}
+                            </span>
+                            {isSubsystemDegraded(room, "entry") ? (
+                              <span
+                                data-availability-reason={
+                                  entryStatus.reasonCode || `entry:${entryStatus.state}`
+                                }
+                              >
+                                {entryStatus.message}
+                              </span>
+                            ) : null}
+                            {entrySafeActions.length > 0 ? (
+                              <span>
+                                {entrySafeActions.map((label, index) => (
+                                  <span
+                                    key={`${room.roomNo}:${label}`}
+                                    data-safe-action={entryStatus.safeActions[index]}
+                                  >
+                                    {index > 0 ? " / " : ""}
+                                    {label}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : null}
+                          </div>
+                          <em>{getFeedStatusLabel(room, entryStatus)}</em>
+                        </Link>
+                      );
+                    })()
                   ))
                 ) : (
                   <div className={styles.emptyFeed}>今晚還沒人開桌</div>
@@ -585,9 +623,17 @@ function getFeedHref(room) {
   return room.entryRoute || room.sharePath || room.detailRoute;
 }
 
-function getFeedStatusLabel(room) {
+function getFeedStatusLabel(room, entryStatus = getDegradedSubsystem(room, "entry")) {
   if (room.availability === "snapshot-only") {
     return "恢復中";
+  }
+
+  if (entryStatus.state === "blocked") {
+    return "入口暫停";
+  }
+
+  if (entryStatus.state === "degraded") {
+    return "入口降級";
   }
 
   return room.roomState === "playing" ? "對局中" : "待開局";

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import SiteLayout from "../../components/SiteLayout";
 import { API_ROUTES, apiFetch } from "../../lib/client/api";
+import { getSafeActionLabel } from "../../lib/shared/availability";
 import styles from "../../styles/UtilityPages.module.css";
 
 const CAPABILITY_UPDATE_REASON = "管理控制台切換";
@@ -12,7 +13,11 @@ const EMPTY_ROOM_CONFIRM = Object.freeze({
 });
 const TRACE_BADGES = {
   "new-rooms-only": "新房生效",
-  "immediate-player-state": "即時生效"
+  "immediate-player-state": "即時生效",
+  global: "全域生效",
+  "family:card": "牌桌生效",
+  "family:party": "派對生效",
+  "family:board": "棋盤生效"
 };
 const ACTION_LABELS = {
   "adjust-player": "玩家調整",
@@ -34,6 +39,7 @@ export default function AdminPage() {
   const [configs, setConfigs] = useState([]);
   const [capabilityFamilies, setCapabilityFamilies] = useState([]);
   const [runtimeControls, setRuntimeControls] = useState([]);
+  const [availabilityControlList, setAvailabilityControlList] = useState([]);
   const [auditItems, setAuditItems] = useState([]);
   const [liveRooms, setLiveRooms] = useState([]);
   const [selectedLiveRoomNo, setSelectedLiveRoomNo] = useState("");
@@ -120,6 +126,7 @@ export default function AdminPage() {
     setConfigs(configsData.items || []);
     setCapabilityFamilies(capabilitiesData.families || []);
     setRuntimeControls(runtimeData.controls || []);
+    setAvailabilityControlList(runtimeData.availabilityControlList || []);
     setRuntimeDraft(normalizeRuntimeDraft(runtimeData.controls || []));
     setAuditItems(logsData.items || []);
     setLiveRooms(liveRoomsData.items || []);
@@ -229,6 +236,49 @@ export default function AdminPage() {
       }
 
       setRuntimeControls(data.controls || []);
+      setRuntimeDraft(normalizeRuntimeDraft(data.controls || []));
+      await loadData();
+    } finally {
+      setSavingKey("");
+    }
+  }
+
+  async function saveAvailabilityControl(control, nextState) {
+    if (!control || control.state === nextState) {
+      return;
+    }
+
+    const scopeKey = control.scopeKey || `${control.scope}:${control.familyKey || "global"}`;
+    setSavingKey(`availability:${scopeKey}:${control.subsystem}`);
+
+    try {
+      const response = await apiFetch(API_ROUTES.admin.runtime(), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          availabilityUpdates: [
+            {
+              scope: control.scope,
+              familyKey: control.familyKey || undefined,
+              subsystem: control.subsystem,
+              state: nextState,
+              reason: buildAvailabilityUpdateReason(control, nextState),
+              reasonCode:
+                nextState === "healthy"
+                  ? ""
+                  : `${String(scopeKey).replace(/[:]/g, "-")}-${control.subsystem}-${nextState}`
+            }
+          ]
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "降級模式更新失敗");
+        return;
+      }
+
+      setRuntimeControls(data.controls || []);
+      setAvailabilityControlList(data.availabilityControlList || []);
       setRuntimeDraft(normalizeRuntimeDraft(data.controls || []));
       await loadData();
     } finally {
@@ -1007,6 +1057,84 @@ export default function AdminPage() {
                 </button>
               </div>
             </div>
+
+            <div className={styles.panelHead}>
+              <div>
+                <h3>降級模式</h3>
+                <span>用同一套 scope / subsystem 狀態控制入口、即時房間與語音</span>
+              </div>
+            </div>
+            <p className={styles.summaryCopy}>
+              只標記受影響服務，不重寫房間自身 `live / snapshot-only / draining / closed` 真相。
+            </p>
+
+            <div className={styles.toggleStack}>
+              {availabilityControlList.map((control) => {
+                const controlKey = `availability:${control.scopeKey}:${control.subsystem}`;
+                const safeActionLabels = (control.safeActions || [])
+                  .map((action) => ({ action, label: getSafeActionLabel(action) }))
+                  .filter((item) => item.label);
+
+                return (
+                  <article
+                    key={`${control.scopeKey}:${control.subsystem}`}
+                    className={styles.toggleRow}
+                    data-runtime-subsystem={control.subsystem}
+                    data-service-status={control.state}
+                    data-availability-scope={control.scopeKey}
+                  >
+                    <div className={styles.toggleMeta}>
+                      <strong>
+                        {control.scopeLabel} · {control.subsystemLabel}
+                      </strong>
+                      <span
+                        data-availability-reason={
+                          control.reasonCode || `${control.scopeKey}:${control.subsystem}:${control.state}`
+                        }
+                      >
+                        {control.message || "服務正常，無需額外提示。"}
+                      </span>
+                      <div className={styles.scopeRow}>
+                        <span className={styles.scopeChip}>{control.stateLabel}</span>
+                        {safeActionLabels.length > 0 ? (
+                          safeActionLabels.map((item) => (
+                            <span
+                              key={`${control.scopeKey}:${control.subsystem}:${item.action}`}
+                              className={styles.scopeChip}
+                              data-safe-action={item.action}
+                            >
+                              {item.label}
+                            </span>
+                          ))
+                        ) : (
+                          <span className={styles.scopeChip}>無需額外操作</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="button-cluster">
+                      {["healthy", "degraded", "blocked"].map((state) => (
+                        <button
+                          key={state}
+                          className={control.state === state ? "primary-button" : "ghost-button"}
+                          type="button"
+                          data-set-service-status={state}
+                          disabled={
+                            savingKey === controlKey ||
+                            control.state === state
+                          }
+                          onClick={() => saveAvailabilityControl(control, state)}
+                        >
+                          {savingKey === controlKey && control.state !== state
+                            ? "提交中..."
+                            : getAvailabilityStateActionLabel(state)}
+                        </button>
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </section>
 
           <section className={styles.panel}>
@@ -1022,7 +1150,7 @@ export default function AdminPage() {
                 <li className={styles.auditRow}>目前還沒有可顯示的後台留痕。</li>
               ) : (
                 auditItems.map((item) => {
-                  const badge = TRACE_BADGES[item.detail?.appliesTo] || "";
+                  const badges = getTraceBadges(item);
 
                   return (
                     <li key={item.id} className={styles.auditRow} data-audit-row={item.id}>
@@ -1034,11 +1162,11 @@ export default function AdminPage() {
                         <div className={styles.auditMeta}>
                           <span>{formatAuditOperator(item)}</span>
                           <time dateTime={item.createdAt}>{formatTimestamp(item.createdAt)}</time>
-                          {badge ? (
-                            <span className={styles.traceBadge} data-trace-badge={badge}>
+                          {badges.map((badge) => (
+                            <span key={`${item.id}:${badge}`} className={styles.traceBadge} data-trace-badge={badge}>
                               {badge}
                             </span>
-                          ) : null}
+                          ))}
                         </div>
                       </div>
                       <p className={styles.auditReason}>
@@ -1135,6 +1263,22 @@ function normalizeRuntimeDraft(controls) {
     maxOpenRoomsPerUser: String(getRuntimeValue(controls, "maxOpenRoomsPerUser", 3)),
     maintenanceMode: Boolean(getRuntimeValue(controls, "maintenanceMode", false))
   };
+}
+
+function buildAvailabilityUpdateReason(control, nextState) {
+  return `${control.scopeLabel}${control.subsystemLabel}切換為${getAvailabilityStateActionLabel(nextState)}`;
+}
+
+function getAvailabilityStateActionLabel(state) {
+  if (state === "blocked") {
+    return "已暫停";
+  }
+
+  if (state === "degraded") {
+    return "降級中";
+  }
+
+  return "恢復正常";
 }
 
 function pickPreferredRoomNo(items, currentRoomNo) {
@@ -1239,11 +1383,50 @@ function formatAuditTarget(item, capabilityLabels = {}) {
   const targets = Array.isArray(item.detail?.target) ? item.detail.target : [];
   if (targets.length > 0) {
     return targets
-      .map((target) => capabilityLabels[target] || target)
+      .map((target) => {
+        if (item.detail?.scope === "availability-controls") {
+          const [scopeKey, subsystem] = String(target || "").split(":");
+          if (scopeKey === "global") {
+            return `全域 / ${getAvailabilitySubsystemLabel(subsystem)}`;
+          }
+
+          if (scopeKey && subsystem) {
+            return `${getFamilyLabel(scopeKey)} / ${getAvailabilitySubsystemLabel(subsystem)}`;
+          }
+        }
+
+        return capabilityLabels[target] || target;
+      })
       .join(" / ");
   }
 
   return item.detail?.scope || "系統操作";
+}
+
+function getTraceBadges(item) {
+  const appliesTo = Array.isArray(item.detail?.appliesTo)
+    ? item.detail.appliesTo
+    : [item.detail?.appliesTo].filter(Boolean);
+
+  return appliesTo
+    .map((badge) => TRACE_BADGES[badge] || "")
+    .filter(Boolean);
+}
+
+function getAvailabilitySubsystemLabel(subsystem) {
+  if (subsystem === "entry") {
+    return "入口";
+  }
+
+  if (subsystem === "realtime") {
+    return "即時房間";
+  }
+
+  if (subsystem === "voice") {
+    return "語音";
+  }
+
+  return subsystem || "未知";
 }
 
 function getTemplateRuleSummary(settings) {

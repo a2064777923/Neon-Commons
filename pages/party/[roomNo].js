@@ -7,9 +7,13 @@ import GameIcon from "../../components/game-hub/GameIcon";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
 import {
   clearPendingGuestMatchClaim,
+  getDegradedSubsystem,
   getPresenceLabel,
   getPresenceState,
   getRecoveryBannerMessage,
+  getSafeActionLabels,
+  isSubsystemBlocked,
+  isSubsystemDegraded,
   readPendingGuestMatchClaim,
   writePendingGuestMatchClaim
 } from "../../lib/client/room-entry";
@@ -94,6 +98,10 @@ export default function PartyRoomPage() {
   const resultOpen = Boolean(room?.lastResult) && dismissedResultKey !== resultKey;
   const recoveryBanner = getRecoveryBannerMessage(mySeat, socketConnected, nowMs);
   const recoveryNotice = recoveryBanner || recoveryRestoreNotice;
+  const voiceStatus = getDegradedSubsystem(room, "voice");
+  const voiceBlocked = isSubsystemBlocked(room, "voice");
+  const voiceDegraded = isSubsystemDegraded(room, "voice");
+  const voiceSafeActionLabels = getSafeActionLabels(voiceStatus.safeActions);
 
   useEffect(() => {
     if (!roomNo) {
@@ -228,6 +236,16 @@ export default function PartyRoomPage() {
 
     socket.emit(PARTY_EVENTS.subscribe, { roomNo });
   }, [roomNo, mySeat]);
+
+  useEffect(() => {
+    if (!voiceBlocked) {
+      return;
+    }
+
+    if (joinedVoiceRef.current) {
+      cleanupVoice(true, true);
+    }
+  }, [voiceBlocked]);
 
   useEffect(() => {
     if (!room?.phaseEndsAt) {
@@ -377,6 +395,11 @@ export default function PartyRoomPage() {
   async function enableVoice() {
     if (!mySeat) {
       setVoiceError("请先加入房间并入座，再接通语音");
+      return;
+    }
+
+    if (voiceBlocked) {
+      setVoiceError(voiceStatus.message || "語音暫時停用，請先使用文字溝通。");
       return;
     }
 
@@ -642,8 +665,18 @@ export default function PartyRoomPage() {
               返回大厅
             </button>
             {!voiceJoined ? (
-              <button type="button" className={styles.primaryButton} onClick={enableVoice}>
-                {mySeat ? "接通语音" : "入座后接通语音"}
+              <button
+                type="button"
+                className={styles.primaryButton}
+                data-voice-status={voiceStatus.state}
+                disabled={voiceBlocked}
+                onClick={enableVoice}
+              >
+                {getVoiceButtonLabel({
+                  voiceBlocked,
+                  voiceDegraded,
+                  hasSeat: Boolean(mySeat)
+                })}
               </button>
             ) : (
               <>
@@ -673,6 +706,11 @@ export default function PartyRoomPage() {
                 <span>{room.state === "waiting" ? "等待准备" : "对局进行中"}</span>
                 <span>{room.config.visibility === "private" ? "私密房" : "公开房"}</span>
                 <span>{room.config.voiceEnabled ? "语音已开启" : "文字房"}</span>
+                {voiceDegraded ? (
+                  <span data-voice-status={voiceStatus.state}>
+                    {voiceBlocked ? "語音暫停" : "語音降級"}
+                  </span>
+                ) : null}
                 {rolePackSummary?.label ? <span>{rolePackSummary.label}</span> : null}
                 {room.gameKey === "werewolf" ? (
                   <span>猎人反击 {Number(room.config.hunterSeconds || 20)}s</span>
@@ -806,11 +844,28 @@ export default function PartyRoomPage() {
               ) : null}
             </section>
 
-            <section className={styles.voiceCard}>
+            <section
+              className={styles.voiceCard}
+              data-voice-status={voiceStatus.state}
+              data-availability-reason={voiceStatus.reasonCode || `voice:${voiceStatus.state}`}
+            >
               <div className={styles.panelTitle}>
                 <strong>语音席</strong>
                 <span>{players.filter((player) => player.voiceConnected).length} 人在线语音</span>
               </div>
+              {voiceDegraded ? (
+                <div className={styles.noteList}>
+                  <span>{voiceStatus.message || "語音目前處於受控降級模式。"}</span>
+                  {voiceSafeActionLabels.map((label, index) => (
+                    <span
+                      key={`${voiceStatus.subsystem}:${voiceStatus.safeActions[index] || label}`}
+                      data-safe-action={voiceStatus.safeActions[index] || ""}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
               {voiceError ? <p className="error-text">{voiceError}</p> : null}
               <div className={styles.voiceList}>
                 {players.map((player) => (
@@ -1523,6 +1578,22 @@ function buildPartyGuestClaim(room, session, mySeat) {
         : "completed"
     }
   };
+}
+
+function getVoiceButtonLabel({ voiceBlocked, voiceDegraded, hasSeat }) {
+  if (voiceBlocked) {
+    return "語音暫停";
+  }
+
+  if (!hasSeat) {
+    return "入座后接通语音";
+  }
+
+  if (voiceDegraded) {
+    return "重試語音";
+  }
+
+  return "接通语音";
 }
 
 function capitalize(value) {

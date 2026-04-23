@@ -8,7 +8,7 @@ function createRouter(handlersDir) {
     const url = new URL(req.url, `http://${req.headers.host || "127.0.0.1"}`);
     const pathname = normalizePathname(url.pathname);
 
-    if (pathname.startsWith("/socket.io/")) {
+    if (pathname === "/socket.io" || pathname.startsWith("/socket.io/")) {
       return undefined;
     }
 

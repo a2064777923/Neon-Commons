@@ -1,9 +1,13 @@
 const { test, expect } = require("playwright/test");
 const { API_ROUTES } = require("../lib/client/network-runtime");
+const { loginAsAdminSession } = require("./support/admin-auth");
+const { adminBackendJson } = require("./support/admin-backend");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
+const BACKEND_BASE_URL = FRONTEND_BASE_URL.replace(/:3100$/, ":3101");
 
 test("admin console exposes grouped family toggles and recent audit traces", async ({ page }) => {
+  test.slow();
   page.setDefaultTimeout(30000);
 
   await loginAsAdmin(page);
@@ -42,6 +46,40 @@ test("admin console exposes grouped family toggles and recent audit traces", asy
     }
     await setGameEnabled(page, "doudezhu", true).catch(() => {});
     await updateRuntimeControl(page, "maxOpenRoomsPerUser", originalMaxOpenRooms).catch(() => {});
+  }
+});
+
+test("admin console can edit scoped degraded controls and surface audit context", async ({
+  page
+}) => {
+  page.setDefaultTimeout(30000);
+
+  await loginAsAdmin(page);
+
+  try {
+    await page.goto(`${FRONTEND_BASE_URL}/admin`);
+
+    const partyVoiceRow = page.locator(
+      '[data-runtime-subsystem="voice"][data-availability-scope="family:party"]'
+    );
+    await expect(partyVoiceRow).toBeVisible();
+    await expect(partyVoiceRow).toHaveAttribute("data-service-status", "healthy");
+
+    await partyVoiceRow.locator('[data-set-service-status="blocked"]').click();
+
+    await expect(partyVoiceRow).toHaveAttribute("data-service-status", "blocked");
+    await expect(partyVoiceRow).toContainText("語音暫時停用");
+    await expect(partyVoiceRow.locator('[data-safe-action="continue-text-only"]')).toBeVisible();
+    await expect(page.locator("[data-audit-row]").first()).toContainText("派對 / 語音");
+    await expect(page.locator("[data-audit-row]").first()).toContainText("切換為已暫停");
+    await expect(page.locator('[data-trace-badge="派對生效"]').first()).toBeVisible();
+  } finally {
+    await updateAvailabilityControl(page, {
+      scope: "family",
+      familyKey: "party",
+      subsystem: "voice",
+      state: "healthy"
+    }).catch(() => {});
   }
 });
 
@@ -175,11 +213,9 @@ test("admin console drives live room inspect, remove, drain, and close workflows
 });
 
 async function loginAsAdmin(page) {
-  await page.goto(`${FRONTEND_BASE_URL}/login`);
-  await page.getByLabel("帳號或郵箱").fill("admin");
-  await page.getByLabel("密碼").fill("Admin123456");
-  await page.getByRole("button", { name: "登入" }).click();
-  await expect(page).toHaveURL(`${FRONTEND_BASE_URL}/`);
+  await loginAsAdminSession(page, FRONTEND_BASE_URL);
+  await page.goto(`${FRONTEND_BASE_URL}/`);
+  await expect(page.getByRole("heading", { name: "遊戲入口", exact: true })).toBeVisible();
 }
 
 async function createCardRoom(page, templateId = 1, overrides = null) {
@@ -354,90 +390,50 @@ async function updateTemplate(page, payload) {
 }
 
 async function getAdminRuntime(page) {
-  const url = API_ROUTES.admin.runtime();
-
-  const data = await page.evaluate(async ({ requestUrl }) => {
-    const response = await fetch(requestUrl, {
-      credentials: "include"
-    });
-
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || "failed to load runtime controls");
-    }
-
-    return payload;
-  }, { requestUrl: url });
-
+  const data = await adminBackendJson(`${BACKEND_BASE_URL}${API_ROUTES.admin.runtime()}`);
   return data.controls || [];
 }
 
 async function getAdminLiveRooms(page) {
-  const url = API_ROUTES.admin.liveRooms.list();
-
-  const data = await page.evaluate(async ({ requestUrl }) => {
-    const response = await fetch(requestUrl, {
-      credentials: "include"
-    });
-
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || "failed to load live rooms");
-    }
-
-    return payload;
-  }, { requestUrl: url });
-
+  const data = await adminBackendJson(`${BACKEND_BASE_URL}${API_ROUTES.admin.liveRooms.list()}`);
   return data.items || [];
 }
 
 async function getCurrentViewer(page) {
-  const url = API_ROUTES.me();
-
-  const data = await page.evaluate(async ({ requestUrl }) => {
-    const response = await fetch(requestUrl, {
-      credentials: "include"
-    });
-
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || "failed to load viewer session");
-    }
-
-    return payload;
-  }, { requestUrl: url });
-
+  const data = await adminBackendJson(`${BACKEND_BASE_URL}${API_ROUTES.me()}`);
   return data.user || data.session || null;
 }
 
 async function updateRuntimeControl(page, key, value) {
-  const url = API_ROUTES.admin.runtime();
-
-  return page.evaluate(async ({ requestUrl, nextKey, nextValue }) => {
-    const response = await fetch(requestUrl, {
-      method: "PATCH",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        updates: [
-          {
-            key: nextKey,
-            value: nextValue,
-            reason: "playwright-admin-console-runtime"
-          }
-        ]
-      })
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "failed to update runtime control");
+  return adminBackendJson(`${BACKEND_BASE_URL}${API_ROUTES.admin.runtime()}`, {
+    method: "PATCH",
+    data: {
+      updates: [
+        {
+          key,
+          value,
+          reason: "playwright-admin-console-runtime"
+        }
+      ]
     }
+  });
+}
 
-    return data;
-  }, { requestUrl: url, nextKey: key, nextValue: value });
+async function updateAvailabilityControl(page, update) {
+  return adminBackendJson(`${BACKEND_BASE_URL}${API_ROUTES.admin.runtime()}`, {
+    method: "PATCH",
+    data: {
+      availabilityUpdates: [
+        {
+          scope: update.scope,
+          familyKey: update.familyKey,
+          subsystem: update.subsystem,
+          state: update.state,
+          reason: "playwright-admin-availability"
+        }
+      ]
+    }
+  });
 }
 
 async function ensureAdminRoomCapacity(page, additionalRooms = 1) {
@@ -459,27 +455,12 @@ async function ensureAdminRoomCapacity(page, additionalRooms = 1) {
 }
 
 async function closeAdminLiveRoom(page, roomNo) {
-  const url = API_ROUTES.admin.liveRooms.action(roomNo);
-
-  return page.evaluate(async ({ requestUrl }) => {
-    const response = await fetch(requestUrl, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        action: "close"
-      })
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "failed to close room");
+  return adminBackendJson(`${BACKEND_BASE_URL}${API_ROUTES.admin.liveRooms.action(roomNo)}`, {
+    method: "POST",
+    data: {
+      action: "close"
     }
-
-    return data;
-  }, { requestUrl: url });
+  });
 }
 
 function getRuntimeValue(controls, key, fallbackValue) {
