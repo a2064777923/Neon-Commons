@@ -39,6 +39,7 @@ async function handler(req, res) {
       degradedState: buildAvailabilityEnvelope({
         controls: availabilityControls,
         familyKey: "party",
+        gameKey: serializedRoom.gameKey,
         roomAvailability: serializedRoom.availability,
         supportsVoice: true
       })

@@ -170,6 +170,9 @@
 .promptCard,
 .actionPanel,
 .clueTimeline,
+.noteList,
+.voiceList,
+.voiceItem,
 .playerCard,
 .feedItem {
   border-radius: 22px;
@@ -226,6 +229,15 @@
   box-shadow: 0 14px 24px rgba(0, 0, 0, 0.18);
 }
 
+.primaryButton:disabled,
+.hudButton:disabled,
+.voteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
 .playArea {
   display: grid;
   gap: 18px;
@@ -263,22 +275,61 @@
 
 .clueList,
 .playerList,
-.feedList {
+.feedList,
+.noteList,
+.voiceList {
   display: grid;
   gap: 10px;
   margin-top: 14px;
 }
 
 .clueItem,
+.voiceItem,
 .playerCard,
 .feedItem {
   padding: 14px 16px;
 }
 
 .clueItem strong,
-.playerCard strong {
+.playerCard strong,
+.voiceItem strong {
   display: block;
   margin-bottom: 6px;
+}
+
+.voiceActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.voiceItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.voiceItem strong {
+  margin-bottom: 0;
+  text-align: right;
+}
+
+.noteList span[data-safe-action],
+.playerMeta span[data-player-voice] {
+  background: rgba(255, 216, 130, 0.1);
+  border: 1px solid rgba(255, 216, 130, 0.14);
+}
+
+.playerMeta span[data-player-voice="live"] {
+  background: rgba(91, 222, 132, 0.16);
+  color: #d6f8c9;
+}
+
+.playerMeta span[data-player-voice="muted"] {
+  background: rgba(255, 225, 142, 0.12);
+  color: #ffe6ab;
 }
 
 .sidebar {
