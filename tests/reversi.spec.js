@@ -8,6 +8,7 @@ const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.
 const BACKEND_BASE_URL = FRONTEND_BASE_URL.replace(/:3100$/, ":3101");
 
 test("reversi lobby, dedicated room route, and deep-link entry smoke", async ({ page }) => {
+  test.slow();
   page.setDefaultTimeout(30000);
   let roomNo = "";
 

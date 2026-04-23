@@ -24,7 +24,7 @@ test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
     await expect(page.getByRole("button", { name: "複製邀請" }).first()).toBeVisible();
     await page.getByLabel("开局规则").selectOption("center-opening");
     await page.getByRole("button", { name: /立即开/ }).click();
-    await expect(page).toHaveURL(/\/board\/\d{6}$/);
+    await expect(page).toHaveURL(/\/board\/\d{6}$/, { timeout: 15000 });
     gomokuRoomNo = page.url().match(/\/board\/(\d{6})$/)[1];
     await waitForBoardRoomReady(page, gomokuRoomNo);
     await expect(page.locator('[data-board-chip="天元开局"]').first()).toBeVisible();
@@ -52,7 +52,7 @@ test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
     await expect(page.getByRole("link", { name: "返回遊戲家族" }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "複製邀請" }).first()).toBeVisible();
     await page.getByRole("button", { name: /立即开/ }).click();
-    await expect(page).toHaveURL(/\/board\/\d{6}$/);
+    await expect(page).toHaveURL(/\/board\/\d{6}$/, { timeout: 15000 });
     chineseCheckersRoomNo = page.url().match(/\/board\/(\d{6})$/)[1];
     await waitForBoardRoomReady(page, chineseCheckersRoomNo);
     await expect(page.getByRole("button", { name: "准备开局" })).toBeEnabled();

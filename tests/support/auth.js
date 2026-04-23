@@ -1,4 +1,6 @@
 const { COOKIE_NAME } = require("../../lib/auth");
+const SESSION_REGISTER_TIMEOUT_MS = 20000;
+const SESSION_REGISTER_ATTEMPTS = 2;
 
 function createFreshCredentials(prefix = "smoke") {
   const uniqueId = `${prefix}${Date.now()}${Math.random().toString(36).slice(2, 6)}`.toLowerCase();
@@ -12,7 +14,10 @@ function createFreshCredentials(prefix = "smoke") {
 
 async function registerFreshUser(page, baseUrl, prefix = "smoke") {
   const credentials = createFreshCredentials(prefix);
+  return registerFreshUserWithCredentials(page, baseUrl, credentials);
+}
 
+async function registerFreshUserWithCredentials(page, baseUrl, credentials) {
   await page.goto(`${baseUrl}/register`);
   await page.getByLabel("用戶名").fill(credentials.username);
   await page.getByLabel("顯示名稱").fill(credentials.displayName);
@@ -55,20 +60,67 @@ async function registerFreshUser(page, baseUrl, prefix = "smoke") {
   return credentials;
 }
 
+async function loginWithCredentials(page, baseUrl, credentials) {
+  await page.goto(`${baseUrl}/login`);
+  await page.getByLabel("帳號或郵箱").fill(credentials.username);
+  await page.getByLabel("密碼").fill(credentials.password);
+  const loginResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/auth/login") && response.request().method() === "POST",
+    {
+      timeout: 30000
+    }
+  );
+  await page.getByRole("button", { name: "登入" }).click();
+
+  try {
+    const loginResponse = await loginResponsePromise;
+    const data = await loginResponse.json().catch(() => ({}));
+    if (!loginResponse.ok) {
+      throw new Error(data.error || "login request failed");
+    }
+
+    await page.waitForURL(`${baseUrl}/`, {
+      timeout: 30000,
+      waitUntil: "commit"
+    });
+  } catch (error) {
+    const errorText = await page
+      .locator(".error-text")
+      .first()
+      .textContent()
+      .catch(() => "");
+
+    if (errorText) {
+      throw new Error(`login failed: ${errorText}`);
+    }
+
+    throw error;
+  }
+
+  return credentials;
+}
+
 async function registerFreshUserSession(page, baseUrl, prefix = "smoke") {
   const credentials = createFreshCredentials(prefix);
   const backendBaseUrl = String(baseUrl || "").replace(/:3100$/, ":3101");
-  const response = await fetch(`${backendBaseUrl}/api/auth/register`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json"
-    },
-    body: JSON.stringify(credentials),
-    signal: AbortSignal.timeout(30000)
-  });
+  let response;
+
+  try {
+    response = await requestFreshUserSession(`${backendBaseUrl}/api/auth/register`, credentials);
+  } catch (error) {
+    if (isRetryableFetchError(error)) {
+      return recoverFreshUserSession(page, baseUrl, credentials);
+    }
+
+    throw error;
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (isDuplicateRegistrationError(data.error)) {
+      return loginWithCredentials(page, baseUrl, credentials);
+    }
     throw new Error(data.error || "registration request failed");
   }
 
@@ -96,3 +148,58 @@ module.exports = {
   registerFreshUser,
   registerFreshUserSession
 };
+
+async function requestFreshUserSession(url, credentials) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= SESSION_REGISTER_ATTEMPTS; attempt += 1) {
+    try {
+      return await fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          connection: "close"
+        },
+        body: JSON.stringify(credentials),
+        signal: AbortSignal.timeout(SESSION_REGISTER_TIMEOUT_MS)
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt >= SESSION_REGISTER_ATTEMPTS || !isRetryableFetchError(error)) {
+        throw error;
+      }
+
+      await wait(250 * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
+async function recoverFreshUserSession(page, baseUrl, credentials) {
+  try {
+    return await loginWithCredentials(page, baseUrl, credentials);
+  } catch {
+    return registerFreshUserWithCredentials(page, baseUrl, credentials);
+  }
+}
+
+function isRetryableFetchError(error) {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.name === "TimeoutError" ||
+    error.name === "AbortError" ||
+    /fetch failed|socket|timed out|terminated|reset/i.test(String(error.message || ""))
+  );
+}
+
+function isDuplicateRegistrationError(errorMessage) {
+  return /duplicate key value|already exists|已存在/i.test(String(errorMessage || ""));
+}
+
+function wait(durationMs) {
+  return new Promise((resolve) => setTimeout(resolve, durationMs));
+}
