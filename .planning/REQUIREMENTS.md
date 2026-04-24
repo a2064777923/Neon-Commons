@@ -18,7 +18,7 @@
 
 ### Wave 2 Content
 
-- [ ] **WAVE-01**: Player can discover second-wave games from the hub with accurate rollout state, availability, and room-entry behavior.
+- [x] **WAVE-01**: Player can discover second-wave games from the hub with accurate rollout state, availability, and room-entry behavior.
 - [ ] **WAVE-02**: Player can create or join the first wave-2 room-based title through the shared room-number, invite, recovery, and admin capability flows.
 - [ ] **WAVE-03**: Player can create or join the second wave-2 title without regressing existing families or the admin rollout model.
 
@@ -62,7 +62,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AVAIL-03 | Phase 11 | Pending |
 | VOICE-01 | Phase 12 | Pending |
 | VOICE-02 | Phase 12 | Pending |
-| WAVE-01 | Phase 14 | Pending |
+| WAVE-01 | Phase 14 | Complete |
 | WAVE-02 | Phase 15 | Pending |
 | WAVE-03 | Phase 16 | Pending |
 | ADMIN-01 | Phase 13 | Pending |

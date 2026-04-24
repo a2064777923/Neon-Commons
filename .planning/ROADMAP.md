@@ -79,8 +79,8 @@
 
 **Plans:**
 
-- [ ] 14-01: Extend shared metadata, rollout, and launch contracts for Wave 2 titles
-- [ ] 14-02: Update hub, entry, and capability surfaces for staged Wave 2 discovery
+- [x] 14-01: Extend shared metadata, rollout, and launch contracts for Wave 2 titles (completed 2026-04-24)
+- [x] 14-02: Update hub, entry, and capability surfaces for staged Wave 2 discovery (completed 2026-04-24)
 
 ### Phase 15: Wave 2 Delivery Set A
 
