@@ -78,9 +78,15 @@
 | `/api/admin/players/:id/adjust` | `POST` | admin | 調整玩家狀態 / 資產 |
 | `/api/admin/templates` | `GET`, `POST`, `PATCH` | admin | 讀寫模板與模板配置 |
 | `/api/admin/config` | `GET`, `POST` | admin | 讀寫系統配置 |
-| `/api/admin/capabilities` | `GET`, `PATCH` | admin | 按遊戲家族讀寫新房開關，只影響新建房 |
-| `/api/admin/runtime` | `GET`, `PATCH` | admin | 讀寫 allowlist runtime controls，例如 `maxOpenRoomsPerUser`、`maintenanceMode` |
+| `/api/admin/capabilities` | `GET`, `PATCH` | admin | 按遊戲家族讀寫新房開關，並管理每個標題的 rollout 狀態（`coming-soon` / `paused-new-rooms` / `playable`） |
+| `/api/admin/runtime` | `GET`, `PATCH` | admin | 讀寫 allowlist runtime controls，並返回後端彙總的 `healthSnapshot`（入口、即時房況、派對語音、rollout） |
 | `/api/admin/logs` | `GET` | admin | 讀取最近 50 筆後台留痕 |
+
+Admin family contract 補充：
+
+- `/api/admin/capabilities` `GET` 會返回 `families`、`rolloutFamilies`、`rolloutSummary`；`PATCH` 可同時接收 `updates` 與 `rolloutUpdates`
+- `/api/admin/runtime` `GET` / `PATCH` 都會返回 `controls`、`availabilityControls`、`availabilityControlList`，以及後端計算的 `healthSnapshot`
+- admin live-room drill-down 會額外暴露 operator-safe `voiceDiagnostics`，只提供 mode、runtime state、時間戳與安全操作，不暴露 ICE/TURN 祕密
 
 ## Socket Event Families
 

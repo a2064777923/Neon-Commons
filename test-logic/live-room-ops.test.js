@@ -161,6 +161,39 @@ test("live-room ops list shows live and snapshot-only rooms with actionable deta
   assert.equal(snapshotDetail.occupants.length, 2);
 });
 
+test("snapshot room detail keeps owner badge when member ids are stored as strings", async (t) => {
+  const { directory, liveRoomOps, cleanup } = loadModules();
+  t.after(cleanup);
+
+  const {
+    ROOM_DIRECTORY_SNAPSHOT_SOURCES,
+    registerRoomEntry
+  } = directory;
+  const { getLiveRoomDetail } = liveRoomOps;
+
+  registerRoomEntry({
+    roomNo: "931002",
+    familyKey: "party",
+    gameKey: "undercover",
+    title: "Recovered String Owner",
+    strapline: "Owner id normalization",
+    detailRoute: "/undercover/931002",
+    joinRoute: "/api/party/rooms/931002/join",
+    visibility: "private",
+    ownerId: 901,
+    state: "waiting",
+    supportsShareLink: true,
+    guestAllowed: true,
+    memberIds: ["901", "guest_snapshot_931002"],
+    source: ROOM_DIRECTORY_SNAPSHOT_SOURCES.SNAPSHOT,
+    restoredAt: new Date().toISOString()
+  });
+
+  const snapshotDetail = getLiveRoomDetail("931002");
+  assert.equal(snapshotDetail.occupants[0].occupantId, "901");
+  assert.equal(snapshotDetail.occupants[0].isOwner, true);
+});
+
 test("drain blocks new joins and close returns a closed detail payload", async (t) => {
   const { directory, partyManagerModule, liveRoomOps, cleanup } = loadModules();
   t.after(cleanup);
@@ -221,4 +254,66 @@ test("removing an occupant rewrites room detail without duplicating survivors", 
     ).length,
     1
   );
+});
+
+test("live-room detail marks reconnecting occupants and runtime counters consistently", async (t) => {
+  const { directory, roomManagerModule, liveRoomOps, cleanup } = loadModules();
+  t.after(cleanup);
+
+  const { __testing: directoryTesting } = directory;
+  const { getRoomManager } = roomManagerModule;
+  const { getLiveRoomDetail } = liveRoomOps;
+
+  const manager = getRoomManager();
+  const owner = { id: 531, username: "owner531", displayName: "Owner 531" };
+  const joiner = { id: 532, username: "joiner532", displayName: "Joiner 532" };
+  const room = manager.createRoom(owner, createCardTemplate("private"), {});
+  manager.joinRoom(room.roomNo, joiner);
+  manager.registerSocket(room.roomNo, joiner.id, {
+    id: "socket-reconnect-532",
+    join() {}
+  });
+  manager.unregisterSocket("socket-reconnect-532");
+  await directoryTesting.flushPersistence();
+
+  const detail = getLiveRoomDetail(room.roomNo);
+  const reconnectingOccupant = detail.occupants.find(
+    (occupant) => occupant.occupantId === String(joiner.id)
+  );
+
+  assert.equal(reconnectingOccupant?.presenceState, "reconnecting");
+  assert.equal(detail.runtimeHealth.reconnectingHumans, 1);
+  assert.equal(detail.runtimeHealth.disconnectedHumans, 0);
+});
+
+test("party live-room detail exposes operator-safe voice diagnostics", async (t) => {
+  const { directory, partyManagerModule, liveRoomOps, cleanup } = loadModules();
+  t.after(cleanup);
+
+  const { __testing: directoryTesting } = directory;
+  const { getPartyRoomManager } = partyManagerModule;
+  const { getLiveRoomDetail } = liveRoomOps;
+
+  const manager = getPartyRoomManager();
+  const owner = { id: 541, username: "owner541", displayName: "Owner 541" };
+  const joiner = { id: 542, username: "joiner542", displayName: "Joiner 542" };
+  const room = manager.createRoom(owner, "werewolf", {
+    visibility: "private",
+    maxPlayers: 8,
+    voiceEnabled: true
+  });
+  manager.joinRoom(room.roomNo, joiner);
+  manager.reportVoiceTransport(room.roomNo, owner.id, { reason: "ice-failed" });
+  await directoryTesting.flushPersistence();
+
+  const detail = getLiveRoomDetail(room.roomNo);
+  assert.equal(detail.familyKey, "party");
+  assert.equal(detail.voiceDiagnostics.mode, "relay-required");
+  assert.equal(detail.voiceDiagnostics.runtimeState, "degraded");
+  assert.equal(detail.voiceDiagnostics.lastReasonCode, "voice-ice-failed");
+  assert.equal(detail.voiceDiagnostics.reconnectGraceSeconds > 0, true);
+  assert.equal(detail.voiceDiagnostics.degradedState.state, "degraded");
+  assert.equal(detail.voiceDiagnostics.degradedState.reasonCode, "voice-ice-failed");
+  assert.equal(Array.isArray(detail.voiceDiagnostics.degradedState.safeActions), true);
+  assert.equal("iceServers" in detail.voiceDiagnostics, false);
 });

@@ -10,6 +10,7 @@
 **Goal:** Push the platform toward higher availability while shipping a second wave of games, more reliable voice, and stronger backend/admin operating leverage.
 
 - **Status:** Requirements defined and roadmap initialized on 2026-04-23
+- **Execution status:** Phase 11, 12, and 13 completed on 2026-04-24; next active step is planning Phase 14
 - **Phases:** 6
 - **Requirements coverage:** 10 / 10 mapped
 
@@ -27,8 +28,9 @@
 **Plans:**
 
 - [x] 11-01: Define shared availability and degraded-mode contracts across backend and client payloads (completed 2026-04-23)
-- [ ] 11-02: Implement degraded-mode runtime controls, entry gating, and player-facing messaging
-- [ ] 11-03: Verify degraded-state behavior across critical room-entry and release flows
+- [x] 11-02: Implement degraded-mode runtime controls, entry gating, and player-facing messaging (completed 2026-04-23)
+- [x] 11-03: Verify degraded-state behavior across critical room-entry and release flows (completed 2026-04-23)
+- [x] 11-04: Harden degraded-mode release verification and operational docs (completed 2026-04-23)
 
 ### Phase 12: Voice Reliability Foundation
 
@@ -43,9 +45,9 @@
 
 **Plans:**
 
-- [ ] 12-01: Introduce relay/fallback voice transport contracts and configuration
-- [ ] 12-02: Implement reconnect and fallback handling in party rooms and signaling paths
-- [ ] 12-03: Add diagnostics and regression coverage for voice degradation and recovery
+- [x] 12-01: Introduce relay/fallback voice transport contracts and configuration (completed 2026-04-23)
+- [x] 12-02: Implement reconnect and fallback handling in party rooms and signaling paths (completed 2026-04-24)
+- [x] 12-03: Add diagnostics and regression coverage for voice degradation and recovery (completed 2026-04-24)
 
 ### Phase 13: Admin HA & Rollout Control Plane
 
@@ -60,9 +62,9 @@
 
 **Plans:**
 
-- [ ] 13-01: Extend admin APIs for runtime health, voice diagnostics, and rollout state
-- [ ] 13-02: Build admin console workflows for degraded mode, rollout control, and audit review
-- [ ] 13-03: Cover permissions, diagnostics, and audit semantics for HA/admin operations
+- [x] 13-01: Extend admin APIs for runtime health, voice diagnostics, and rollout state (completed 2026-04-24)
+- [x] 13-02: Build admin console workflows for degraded mode, rollout control, and audit review (completed 2026-04-24)
+- [x] 13-03: Cover permissions, diagnostics, and audit semantics for HA/admin operations (completed 2026-04-24)
 
 ### Phase 14: Wave 2 Launch Contract
 
@@ -116,11 +118,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AVAIL-01 | Phase 11 | Pending |
-| AVAIL-02 | Phase 13 | Pending |
-| AVAIL-03 | Phase 11 | Pending |
-| VOICE-01 | Phase 12 | Pending |
-| VOICE-02 | Phase 12 | Pending |
+| AVAIL-01 | Phase 11 | Complete |
+| AVAIL-02 | Phase 13 | Complete |
+| AVAIL-03 | Phase 11 | Complete |
+| VOICE-01 | Phase 12 | Complete |
+| VOICE-02 | Phase 12 | Complete |
 | WAVE-01 | Phase 14 | Pending |
 | WAVE-02 | Phase 15 | Pending |
 | WAVE-03 | Phase 16 | Pending |

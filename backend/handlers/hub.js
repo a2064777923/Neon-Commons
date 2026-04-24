@@ -11,7 +11,8 @@ const {
   getAvailabilityControls,
   buildCapabilitySummary,
   buildHubFamilies,
-  getCapabilityState
+  getCapabilityState,
+  getRolloutState
 } = require("../../lib/admin/control-plane");
 const {
   getGameMeta,
@@ -30,9 +31,10 @@ async function handler(req, res) {
     return methodNotAllowed(res, ["GET"]);
   }
 
-  const [capabilities, availabilityControls, leaderboardPreview, roomGroups] = await Promise.all([
+  const [capabilities, availabilityControls, rolloutState, leaderboardPreview, roomGroups] = await Promise.all([
     getCapabilityState(),
     getAvailabilityControls(),
+    getRolloutState(),
     getLeaderboardPreview(),
     loadPublicRoomGroups()
   ]);
@@ -44,7 +46,7 @@ async function handler(req, res) {
   }, {});
 
   return res.status(200).json({
-    families: buildHubFamilies(capabilities, { roomCounts }),
+    families: buildHubFamilies(capabilities, { roomCounts, rolloutStates: rolloutState }),
     liveFeed: publicRooms
       .slice()
       .sort(compareLiveRooms)
@@ -77,7 +79,10 @@ async function handler(req, res) {
         }
       ]
     },
-    capabilitySummary: buildCapabilitySummary(capabilities, { roomCounts })
+    capabilitySummary: buildCapabilitySummary(capabilities, {
+      roomCounts,
+      rolloutStates: rolloutState
+    })
   });
 }
 

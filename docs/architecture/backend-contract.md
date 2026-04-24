@@ -82,6 +82,12 @@
 | Admin | `/api/admin/runtime` | `GET`, `PATCH` | admin |
 | Admin | `/api/admin/logs` | `GET` | admin |
 
+Admin control-plane 補充責任：
+
+- `/api/admin/capabilities` 由 backend 持有新房 capability truth，並同時持有 per-title rollout truth；frontend 只渲染 `families`、`rolloutFamilies`、`rolloutSummary`
+- `/api/admin/runtime` 由 backend 持有 allowlist runtime controls、availability controls，並計算 operator 用的 `healthSnapshot`
+- admin live-room detail 的 `voiceDiagnostics` 也屬於 backend-owned contract；它是管理用途的只讀診斷，不改變玩家面 `/api/party/rooms/:roomNo` 的公開邊界
+
 新增 handler 時，必須同步更新 `lib/shared/network-contract.js`，讓 `API_ROUTES`、handler contract metadata、前端呼叫端保持一致。
 
 ## 4. Socket.IO Ownership
@@ -144,6 +150,8 @@ HTTP 與 Socket 共用 `ddz_token` JWT cookie：
 - `/socket.io` 代理到 `3101`
 - `APP_URL` 設成對外 frontend origin
 - `NEXT_PUBLIC_API_BASE_URL` 與 `NEXT_PUBLIC_SOCKET_URL` 留空
+
+不論是否同源反代，`/api/admin/*` 與 `/socket.io/*` 的 owner 都維持在 backend `3101` 這一側，不能在 `pages/api/**` 另做旁路實作。
 
 ### Canonical release contract
 

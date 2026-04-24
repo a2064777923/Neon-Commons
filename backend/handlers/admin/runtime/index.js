@@ -10,11 +10,15 @@ const {
   NEW_ROOM_SCOPE,
   buildRuntimeControlList,
   getAvailabilityControls,
+  getCapabilityState,
+  getRolloutState,
+  buildRolloutSummary,
   getRuntimeControls,
   recordAdminLog,
   updateAvailabilityControls,
   updateRuntimeControls
 } = require("../../../../lib/admin/control-plane");
+const { buildAdminHealthSnapshot } = require("../../../../lib/admin/health-snapshot");
 
 async function handler(req, res) {
   const admin = await requireAdmin(req, res);
@@ -23,14 +27,20 @@ async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    const [state, availabilityControls] = await Promise.all([
+    const [state, availabilityControls, capabilities, rolloutState] = await Promise.all([
       getRuntimeControls(),
-      getAvailabilityControls()
+      getAvailabilityControls(),
+      getCapabilityState(),
+      getRolloutState()
     ]);
     return res.status(200).json({
       controls: buildRuntimeControlList(state),
       availabilityControls,
-      availabilityControlList: buildAvailabilityControlList(availabilityControls)
+      availabilityControlList: buildAvailabilityControlList(availabilityControls),
+      healthSnapshot: buildAdminHealthSnapshot({
+        availabilityControls,
+        rolloutSummary: buildRolloutSummary(capabilities, rolloutState)
+      })
     });
   }
 
@@ -102,10 +112,19 @@ async function handler(req, res) {
         });
       }
 
+      const [capabilities, rolloutState] = await Promise.all([
+        getCapabilityState(),
+        getRolloutState()
+      ]);
+
       return res.status(200).json({
         controls: buildRuntimeControlList(runtimeResult.after),
         availabilityControls: availabilityResult.after,
-        availabilityControlList: buildAvailabilityControlList(availabilityResult.after)
+        availabilityControlList: buildAvailabilityControlList(availabilityResult.after),
+        healthSnapshot: buildAdminHealthSnapshot({
+          availabilityControls: availabilityResult.after,
+          rolloutSummary: buildRolloutSummary(capabilities, rolloutState)
+        })
       });
     } catch (error) {
       return res.status(400).json({ error: error.message || "運行配置更新失敗" });

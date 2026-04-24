@@ -8,9 +8,13 @@ const {
 const {
   NEW_ROOM_SCOPE,
   buildCapabilityFamilies,
+  buildRolloutFamilies,
+  buildRolloutSummary,
   getCapabilityState,
+  getRolloutState,
   recordAdminLog,
-  updateCapabilities
+  updateCapabilities,
+  updateRolloutState
 } = require("../../../../lib/admin/control-plane");
 
 async function handler(req, res) {
@@ -20,32 +24,83 @@ async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    const state = await getCapabilityState();
+    const [state, rolloutState] = await Promise.all([
+      getCapabilityState(),
+      getRolloutState()
+    ]);
     return res.status(200).json({
-      families: buildCapabilityFamilies(state)
+      families: buildCapabilityFamilies(state, { rolloutStates: rolloutState }),
+      rolloutFamilies: buildRolloutFamilies(state, rolloutState),
+      rolloutSummary: buildRolloutSummary(state, rolloutState)
     });
   }
 
   if (req.method === "PATCH") {
     try {
       const body = parseBody(req);
-      const { before, after, updates } = await updateCapabilities(body.updates);
+      const capabilityUpdates = Array.isArray(body.updates) && body.updates.length > 0 ? body.updates : null;
+      const rolloutUpdates = Array.isArray(body.rolloutUpdates) && body.rolloutUpdates.length > 0
+        ? body.rolloutUpdates
+        : body.rolloutUpdate
+          ? [body.rolloutUpdate]
+          : null;
 
-      await recordAdminLog({
-        operatorUserId: admin.id,
-        action: "update-capabilities",
-        detail: {
-          scope: "capabilities",
-          target: updates.map((update) => update.gameKey),
-          before,
-          after,
-          reason: updates.map((update) => update.reason).filter(Boolean).join(" | "),
-          appliesTo: NEW_ROOM_SCOPE
-        }
-      });
+      if (!capabilityUpdates && !rolloutUpdates) {
+        throw new Error("至少提供一項能力或 rollout 更新");
+      }
+
+      const capabilityResult = capabilityUpdates
+        ? await updateCapabilities(capabilityUpdates)
+        : {
+            before: await getCapabilityState(),
+            after: await getCapabilityState(),
+            updates: []
+          };
+      const rolloutResult = rolloutUpdates
+        ? await updateRolloutState(rolloutUpdates)
+        : {
+            before: await getRolloutState(),
+            after: await getRolloutState(),
+            updates: []
+          };
+
+      if (capabilityResult.updates.length > 0) {
+        await recordAdminLog({
+          operatorUserId: admin.id,
+          action: "update-capabilities",
+          detail: {
+            scope: "capabilities",
+            target: capabilityResult.updates.map((update) => update.gameKey),
+            before: capabilityResult.before,
+            after: capabilityResult.after,
+            reason: capabilityResult.updates.map((update) => update.reason).filter(Boolean).join(" | "),
+            appliesTo: NEW_ROOM_SCOPE
+          }
+        });
+      }
+
+      if (rolloutResult.updates.length > 0) {
+        await recordAdminLog({
+          operatorUserId: admin.id,
+          action: "update-rollout",
+          detail: {
+            scope: "rollout",
+            target: rolloutResult.updates.map((update) => update.gameKey),
+            before: rolloutResult.before,
+            after: rolloutResult.after,
+            reason: rolloutResult.updates.map((update) => update.reason).filter(Boolean).join(" | "),
+            appliesTo: "discovery-state",
+            state: rolloutResult.updates.map((update) => update.state)
+          }
+        });
+      }
 
       return res.status(200).json({
-        families: buildCapabilityFamilies(after)
+        families: buildCapabilityFamilies(capabilityResult.after, {
+          rolloutStates: rolloutResult.after
+        }),
+        rolloutFamilies: buildRolloutFamilies(capabilityResult.after, rolloutResult.after),
+        rolloutSummary: buildRolloutSummary(capabilityResult.after, rolloutResult.after)
       });
     } catch (error) {
       return res.status(400).json({ error: error.message || "能力更新失敗" });

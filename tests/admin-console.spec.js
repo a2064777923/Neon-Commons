@@ -83,6 +83,33 @@ test("admin console can edit scoped degraded controls and surface audit context"
   }
 });
 
+test("admin console surfaces health summary and rollout staging controls", async ({ page }) => {
+  page.setDefaultTimeout(30000);
+
+  await loginAsAdmin(page);
+
+  try {
+    await openAdminDashboard(page);
+
+    await expect(page.locator('[data-health-summary="true"]')).toBeVisible();
+    await expect(page.locator('[data-health-card="entry"]')).toBeVisible();
+    await expect(page.locator('[data-health-card="voice"]')).toBeVisible();
+
+    const rolloutRow = page.locator('[data-rollout-game="drawguess"]');
+    await expect(rolloutRow).toBeVisible();
+    await expect(rolloutRow).toHaveAttribute("data-rollout-state", "coming-soon");
+
+    await rolloutRow.locator('[data-set-rollout-state="paused-new-rooms"]').click();
+
+    await expect(rolloutRow).toHaveAttribute("data-rollout-state", "paused-new-rooms");
+    await expect(page.locator("[data-audit-row]").first()).toContainText("標題 rollout");
+    await expect(page.locator("[data-audit-row]").first()).toContainText(/你畫我猜|Draw/);
+    await expect(page.locator('[data-trace-badge="入口展示"]').first()).toBeVisible();
+  } finally {
+    await updateRolloutState(page, "drawguess", "coming-soon").catch(() => {});
+  }
+});
+
 test("admin template editor surfaces normalized DDZ rules and room summary stays aligned", async ({
   page
 }) => {
@@ -180,6 +207,13 @@ test("admin console drives live room inspect, remove, drain, and close workflows
 
     const detail = page.locator(`[data-live-room-detail="${roomNo}"]`);
     await expect(detail).toBeVisible();
+    await expect(page.locator(`[data-room-voice-diagnostics="${roomNo}"]`)).toBeVisible();
+    await expect(page.locator(`[data-room-voice-diagnostics="${roomNo}"]`)).toContainText(
+      /派對語音診斷/
+    );
+    await expect(page.locator(`[data-room-voice-diagnostics="${roomNo}"]`)).toContainText(
+      /直連優先|Relay/
+    );
 
     const removableOccupant = detail.locator('[data-room-occupant]').nth(1);
     await expect(removableOccupant).toBeVisible();
@@ -430,6 +464,21 @@ async function updateAvailabilityControl(page, update) {
           subsystem: update.subsystem,
           state: update.state,
           reason: "playwright-admin-availability"
+        }
+      ]
+    }
+  });
+}
+
+async function updateRolloutState(page, gameKey, state) {
+  return adminBackendJson(`${BACKEND_BASE_URL}${API_ROUTES.admin.capabilities()}`, {
+    method: "PATCH",
+    data: {
+      rolloutUpdates: [
+        {
+          gameKey,
+          state,
+          reason: "playwright-admin-rollout"
         }
       ]
     }

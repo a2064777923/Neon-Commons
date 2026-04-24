@@ -38,6 +38,46 @@ test("runtime control normalization keeps allowlisted values safe", () => {
   assert.equal(runtime.maintenanceMode, true);
 });
 
+test("rollout normalization keeps catalog defaults and effective discovery states consistent", () => {
+  const rolloutState = controlPlane.normalizeRolloutState({
+    drawguess: "playable",
+    uno: "paused-new-rooms"
+  });
+
+  assert.equal(rolloutState.drawguess, "playable");
+  assert.equal(rolloutState.uno, "paused-new-rooms");
+  assert.equal(controlPlane.normalizeRolloutState({}).drawguess, "coming-soon");
+  assert.equal(
+    controlPlane.getDiscoveryState(
+      "drawguess",
+      controlPlane.normalizeCapabilityState({ drawguess: true }),
+      rolloutState
+    ),
+    "paused-new-rooms"
+  );
+
+  const families = controlPlane.buildRolloutFamilies(
+    controlPlane.normalizeCapabilityState({ werewolf: true, drawguess: true }),
+    rolloutState
+  );
+  const drawguess = families
+    .find((family) => family.key === "party")
+    .items.find((item) => item.gameKey === "drawguess");
+  const werewolf = families
+    .find((family) => family.key === "party")
+    .items.find((item) => item.gameKey === "werewolf");
+  const uno = families
+    .find((family) => family.key === "card")
+    .items.find((item) => item.gameKey === "uno");
+
+  assert.equal(drawguess.rolloutState, "playable");
+  assert.equal(drawguess.state, "paused-new-rooms");
+  assert.equal(drawguess.stateSource, "admin-override");
+  assert.equal(werewolf.state, "playable");
+  assert.equal(uno.rolloutState, "paused-new-rooms");
+  assert.equal(uno.state, "paused-new-rooms");
+});
+
 test("availability control normalization keeps subsystem defaults and scoped overrides safe", () => {
   const controls = getDefaultAvailabilityControls();
   assert.equal(controls.global.entry.state, "healthy");
@@ -124,8 +164,12 @@ test("capabilities handler requires admin auth", async () => {
   assert.match(response.jsonBody.error, /未登入/);
 });
 
-test("capabilities handler GET returns grouped families and PATCH validates payload", async () => {
+test("capabilities handler GET returns grouped families and PATCH supports rollout updates", async () => {
   const recordedLogDetails = [];
+  const storedConfigs = new Map([
+    ["gameCapabilities", { werewolf: false, drawguess: true }],
+    ["gameRolloutStates", { drawguess: "coming-soon" }]
+  ]);
   const handler = loadWithMocks(
     "./backend/handlers/admin/capabilities/index.js",
     {
@@ -139,14 +183,19 @@ test("capabilities handler GET returns grouped families and PATCH validates payl
             return { rows: [] };
           }
 
+          if (String(text).includes("INSERT INTO system_configs")) {
+            storedConfigs.set(params[0], JSON.parse(params[1]));
+            return { rows: [] };
+          }
+
           if (Array.isArray(params[0])) {
             return {
-              rows: [
-                {
-                  key: "gameCapabilities",
-                  value: { werewolf: false }
-                }
-              ]
+              rows: params[0]
+                .filter((key) => storedConfigs.has(key))
+                .map((key) => ({
+                  key,
+                  value: storedConfigs.get(key)
+                }))
             };
           }
 
@@ -162,7 +211,13 @@ test("capabilities handler GET returns grouped families and PATCH validates payl
   assert.equal(getResponse.statusCode, 200);
   const partyFamily = getResponse.jsonBody.families.find((family) => family.key === "party");
   const werewolf = partyFamily.items.find((item) => item.gameKey === "werewolf");
+  const rolloutPartyFamily = getResponse.jsonBody.rolloutFamilies.find(
+    (family) => family.key === "party"
+  );
+  const drawguess = rolloutPartyFamily.items.find((item) => item.gameKey === "drawguess");
   assert.equal(werewolf.enabled, false);
+  assert.equal(drawguess.rolloutState, "coming-soon");
+  assert.equal(getResponse.jsonBody.rolloutSummary.counts["coming-soon"] >= 1, true);
 
   const validPatchResponse = createMockResponse();
   await handler(
@@ -184,6 +239,36 @@ test("capabilities handler GET returns grouped families and PATCH validates payl
   assert.equal(recordedLogDetails[0].reason, "恢復開放");
   assert.equal(recordedLogDetails[0].appliesTo, "new-rooms-only");
 
+  const rolloutPatchResponse = createMockResponse();
+  await handler(
+    {
+      method: "PATCH",
+      body: {
+        rolloutUpdates: [
+          {
+            gameKey: "drawguess",
+            state: "paused-new-rooms",
+            reason: "第二波預演"
+          }
+        ]
+      },
+      headers: {}
+    },
+    rolloutPatchResponse
+  );
+
+  assert.equal(rolloutPatchResponse.statusCode, 200);
+  const patchedDrawguess = rolloutPatchResponse.jsonBody.rolloutFamilies
+    .find((family) => family.key === "party")
+    .items.find((item) => item.gameKey === "drawguess");
+  assert.equal(patchedDrawguess.rolloutState, "paused-new-rooms");
+  assert.equal(patchedDrawguess.state, "paused-new-rooms");
+  assert.deepEqual(recordedLogDetails[1].target, ["drawguess"]);
+  assert.equal(recordedLogDetails[1].scope, "rollout");
+  assert.equal(recordedLogDetails[1].reason, "第二波預演");
+  assert.equal(recordedLogDetails[1].appliesTo, "discovery-state");
+  assert.deepEqual(recordedLogDetails[1].state, ["paused-new-rooms"]);
+
   const patchResponse = createMockResponse();
   await handler(
     {
@@ -200,7 +285,7 @@ test("capabilities handler GET returns grouped families and PATCH validates payl
   assert.match(patchResponse.jsonBody.error, /未知遊戲能力/);
 });
 
-test("runtime handler GET returns controls and PATCH validates keys", async () => {
+test("runtime handler GET returns controls, health snapshot, and PATCH validates keys", async () => {
   const recordedLogDetails = [];
   const storedConfigs = new Map([
     ["runtimeControls", { maxOpenRoomsPerUser: 5, maintenanceMode: true }]
@@ -250,6 +335,11 @@ test("runtime handler GET returns controls and PATCH validates keys", async () =
   );
   assert.equal(getResponse.jsonBody.availabilityControls.global.entry.state, "healthy");
   assert.equal(getResponse.jsonBody.availabilityControlList.length, 12);
+  assert.equal(getResponse.jsonBody.healthSnapshot.overallState, "healthy");
+  assert.deepEqual(
+    getResponse.jsonBody.healthSnapshot.cards.map((card) => card.key),
+    ["entry", "realtime", "voice", "rollout"]
+  );
 
   const validPatchResponse = createMockResponse();
   await handler(
@@ -271,6 +361,7 @@ test("runtime handler GET returns controls and PATCH validates keys", async () =
   assert.equal(recordedLogDetails[0].reason, "結束維護");
   assert.equal(recordedLogDetails[0].appliesTo, "new-rooms-only");
   assert.equal(validPatchResponse.jsonBody.availabilityControls.global.entry.state, "healthy");
+  assert.equal(validPatchResponse.jsonBody.healthSnapshot.cards[0].key, "entry");
 
   const availabilityPatchResponse = createMockResponse();
   await handler(
@@ -308,6 +399,11 @@ test("runtime handler GET returns controls and PATCH validates keys", async () =
   assert.deepEqual(recordedLogDetails[1].appliesTo, ["family:party"]);
   assert.deepEqual(recordedLogDetails[1].subsystem, ["voice"]);
   assert.deepEqual(recordedLogDetails[1].state, ["blocked"]);
+  assert.equal(
+    availabilityPatchResponse.jsonBody.healthSnapshot.cards.find((card) => card.key === "voice")
+      .state,
+    "blocked"
+  );
 
   const patchResponse = createMockResponse();
   await handler(
@@ -536,6 +632,55 @@ test("party room create handler blocks disabled games for new rooms", async () =
                 {
                   key: "gameCapabilities",
                   value: { werewolf: false }
+                }
+              ]
+            };
+          }
+
+          return { rows: [] };
+        }
+      }
+    }
+  );
+
+  const response = createMockResponse();
+  await handler(
+    {
+      method: "POST",
+      query: { gameKey: "werewolf" },
+      body: { config: {} },
+      headers: {}
+    },
+    response
+  );
+
+  assert.equal(response.statusCode, 400);
+  assert.equal(response.jsonBody.error, "該遊戲目前未開放新房");
+});
+
+test("party room create handler blocks rollout-paused games for new rooms", async () => {
+  const handler = loadWithMocks(
+    "./backend/handlers/party/rooms/index.js",
+    {
+      "./lib/auth": {
+        requireUser: async () => ({ id: 16, username: "tester2", displayName: "Tester 2" })
+      },
+      "./lib/db": {
+        query: async (_text, params = []) => {
+          if (Array.isArray(params[0])) {
+            return {
+              rows: [
+                {
+                  key: "runtimeControls",
+                  value: { maxOpenRoomsPerUser: 3, maintenanceMode: false }
+                },
+                {
+                  key: "gameCapabilities",
+                  value: { werewolf: true }
+                },
+                {
+                  key: "gameRolloutStates",
+                  value: { werewolf: "paused-new-rooms" }
                 }
               ]
             };

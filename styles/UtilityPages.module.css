@@ -525,6 +525,126 @@
   font: inherit;
 }
 
+.healthSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.healthCard,
+.rolloutRow,
+.voiceDiagnostics {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.healthCardHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.healthMetricGrid,
+.voiceMetricGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.healthMetricGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.voiceMetricGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.healthMetricGrid > div,
+.voiceMetricGrid > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(36, 64, 51, 0.08);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.healthMetricGrid strong,
+.voiceMetricGrid strong {
+  color: #264336;
+  font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+  font-size: 20px;
+}
+
+.healthMetricGrid span,
+.voiceMetricGrid span,
+.rolloutSummary {
+  color: #60776b;
+}
+
+.rolloutSummary {
+  margin: 0;
+}
+
+.rolloutActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stateHealthy {
+  background: rgba(36, 64, 51, 0.12);
+  color: #2f5643;
+}
+
+.stateDegraded {
+  background: rgba(212, 164, 75, 0.24);
+  color: #7f5913;
+}
+
+.stateBlocked {
+  background: rgba(179, 73, 39, 0.16);
+  color: #8b3d25;
+}
+
+.stateComingSoon {
+  background: rgba(96, 119, 107, 0.16);
+  color: #4f6659;
+}
+
+.surfaceHealthy {
+  border-color: rgba(36, 64, 51, 0.12);
+  background:
+    linear-gradient(180deg, rgba(246, 252, 248, 0.94), rgba(237, 246, 240, 0.88)),
+    rgba(255, 255, 255, 0.72);
+}
+
+.surfaceDegraded {
+  border-color: rgba(212, 164, 75, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 249, 239, 0.96), rgba(251, 238, 210, 0.9)),
+    rgba(255, 255, 255, 0.72);
+}
+
+.surfaceBlocked {
+  border-color: rgba(179, 73, 39, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 246, 241, 0.96), rgba(250, 231, 222, 0.9)),
+    rgba(255, 255, 255, 0.72);
+}
+
+.surfaceComingSoon {
+  border-color: rgba(96, 119, 107, 0.18);
+  background:
+    linear-gradient(180deg, rgba(249, 250, 248, 0.96), rgba(241, 245, 241, 0.9)),
+    rgba(255, 255, 255, 0.72);
+}
+
 .auditFeed {
   display: grid;
   gap: 12px;
@@ -773,6 +893,14 @@
     grid-template-columns: 1fr;
   }
 
+  .healthSummaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .voiceMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .liveRoomShell {
     grid-template-columns: 1fr;
   }
@@ -805,6 +933,7 @@
   }
 
   .toggleRow,
+  .healthCardHead,
   .auditRowHead,
   .liveRoomRowHead,
   .liveRoomDetailHead,
@@ -827,7 +956,10 @@
   }
 
   .liveRoomStats,
-  .liveRoomConfigList {
+  .liveRoomConfigList,
+  .healthSummaryGrid,
+  .healthMetricGrid,
+  .voiceMetricGrid {
     grid-template-columns: 1fr;
   }
 }

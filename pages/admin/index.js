@@ -5,6 +5,7 @@ import { getSafeActionLabel } from "../../lib/shared/availability";
 import styles from "../../styles/UtilityPages.module.css";
 
 const CAPABILITY_UPDATE_REASON = "管理控制台切換";
+const ROLLOUT_UPDATE_REASON = "管理控制台調整發版節奏";
 const RUNTIME_UPDATE_REASON = "管理控制台調整";
 const PLAYER_UPDATE_REASON = "管理後台調整";
 const EMPTY_ROOM_CONFIRM = Object.freeze({
@@ -14,6 +15,7 @@ const EMPTY_ROOM_CONFIRM = Object.freeze({
 const TRACE_BADGES = {
   "new-rooms-only": "新房生效",
   "immediate-player-state": "即時生效",
+  "discovery-state": "入口展示",
   global: "全域生效",
   "family:card": "牌桌生效",
   "family:party": "派對生效",
@@ -22,6 +24,7 @@ const TRACE_BADGES = {
 const ACTION_LABELS = {
   "adjust-player": "玩家調整",
   "update-capabilities": "遊戲開關",
+  "update-rollout": "標題 rollout",
   "update-runtime": "運行配置",
   "update-template": "模板更新",
   "update-config": "系統配置",
@@ -38,8 +41,10 @@ export default function AdminPage() {
   const [templateModes, setTemplateModes] = useState([]);
   const [configs, setConfigs] = useState([]);
   const [capabilityFamilies, setCapabilityFamilies] = useState([]);
+  const [rolloutFamilies, setRolloutFamilies] = useState([]);
   const [runtimeControls, setRuntimeControls] = useState([]);
   const [availabilityControlList, setAvailabilityControlList] = useState([]);
+  const [healthSnapshot, setHealthSnapshot] = useState(null);
   const [auditItems, setAuditItems] = useState([]);
   const [liveRooms, setLiveRooms] = useState([]);
   const [selectedLiveRoomNo, setSelectedLiveRoomNo] = useState("");
@@ -125,8 +130,10 @@ export default function AdminPage() {
     setTemplateModes(templatesData.supportedModes || []);
     setConfigs(configsData.items || []);
     setCapabilityFamilies(capabilitiesData.families || []);
+    setRolloutFamilies(capabilitiesData.rolloutFamilies || []);
     setRuntimeControls(runtimeData.controls || []);
     setAvailabilityControlList(runtimeData.availabilityControlList || []);
+    setHealthSnapshot(runtimeData.healthSnapshot || null);
     setRuntimeDraft(normalizeRuntimeDraft(runtimeData.controls || []));
     setAuditItems(logsData.items || []);
     setLiveRooms(liveRoomsData.items || []);
@@ -206,6 +213,42 @@ export default function AdminPage() {
       }
 
       setCapabilityFamilies(data.families || []);
+      setRolloutFamilies(data.rolloutFamilies || []);
+      await loadData();
+    } finally {
+      setSavingKey("");
+    }
+  }
+
+  async function saveRolloutControl(item, nextState) {
+    if (!item || item.rolloutState === nextState) {
+      return;
+    }
+
+    setSavingKey(`rollout:${item.gameKey}`);
+
+    try {
+      const response = await apiFetch(API_ROUTES.admin.capabilities(), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rolloutUpdates: [
+            {
+              gameKey: item.gameKey,
+              state: nextState,
+              reason: ROLLOUT_UPDATE_REASON
+            }
+          ]
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "rollout 狀態更新失敗");
+        return;
+      }
+
+      setCapabilityFamilies(data.families || []);
+      setRolloutFamilies(data.rolloutFamilies || []);
       await loadData();
     } finally {
       setSavingKey("");
@@ -237,6 +280,7 @@ export default function AdminPage() {
 
       setRuntimeControls(data.controls || []);
       setRuntimeDraft(normalizeRuntimeDraft(data.controls || []));
+      setHealthSnapshot(data.healthSnapshot || null);
       await loadData();
     } finally {
       setSavingKey("");
@@ -280,6 +324,7 @@ export default function AdminPage() {
       setRuntimeControls(data.controls || []);
       setAvailabilityControlList(data.availabilityControlList || []);
       setRuntimeDraft(normalizeRuntimeDraft(data.controls || []));
+      setHealthSnapshot(data.healthSnapshot || null);
       await loadData();
     } finally {
       setSavingKey("");
@@ -479,13 +524,30 @@ export default function AdminPage() {
     (total, family) => total + (family.items?.length || 0),
     0
   );
-  const capabilityLabels = Object.fromEntries(
-    capabilityFamilies.flatMap((family) =>
+  const rolloutManagedTitles = rolloutFamilies.reduce(
+    (total, family) => total + (family.items?.length || 0),
+    0
+  );
+  const gameLabels = Object.fromEntries(
+    [...capabilityFamilies, ...rolloutFamilies].flatMap((family) =>
       (family.items || []).map((item) => [item.gameKey, item.title])
     )
   );
   const livePlayerCount = players.filter((player) => player.status === "active").length;
   const maintenanceMode = Boolean(getRuntimeValue(runtimeControls, "maintenanceMode", false));
+  const healthCards = healthSnapshot?.cards || [];
+  const healthOverview = healthSnapshot?.overview || {
+    liveRooms: 0,
+    drainingRooms: 0,
+    snapshotOnlyRooms: 0,
+    closedRooms: 0,
+    totalHumans: 0,
+    totalPlayers: 0,
+    connectedHumans: 0
+  };
+  const overallHealthState = healthSnapshot?.overallState || "healthy";
+  const rolloutStateCounts = summarizeRolloutStateCounts(rolloutFamilies);
+  const rolloutOverrideCount = countRolloutOverrides(rolloutFamilies);
 
   return (
     <SiteLayout>
@@ -504,8 +566,8 @@ export default function AdminPage() {
                 <span>活躍帳號</span>
               </div>
               <div>
-                <strong>{totalManagedGames}</strong>
-                <span>受控遊戲</span>
+                <strong>{rolloutManagedTitles || totalManagedGames}</strong>
+                <span>受控標題</span>
               </div>
               <div>
                 <strong>{auditItems.length}</strong>
@@ -526,6 +588,204 @@ export default function AdminPage() {
         </section>
 
         <div className={styles.adminGrid}>
+          <section className={`${styles.panel} ${styles.panelSpan}`} data-health-summary="true">
+            <div className={styles.panelHead}>
+              <div>
+                <h2>運行健康摘要</h2>
+                <span>後端彙總入口、即時房況、派對語音與 rollout 節奏</span>
+              </div>
+              <strong
+                className={`${styles.scopeChip} ${getStateChipClass(styles, overallHealthState)}`}
+                data-health-state={overallHealthState}
+              >
+                {getOverallHealthLabel(overallHealthState)}
+              </strong>
+            </div>
+            <p className={styles.summaryCopy}>
+              先看總體狀態，再決定是調整降級模式、rollout 節奏，還是直接進 live 房間檢查。
+            </p>
+
+            <div className={styles.metricStrip}>
+              <div>
+                <strong>{healthOverview.liveRooms}</strong>
+                <span>Live 房</span>
+              </div>
+              <div>
+                <strong>{healthOverview.connectedHumans}</strong>
+                <span>連線中真人</span>
+              </div>
+              <div>
+                <strong>{healthOverview.drainingRooms + healthOverview.snapshotOnlyRooms}</strong>
+                <span>排空 / 快照</span>
+              </div>
+            </div>
+
+            <div className={styles.healthSummaryGrid}>
+              {healthCards.map((card) => (
+                <article
+                  key={card.key}
+                  className={`${styles.healthCard} ${getStateSurfaceClass(styles, card.state)}`}
+                  data-health-card={card.key}
+                  data-health-state={card.state}
+                >
+                  <div className={styles.healthCardHead}>
+                    <div className={styles.toggleMeta}>
+                      <strong>{card.label}</strong>
+                      <span>{card.message}</span>
+                    </div>
+                    <span
+                      className={`${styles.scopeChip} ${getStateChipClass(styles, card.state)}`}
+                      data-health-state={card.state}
+                    >
+                      {card.stateLabel}
+                    </span>
+                  </div>
+
+                  <div className={styles.scopeRow}>
+                    <span className={styles.scopeChip}>{card.scopeLabel}</span>
+                    {card.lastTransitionAt ? (
+                      <span className={styles.scopeChip}>
+                        最近切換 {formatTimestamp(card.lastTransitionAt)}
+                      </span>
+                    ) : null}
+                    {(card.safeActions || []).length > 0 ? (
+                      card.safeActions.map((action) => (
+                        <span
+                          key={`${card.key}:${action}`}
+                          className={styles.scopeChip}
+                          data-safe-action={action}
+                        >
+                          {getSafeActionLabel(action)}
+                        </span>
+                      ))
+                    ) : (
+                      <span className={styles.scopeChip}>目前無需額外操作</span>
+                    )}
+                  </div>
+
+                  <div className={styles.healthMetricGrid}>
+                    {(card.metrics || []).map((metric) => (
+                      <div key={`${card.key}:${metric.label}`}>
+                        <strong>{metric.value}</strong>
+                        <span>{metric.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className={`${styles.panel} ${styles.panelSpan}`}>
+            <div className={styles.panelHead}>
+              <div>
+                <h2>第二波 rollout</h2>
+                <span>按標題控制上線節奏，先改入口展示，再決定是否開放新房</span>
+              </div>
+              <strong>{rolloutManagedTitles} 個標題</strong>
+            </div>
+            <p className={styles.summaryCopy}>
+              這裡的三態控制只影響入口展示與新房節奏，不會原地改寫既有 live 房或房號加入流程。
+            </p>
+
+            <div className={styles.metricStrip}>
+              <div>
+                <strong>{rolloutStateCounts.playable}</strong>
+                <span>已可開放</span>
+              </div>
+              <div>
+                <strong>{rolloutStateCounts["paused-new-rooms"]}</strong>
+                <span>暫停新房</span>
+              </div>
+              <div>
+                <strong>{rolloutOverrideCount}</strong>
+                <span>後台覆寫</span>
+              </div>
+            </div>
+
+            <div className={styles.controlGrid}>
+              {rolloutFamilies.map((family) => (
+                <article
+                  key={family.key}
+                  className={styles.controlFamily}
+                  data-rollout-family={family.key}
+                >
+                  <div className={styles.familyHead}>
+                    <h3>{family.label}</h3>
+                    <p>{family.items?.length || 0} 個標題可單獨調整節奏</p>
+                  </div>
+
+                  <div className={styles.toggleStack}>
+                    {(family.items || []).map((item) => (
+                      <div
+                        key={item.gameKey}
+                        className={`${styles.rolloutRow} ${getStateSurfaceClass(
+                          styles,
+                          item.rolloutState
+                        )}`}
+                        data-rollout-game={item.gameKey}
+                        data-rollout-state={item.rolloutState}
+                      >
+                        <div className={styles.toggleMeta}>
+                          <strong>{item.title}</strong>
+                          <span>{item.strapline || "保留入口，視節奏調整狀態"}</span>
+                          <div className={styles.scopeRow}>
+                            <span
+                              className={`${styles.scopeChip} ${getStateChipClass(
+                                styles,
+                                item.rolloutState
+                              )}`}
+                            >
+                              {getRolloutStateLabel(item.rolloutState)}
+                            </span>
+                            <span className={styles.scopeChip}>
+                              {getRolloutBlastRadiusLabel(item.rolloutState)}
+                            </span>
+                            <span className={styles.scopeChip}>
+                              {item.stateSource === "admin-override" ? "後台覆寫" : "catalog 預設"}
+                            </span>
+                          </div>
+                          <p className={styles.rolloutSummary}>{item.stateDescription}</p>
+                          <div className={styles.scopeRow}>
+                            <span className={styles.scopeChip}>
+                              實際入口：{item.stateLabel}
+                            </span>
+                            <span className={styles.scopeChip}>
+                              {item.enabled ? "新房開關已開" : "新房開關已關"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={styles.rolloutActions}>
+                          {["coming-soon", "paused-new-rooms", "playable"].map((state) => (
+                            <button
+                              key={state}
+                              className={
+                                item.rolloutState === state ? "primary-button" : "ghost-button"
+                              }
+                              type="button"
+                              data-set-rollout-state={state}
+                              disabled={
+                                savingKey === `rollout:${item.gameKey}` ||
+                                item.rolloutState === state
+                              }
+                              onClick={() => saveRolloutControl(item, state)}
+                            >
+                              {savingKey === `rollout:${item.gameKey}` &&
+                              item.rolloutState !== state
+                                ? "保存中..."
+                                : getRolloutStateLabel(state)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <section className={`${styles.panel} ${styles.panelSpan}`}>
             <div className={styles.panelHead}>
               <div>
@@ -710,6 +970,101 @@ export default function AdminPage() {
                         </div>
                       )}
                     </div>
+
+                    {selectedLiveRoomDetail.voiceDiagnostics ? (
+                      <div
+                        className={`${styles.voiceDiagnostics} ${getStateSurfaceClass(
+                          styles,
+                          selectedLiveRoomDetail.voiceDiagnostics.degradedState?.state ||
+                            selectedLiveRoomDetail.voiceDiagnostics.runtimeState
+                        )}`}
+                        data-room-voice-diagnostics={selectedLiveRoomDetail.roomNo}
+                      >
+                        <div className={styles.liveRoomOccupantsHead}>
+                          <div className={styles.toggleMeta}>
+                            <strong>派對語音診斷</strong>
+                            <span>只讀資訊，協助判斷是否需要切換降級模式或介入房間操作。</span>
+                          </div>
+                          <div className={styles.scopeRow}>
+                            <span
+                              className={`${styles.scopeChip} ${getStateChipClass(
+                                styles,
+                                selectedLiveRoomDetail.voiceDiagnostics.degradedState?.state ||
+                                  selectedLiveRoomDetail.voiceDiagnostics.runtimeState
+                              )}`}
+                            >
+                              {getAvailabilityStateDisplayLabel(
+                                selectedLiveRoomDetail.voiceDiagnostics.degradedState?.state ||
+                                  selectedLiveRoomDetail.voiceDiagnostics.runtimeState
+                              )}
+                            </span>
+                            <span className={styles.scopeChip}>
+                              {getVoiceModeLabel(selectedLiveRoomDetail.voiceDiagnostics.mode)}
+                            </span>
+                            <span className={styles.scopeChip}>
+                              {selectedLiveRoomDetail.voiceDiagnostics.stickyRelay
+                                ? "Sticky relay"
+                                : "按需 relay"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className={styles.summaryCopy}>
+                          {selectedLiveRoomDetail.voiceDiagnostics.degradedState?.message ||
+                            getVoiceDiagnosticsSummary(selectedLiveRoomDetail.voiceDiagnostics)}
+                        </p>
+
+                        <div className={styles.voiceMetricGrid}>
+                          <div>
+                            <strong>
+                              {getVoiceReasonLabel(
+                                selectedLiveRoomDetail.voiceDiagnostics.lastReasonCode
+                              )}
+                            </strong>
+                            <span>最近原因</span>
+                          </div>
+                          <div>
+                            <strong>
+                              {formatTimestamp(
+                                selectedLiveRoomDetail.voiceDiagnostics.lastTransitionAt
+                              ) || "未切換"}
+                            </strong>
+                            <span>最近切換</span>
+                          </div>
+                          <div>
+                            <strong>
+                              {formatTimestamp(
+                                selectedLiveRoomDetail.voiceDiagnostics.lastRecoveredAt
+                              ) || "尚未恢復"}
+                            </strong>
+                            <span>最近恢復</span>
+                          </div>
+                          <div>
+                            <strong>
+                              {selectedLiveRoomDetail.voiceDiagnostics.reconnectGraceSeconds}s
+                            </strong>
+                            <span>重連寬限</span>
+                          </div>
+                          <div>
+                            <strong>
+                              {selectedLiveRoomDetail.voiceDiagnostics.resumeMutedOnRecovery
+                                ? "回來先靜音"
+                                : "可自動恢復"}
+                            </strong>
+                            <span>恢復策略</span>
+                          </div>
+                          <div>
+                            <strong>
+                              {selectedLiveRoomDetail.voiceDiagnostics.degradedState?.safeActions
+                                ?.map((action) => getSafeActionLabel(action))
+                                .filter(Boolean)
+                                .join(" / ") || "無需額外操作"}
+                            </strong>
+                            <span>安全操作</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
 
                     <div className={styles.liveRoomActionBarWide}>
                       <button
@@ -1157,7 +1512,7 @@ export default function AdminPage() {
                       <div className={styles.auditRowHead}>
                         <div className={styles.auditSummary}>
                           <strong>{ACTION_LABELS[item.action] || item.action}</strong>
-                          <span>{formatAuditTarget(item, capabilityLabels)}</span>
+                          <span>{formatAuditTarget(item, gameLabels)}</span>
                         </div>
                         <div className={styles.auditMeta}>
                           <span>{formatAuditOperator(item)}</span>
@@ -1281,6 +1636,22 @@ function getAvailabilityStateActionLabel(state) {
   return "恢復正常";
 }
 
+function getAvailabilityStateDisplayLabel(state) {
+  if (state === "blocked") {
+    return "已暫停";
+  }
+
+  if (state === "degraded" || state === "paused-new-rooms") {
+    return "降級中";
+  }
+
+  if (state === "coming-soon") {
+    return "即將推出";
+  }
+
+  return "健康";
+}
+
 function pickPreferredRoomNo(items, currentRoomNo) {
   if (items.some((item) => item.roomNo === currentRoomNo)) {
     return currentRoomNo;
@@ -1303,11 +1674,10 @@ function summarizeLiveRoom(room) {
     lastActiveAt: room.lastActiveAt,
     ownerId: room.ownerId,
     occupancy: {
-      total: room.runtimeHealth?.totalOccupants || room.occupancy?.total || 0,
-      humans: room.runtimeHealth?.humanOccupants || room.occupancy?.humans || 0,
-      bots: room.runtimeHealth?.botOccupants || room.occupancy?.bots || 0,
-      connectedHumans:
-        room.runtimeHealth?.connectedHumans || room.occupancy?.connectedHumans || 0
+      total: room.runtimeHealth?.totalOccupants ?? room.occupancy?.total ?? 0,
+      humans: room.runtimeHealth?.humanOccupants ?? room.occupancy?.humans ?? 0,
+      bots: room.runtimeHealth?.botOccupants ?? room.occupancy?.bots ?? 0,
+      connectedHumans: room.runtimeHealth?.connectedHumans ?? room.occupancy?.connectedHumans ?? 0
     }
   };
 }
@@ -1325,6 +1695,71 @@ function upsertLiveRoomSummary(currentItems, room) {
 function getRuntimeValue(controls, key, fallbackValue) {
   const match = controls.find((item) => item.key === key);
   return match ? match.value : fallbackValue;
+}
+
+function summarizeRolloutStateCounts(families) {
+  return families.flatMap((family) => family.items || []).reduce(
+    (summary, item) => {
+      const state = String(item?.rolloutState || "").trim() || "coming-soon";
+      summary[state] = Number(summary[state] || 0) + 1;
+      return summary;
+    },
+    {
+      playable: 0,
+      "paused-new-rooms": 0,
+      "coming-soon": 0
+    }
+  );
+}
+
+function countRolloutOverrides(families) {
+  return families
+    .flatMap((family) => family.items || [])
+    .filter((item) => item.stateSource === "admin-override").length;
+}
+
+function getOverallHealthLabel(state) {
+  if (state === "blocked") {
+    return "需要立即處理";
+  }
+
+  if (state === "degraded") {
+    return "部分降級";
+  }
+
+  return "整體健康";
+}
+
+function getStateChipClass(styles, state) {
+  if (state === "blocked") {
+    return styles.stateBlocked;
+  }
+
+  if (state === "degraded" || state === "paused-new-rooms") {
+    return styles.stateDegraded;
+  }
+
+  if (state === "coming-soon") {
+    return styles.stateComingSoon;
+  }
+
+  return styles.stateHealthy;
+}
+
+function getStateSurfaceClass(styles, state) {
+  if (state === "blocked") {
+    return styles.surfaceBlocked;
+  }
+
+  if (state === "degraded" || state === "paused-new-rooms") {
+    return styles.surfaceDegraded;
+  }
+
+  if (state === "coming-soon") {
+    return styles.surfaceComingSoon;
+  }
+
+  return styles.surfaceHealthy;
 }
 
 function getFamilyLabel(familyKey) {
@@ -1427,6 +1862,66 @@ function getAvailabilitySubsystemLabel(subsystem) {
   }
 
   return subsystem || "未知";
+}
+
+function getRolloutStateLabel(state) {
+  if (state === "playable") {
+    return "已可開放";
+  }
+
+  if (state === "paused-new-rooms") {
+    return "暫停新房";
+  }
+
+  return "即將推出";
+}
+
+function getRolloutBlastRadiusLabel(state) {
+  if (state === "playable") {
+    return "已可開放";
+  }
+
+  if (state === "paused-new-rooms") {
+    return "暫停新房";
+  }
+
+  return "只影響入口展示";
+}
+
+function getVoiceModeLabel(mode) {
+  if (mode === "relay-required") {
+    return "Relay 鎖定";
+  }
+
+  return "直連優先";
+}
+
+function getVoiceReasonLabel(reasonCode) {
+  if (reasonCode === "voice-ice-failed") {
+    return "ICE 失敗";
+  }
+
+  if (reasonCode === "voice-startup-timeout") {
+    return "啟動逾時";
+  }
+
+  if (reasonCode === "voice-persistent-disconnect") {
+    return "持續斷線";
+  }
+
+  return "目前無異常";
+}
+
+function getVoiceDiagnosticsSummary(voiceDiagnostics) {
+  if (!voiceDiagnostics) {
+    return "目前沒有可顯示的語音診斷。";
+  }
+
+  if (voiceDiagnostics.mode === "relay-required") {
+    return "目前房內語音固定走 relay / recovery 路徑，適合先觀察恢復狀態再介入。";
+  }
+
+  return "目前維持直連優先，必要時才會切入 relay 或 recovery 路徑。";
 }
 
 function getTemplateRuleSummary(settings) {
