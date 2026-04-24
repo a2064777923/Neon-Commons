@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 大跃进
 status: planning
-stopped_at: Phase 15 context gathered
-last_updated: "2026-04-24T11:05:13.494Z"
+stopped_at: Phase 15 UI-SPEC approved
+last_updated: "2026-04-24T11:19:56.271Z"
 last_activity: 2026-04-24 -- Phase 14 launch contract completed, deployed, and browser-verified
 progress:
   total_phases: 6
@@ -112,7 +112,7 @@ None yet.
 ## Session Continuity
 
 Last session: --stopped-at
-Stopped at: Phase 15 context gathered
+Stopped at: Phase 15 UI-SPEC approved
 Resume file: --resume-file
 
 **Last completed phase:** 14 (Wave 2 Launch Contract) — 2 plans — 2026-04-24
