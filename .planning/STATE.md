@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 大跃进
-status: ready_for_planning
-stopped_at: Phase 13 completed and verified
-last_updated: "2026-04-24T08:58:00.000Z"
-last_activity: 2026-04-24 -- Phase 13 execution completed, deployed to 3100, and verified
+status: planning
+stopped_at: Phase 15 context gathered
+last_updated: "2026-04-24T11:05:13.494Z"
+last_activity: 2026-04-24 -- Phase 14 launch contract completed, deployed, and browser-verified
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 16
-  completed_plans: 10
-  percent: 63
+  completed_phases: 4
+  total_plans: 12
+  completed_plans: 12
+  percent: 100
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-23)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** Phase 14 — Wave 2 Launch Contract planning
+**Current focus:** Phase 15 — Wave 2 Delivery Set A planning
 
 ## Current Position
 
-Phase: 13 completed
-Plan: 13-01 to 13-03 completed
-Status: Ready to plan Phase 14
-Last activity: 2026-04-24 -- Phase 13 admin HA rollout control plane completed and verified
+Phase: 14 completed
+Plan: 14-01 and 14-02 completed
+Status: Phase 14 executed, deployed, and verified; ready to plan Phase 15
+Last activity: 2026-04-24 -- Phase 14 launch contract completed, deployed, and browser-verified
 
-Progress: [██████░░░░] 63%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
 
 - Last milestone plans completed: 9
-- Current milestone plans completed: 10
+- Current milestone plans completed: 12
 - Average duration: —
 - Total execution time: —
 
@@ -48,16 +48,16 @@ Progress: [██████░░░░] 63%
 | 11 | 4/4 | - | - |
 | 12 | 3/3 | - | - |
 | 13 | 3/3 | - | - |
-| 14 | 0/2 | - | - |
+| 14 | 2/2 | - | - |
 | 15 | 0/2 | - | - |
 | 16 | 0/2 | - | - |
 
 **Recent Trend:**
 
 - Last shipped milestone: v1.1 Live Ops & Reliability
-- Trend: the repo is moving from single-node recovery hardening toward broader availability, voice resilience, and Wave 2 content delivery
+- Trend: the repo now has backend-authored Wave 2 launch plumbing and is ready to move from discovery staging into actual title delivery
 
-| Phase 13 P01-P03 | latest | 6 tasks | backend, admin UI, docs, tests |
+| Phase 14 P01-P02 | latest | 2 tasks | backend launch contract, hub/lobby UI, browser verification |
 
 ## Accumulated Context
 
@@ -89,6 +89,8 @@ Recent decisions affecting current work:
 - [10-03]: Treat roadmap and requirement status as shipped-artifact traceability, not just original plan ordering
 - [v1.2 Init]: Push the next milestone toward higher availability through degraded-mode controls, voice reliability, Wave 2 content, and stronger operator tooling instead of attempting full distributed room recovery immediately
 - [Phase 11]: Keep room availability truth separate from degraded subsystem state — Lets snapshot-only recovery and operator-driven degradation coexist without rewriting shipped availability semantics
+- [14-01]: Build one additive backend-owned launchContract in discovery synthesis so hub and admin surfaces share the same Wave 2 launch truth
+- [14-02]: Make homepage and lobby pages obey launchContract for routability and room-creation gating, and fail closed for staged titles on direct URLs
 
 ### Pending Todos
 
@@ -109,10 +111,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: Phase 13 execution
-Stopped at: Phase 13 completed and verified
-Resume file: .planning/phases/13-admin-ha-rollout-control-plane/13-03-SUMMARY.md
+Last session: --stopped-at
+Stopped at: Phase 15 context gathered
+Resume file: --resume-file
 
-**Last completed phase:** 13 (Admin HA & Rollout Control Plane) — 3 plans — 2026-04-24
+**Last completed phase:** 14 (Wave 2 Launch Contract) — 2 plans — 2026-04-24
 
-**Next recommended action:** Run `$gsd-plan-phase 14` to start the Wave 2 launch contract phase
+**Next recommended action:** Run `$gsd-next` to route into Phase 15 planning
