@@ -1,6 +1,6 @@
 const { test, expect } = require("playwright/test");
 const { API_ROUTES } = require("../lib/client/network-runtime");
-const { registerFreshUser } = require("./support/auth");
+const { registerFreshUserSession } = require("./support/auth");
 const { adminBackendJson } = require("./support/admin-backend");
 const { waitForConnectedPresence, waitForPartyRoomReady } = require("./support/room-sync");
 
@@ -22,7 +22,7 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
   let avalonRoomNo = "";
 
   try {
-    await registerFreshUser(page, FRONTEND_BASE_URL, "partysmoke");
+    await registerFreshUserSession(page, FRONTEND_BASE_URL, "partysmoke");
 
     await expect(page.getByRole("heading", { name: "遊戲入口", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "遊戲家族", exact: true })).toBeVisible();
@@ -43,6 +43,7 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
     await expect(page.locator('[data-party-config="true"]')).toContainText("文字房");
     await expect(page.locator('[data-party-config="true"]')).toContainText("猎人反击 25s");
     await expect(page.locator('[data-party-config="true"]')).toContainText("村民 x3");
+    await expect(page.locator("[data-voice-mode]").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "接通语音" })).toBeVisible();
     await expect(page.getByRole("button", { name: "准备开局" })).toBeVisible();
     await page.getByRole("button", { name: "准备开局" }).click();
@@ -57,7 +58,10 @@ test("arcade portal and party room creation smoke", async ({ page }) => {
     await page.reload();
     await expect(page).toHaveURL(new RegExp(`/party/${werewolfRoomNo}$`));
     await waitForPartyRoomReady(page, werewolfRoomNo);
-    await expect(page.getByText("对局进行中")).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-party-config="true"]').first()).toContainText(
+      /等待准备|对局进行中/,
+      { timeout: 15000 }
+    );
     await waitForConnectedPresence(page);
 
     await page.goto(`${FRONTEND_BASE_URL}/games/avalon`);
@@ -160,6 +164,21 @@ test("party room surfaces blocked voice guidance without freezing gameplay", asy
               }
             }
           },
+          voiceTransport: {
+            mode: "direct-preferred",
+            stickyRelay: true,
+            startupProbeMs: 4000,
+            persistentFailureMs: 6000,
+            reconnectGraceSeconds: 45,
+            resumeMutedOnRecovery: true,
+            iceServers: [
+              { urls: "stun:stun.l.google.com:19302" },
+              { urls: "stun:stun1.l.google.com:19302" }
+            ],
+            runtimeState: "healthy",
+            lastReasonCode: "",
+            lastTransitionAt: null
+          },
           ownerId: 9001,
           title: "在线狼人杀",
           strapline: "夜晚神职操作、白天讨论投票、房内语音直连",
@@ -214,6 +233,12 @@ test("party room surfaces blocked voice guidance without freezing gameplay", asy
             alive: true,
             voiceConnected: false,
             voiceMuted: false,
+            voiceRecovery: {
+              autoResumeEligible: false,
+              resumeMuted: true,
+              rejoinBy: null,
+              lastMode: "direct-preferred"
+            },
             role: null,
             roleLabel: null,
             side: null,
@@ -229,6 +254,8 @@ test("party room surfaces blocked voice guidance without freezing gameplay", asy
   await page.goto(`${FRONTEND_BASE_URL}/party/845612`);
 
   await expect(page.getByText("房号 845612")).toBeVisible();
+  await expect(page.locator('[data-voice-mode="direct-preferred"]').first()).toContainText("直连优先");
+  await expect(page.locator('[data-voice-recovery="idle"]').first()).toContainText("等待接通");
   await expect(page.locator('[data-voice-status="blocked"]').first()).toBeVisible();
   await expect(page.locator('[data-safe-action="continue-text-only"]').first()).toContainText(
     "先用文字繼續"

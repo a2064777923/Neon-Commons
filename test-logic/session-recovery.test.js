@@ -149,6 +149,7 @@ test("party room reconnect grace applies only to human seats and reconnect resto
   manager.addBot(room.roomNo, owner.id, 1);
 
   manager.registerSocket(room.roomNo, guest.id, createSocket("party-socket-1"));
+  manager.voiceJoin(room.roomNo, guest.id, false);
   manager.unregisterSocket("party-socket-1");
 
   const serializedAfterDisconnect = manager.serializeRoom(room, guest.id);
@@ -156,19 +157,20 @@ test("party room reconnect grace applies only to human seats and reconnect resto
     (player) => player.userId === guest.id
   );
   const botSeat = serializedAfterDisconnect.players.find((player) => player.isBot);
+  const reconnectGraceEndsAt = room.players.find((player) => player.userId === guest.id).reconnectGraceEndsAt;
 
   assert.equal(serializedAfterDisconnect.voiceTransport.mode, "direct-preferred");
   assert.equal(serializedAfterDisconnect.voiceTransport.reconnectGraceSeconds, 45);
   assert.deepEqual(serializedAfterDisconnect.viewer.voiceRecovery, {
-    autoResumeEligible: false,
+    autoResumeEligible: true,
     resumeMuted: true,
-    rejoinBy: null,
+    rejoinBy: reconnectGraceEndsAt,
     lastMode: "direct-preferred"
   });
   assert.deepEqual(pickRecoveryFields(guestSeatAfterDisconnect), {
     connected: false,
     presenceState: "reconnecting",
-    reconnectGraceEndsAt: room.players.find((player) => player.userId === guest.id).reconnectGraceEndsAt
+    reconnectGraceEndsAt
   });
   assert.deepEqual(pickRecoveryFields(botSeat), {
     connected: true,
@@ -188,6 +190,46 @@ test("party room reconnect grace applies only to human seats and reconnect resto
       reconnectGraceEndsAt: null
     }
   );
+  assert.deepEqual(manager.serializeRoom(room, guest.id).viewer.voiceRecovery, {
+    autoResumeEligible: true,
+    resumeMuted: true,
+    rejoinBy: reconnectGraceEndsAt,
+    lastMode: "direct-preferred"
+  });
+
+  manager.voiceJoin(room.roomNo, guest.id, true);
+
+  assert.deepEqual(manager.serializeRoom(room, guest.id).viewer.voiceRecovery, {
+    autoResumeEligible: false,
+    resumeMuted: true,
+    rejoinBy: null,
+    lastMode: "direct-preferred"
+  });
+});
+
+test("party voice recovery intent expires with the reconnect window", async (t) => {
+  resetLiveRoomState();
+  t.after(resetLiveRoomState);
+
+  const manager = getPartyRoomManager();
+  manager.reconnectGraceMs = 25;
+
+  const owner = { id: 212, username: "owner212", displayName: "Owner 212" };
+  const guest = { id: "guest_party_voice_expiry", username: "guest_party_voice_expiry", displayName: "Guest Voice Expiry" };
+  const room = manager.createRoom(owner, "werewolf", {
+    visibility: "private",
+    maxPlayers: 8
+  });
+  manager.joinRoom(room.roomNo, guest);
+
+  manager.registerSocket(room.roomNo, guest.id, createSocket("party-socket-expiry-1"));
+  manager.voiceJoin(room.roomNo, guest.id, false);
+  manager.unregisterSocket("party-socket-expiry-1");
+
+  assert.equal(manager.serializeRoom(room, guest.id).viewer.voiceRecovery.autoResumeEligible, true);
+
+  await sleep(40);
+
   assert.deepEqual(manager.serializeRoom(room, guest.id).viewer.voiceRecovery, {
     autoResumeEligible: false,
     resumeMuted: true,

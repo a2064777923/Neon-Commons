@@ -5,6 +5,7 @@ import MatchResultOverlay from "../../components/MatchResultOverlay";
 import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
+import { usePartyVoiceRuntime } from "../../lib/client/party-voice-runtime";
 import {
   clearPendingGuestMatchClaim,
   getDegradedSubsystem,
@@ -34,11 +35,6 @@ const QUICK_LINES = {
   avalon: ["这队能过", "我不信这票", "任务稳住", "我来带队", "刺客注意视角"]
 };
 
-const ICE_SERVERS = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" }
-];
-
 export default function PartyRoomPage() {
   const router = useRouter();
   const { roomNo } = router.query;
@@ -47,10 +43,6 @@ export default function PartyRoomPage() {
   const [message, setMessage] = useState("");
   const [joining, setJoining] = useState(false);
   const [nowMs, setNowMs] = useState(Date.now());
-  const [voiceJoined, setVoiceJoined] = useState(false);
-  const [voiceMuted, setVoiceMuted] = useState(false);
-  const [voiceError, setVoiceError] = useState("");
-  const [remoteStreams, setRemoteStreams] = useState({});
   const [noteText, setNoteText] = useState("");
   const [dismissedResultKey, setDismissedResultKey] = useState("");
   const [socketConnected, setSocketConnected] = useState(null);
@@ -62,11 +54,6 @@ export default function PartyRoomPage() {
   const roomRef = useRef(null);
   const messageTimerRef = useRef(null);
   const recoveryTimerRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const peerConnectionsRef = useRef({});
-  const remoteAudioRefs = useRef({});
-  const joinedVoiceRef = useRef(false);
-  const voiceMutedRef = useRef(false);
   const guestClaimSyncRef = useRef("");
   const previousSocketConnectedRef = useRef(null);
 
@@ -102,6 +89,78 @@ export default function PartyRoomPage() {
   const voiceBlocked = isSubsystemBlocked(room, "voice");
   const voiceDegraded = isSubsystemDegraded(room, "voice");
   const voiceSafeActionLabels = getSafeActionLabels(voiceStatus.safeActions);
+  const {
+    voiceJoined,
+    voiceMuted,
+    voiceError,
+    remoteStreams,
+    bindRemoteAudioRef,
+    cleanupVoice,
+    enableVoice,
+    handleVoicePeers,
+    handleVoiceSignal,
+    handleVoiceUserLeft,
+    toggleVoiceMute
+  } = usePartyVoiceRuntime({
+    roomNo,
+    room,
+    viewer: mySeat,
+    socket,
+    initialMuted: false,
+    voiceEvents: VOICE_EVENTS,
+    subscribeToRoom() {
+      if (socket && roomNo) {
+        socket.emit(PARTY_EVENTS.subscribe, { roomNo });
+      }
+    },
+    getManualJoinOptions() {
+      if (!mySeat) {
+        return {
+          allowed: false,
+          error: "请先加入房间并入座，再接通语音"
+        };
+      }
+
+      if (voiceBlocked) {
+        return {
+          allowed: false,
+          error: voiceStatus.message || "語音暫時停用，請先使用文字溝通。"
+        };
+      }
+
+      if (room?.config?.voiceEnabled === false) {
+        return {
+          allowed: false,
+          error: "当前房间未开启语音"
+        };
+      }
+
+      if (!socket) {
+        return {
+          allowed: false,
+          error: "房间连接尚未建立，请稍后再试"
+        };
+      }
+
+      return {
+        allowed: true,
+        muted: false,
+        receiveOnly: false
+      };
+    },
+    getRecoveryJoinOptions() {
+      return {
+        allowed: Boolean(mySeat) && !voiceBlocked && room?.config?.voiceEnabled !== false && Boolean(socket),
+        muted: true,
+        receiveOnly: true
+      };
+    },
+    permissionsErrorText: "麦克风权限未开启或设备不可用",
+    negotiationErrorText: "语音连接协商失败",
+    showMessage
+  });
+  const voiceModeState = room?.voiceTransport?.mode || "direct-preferred";
+  const voiceRecoveryState = getPartyVoiceRecoveryState({ mySeat, voiceJoined, voiceMuted });
 
   useEffect(() => {
     if (!roomNo) {
@@ -178,24 +237,6 @@ export default function PartyRoomPage() {
       showMessage(error || "房间操作失败");
     }
 
-    function onVoicePeers({ peers }) {
-      if (!joinedVoiceRef.current) {
-        return;
-      }
-
-      for (const peer of peers || []) {
-        if (peer.userId !== me.id) {
-          createOffer(peer.userId).catch(() => {
-            showMessage("语音连接协商失败");
-          });
-        }
-      }
-    }
-
-    function onVoiceUserLeft(payload) {
-      detachRemotePeer(payload.userId);
-    }
-
     function onVoiceSignal(payload) {
       handleVoiceSignal(payload).catch(() => {
         showMessage("语音连接协商失败");
@@ -212,8 +253,8 @@ export default function PartyRoomPage() {
     socket.on("disconnect", onDisconnect);
     socket.on(PARTY_EVENTS.update, onRoomUpdate);
     socket.on(PARTY_EVENTS.error, onRoomError);
-    socket.on(PARTY_EVENTS.voicePeers, onVoicePeers);
-    socket.on(PARTY_EVENTS.voiceUserLeft, onVoiceUserLeft);
+    socket.on(PARTY_EVENTS.voicePeers, handleVoicePeers);
+    socket.on(PARTY_EVENTS.voiceUserLeft, handleVoiceUserLeft);
     socket.on(VOICE_EVENTS.signal, onVoiceSignal);
 
     subscribeIfSeated();
@@ -223,11 +264,11 @@ export default function PartyRoomPage() {
       socket.off("disconnect", onDisconnect);
       socket.off(PARTY_EVENTS.update, onRoomUpdate);
       socket.off(PARTY_EVENTS.error, onRoomError);
-      socket.off(PARTY_EVENTS.voicePeers, onVoicePeers);
-      socket.off(PARTY_EVENTS.voiceUserLeft, onVoiceUserLeft);
+      socket.off(PARTY_EVENTS.voicePeers, handleVoicePeers);
+      socket.off(PARTY_EVENTS.voiceUserLeft, handleVoiceUserLeft);
       socket.off(VOICE_EVENTS.signal, onVoiceSignal);
     };
-  }, [roomNo, me]);
+  }, [roomNo, me, handleVoicePeers, handleVoiceUserLeft]);
 
   useEffect(() => {
     if (!roomNo || !mySeat || !socket) {
@@ -236,16 +277,6 @@ export default function PartyRoomPage() {
 
     socket.emit(PARTY_EVENTS.subscribe, { roomNo });
   }, [roomNo, mySeat]);
-
-  useEffect(() => {
-    if (!voiceBlocked) {
-      return;
-    }
-
-    if (joinedVoiceRef.current) {
-      cleanupVoice(true, true);
-    }
-  }, [voiceBlocked]);
 
   useEffect(() => {
     if (!room?.phaseEndsAt) {
@@ -392,215 +423,6 @@ export default function PartyRoomPage() {
     socket?.emit(PARTY_EVENTS.action, { roomNo, payload });
   }
 
-  async function enableVoice() {
-    if (!mySeat) {
-      setVoiceError("请先加入房间并入座，再接通语音");
-      return;
-    }
-
-    if (voiceBlocked) {
-      setVoiceError(voiceStatus.message || "語音暫時停用，請先使用文字溝通。");
-      return;
-    }
-
-    if (room?.config?.voiceEnabled === false) {
-      setVoiceError("当前房间未开启语音");
-      return;
-    }
-
-    if (!socket) {
-      setVoiceError("房间连接尚未建立，请稍后再试");
-      return;
-    }
-
-    try {
-      setVoiceError("");
-      if (!localStreamRef.current) {
-        localStreamRef.current = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
-      }
-
-      localStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !voiceMutedRef.current;
-      });
-
-      socket.emit(PARTY_EVENTS.subscribe, { roomNo });
-      joinedVoiceRef.current = true;
-      setVoiceJoined(true);
-      socket.emit(VOICE_EVENTS.join, { roomNo, muted: voiceMutedRef.current });
-    } catch (error) {
-      setVoiceError("麦克风权限未开启或设备不可用");
-    }
-  }
-
-  function cleanupVoice(stopTracks = true, notifyServer = true) {
-    if (notifyServer && joinedVoiceRef.current) {
-      socket?.emit(VOICE_EVENTS.leave, { roomNo });
-    }
-
-    joinedVoiceRef.current = false;
-    setVoiceJoined(false);
-
-    Object.keys(peerConnectionsRef.current).forEach((userId) => detachRemotePeer(userId));
-
-    if (stopTracks && localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
-    }
-  }
-
-  function detachRemotePeer(userId) {
-    const pc = peerConnectionsRef.current[userId];
-    if (pc) {
-      pc.ontrack = null;
-      pc.onicecandidate = null;
-      pc.close();
-      delete peerConnectionsRef.current[userId];
-    }
-
-    setRemoteStreams((current) => {
-      if (!current[userId]) {
-        return current;
-      }
-      const next = { ...current };
-      delete next[userId];
-      return next;
-    });
-  }
-
-  function getOrCreatePeerConnection(userId) {
-    if (peerConnectionsRef.current[userId]) {
-      return peerConnectionsRef.current[userId];
-    }
-
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket?.emit(VOICE_EVENTS.signal, {
-          roomNo,
-          targetUserId: userId,
-          data: {
-            type: "candidate",
-            candidate: event.candidate
-          }
-        });
-      }
-    };
-    pc.ontrack = (event) => {
-      const [stream] = event.streams;
-      if (!stream) {
-        return;
-      }
-
-      setRemoteStreams((current) => ({
-        ...current,
-        [userId]: stream
-      }));
-
-      const audio = remoteAudioRefs.current[userId];
-      if (audio) {
-        if (audio.srcObject !== stream) {
-          audio.srcObject = stream;
-        }
-        audio.play?.().catch(() => null);
-      }
-    };
-    pc.onconnectionstatechange = () => {
-      if (["closed", "failed", "disconnected"].includes(pc.connectionState)) {
-        detachRemotePeer(userId);
-      }
-    };
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => {
-        pc.addTrack(track, localStreamRef.current);
-      });
-    }
-
-    peerConnectionsRef.current[userId] = pc;
-    return pc;
-  }
-
-  async function createOffer(targetUserId) {
-    if (!joinedVoiceRef.current) {
-      return;
-    }
-
-    const pc = getOrCreatePeerConnection(targetUserId);
-    if (pc.signalingState !== "stable") {
-      return;
-    }
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket?.emit(VOICE_EVENTS.signal, {
-      roomNo,
-      targetUserId,
-      data: {
-        type: "offer",
-        sdp: pc.localDescription
-      }
-    });
-  }
-
-  async function handleVoiceSignal({ fromUserId, data }) {
-    if (!joinedVoiceRef.current) {
-      return;
-    }
-
-    const pc = getOrCreatePeerConnection(fromUserId);
-    if (data.type === "offer") {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket?.emit(VOICE_EVENTS.signal, {
-        roomNo,
-        targetUserId: fromUserId,
-        data: {
-          type: "answer",
-          sdp: pc.localDescription
-        }
-      });
-      return;
-    }
-
-    if (data.type === "answer") {
-      if (pc.signalingState === "have-local-offer") {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      }
-      return;
-    }
-
-    if (data.type === "candidate" && data.candidate) {
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-      } catch (error) {
-        return;
-      }
-    }
-  }
-
-  function toggleMute() {
-    const nextMuted = !voiceMutedRef.current;
-    voiceMutedRef.current = nextMuted;
-    setVoiceMuted(nextMuted);
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !nextMuted;
-      });
-    }
-
-    if (joinedVoiceRef.current) {
-      socket?.emit(VOICE_EVENTS.state, { roomNo, muted: nextMuted });
-    }
-  }
-
   async function sendNote(event) {
     event.preventDefault();
     const text = noteText.trim();
@@ -669,6 +491,7 @@ export default function PartyRoomPage() {
                 type="button"
                 className={styles.primaryButton}
                 data-voice-status={voiceStatus.state}
+                data-voice-action="join"
                 disabled={voiceBlocked}
                 onClick={enableVoice}
               >
@@ -680,12 +503,18 @@ export default function PartyRoomPage() {
               </button>
             ) : (
               <>
-                <button type="button" className={styles.hudButton} onClick={toggleMute}>
+                <button
+                  type="button"
+                  className={styles.hudButton}
+                  data-voice-action="toggle"
+                  onClick={toggleVoiceMute}
+                >
                   {voiceMuted ? "取消静音" : "麦克风静音"}
                 </button>
                 <button
                   type="button"
                   className={styles.hudButton}
+                  data-voice-action="leave"
                   onClick={() => cleanupVoice(true, true)}
                 >
                   断开语音
@@ -706,6 +535,10 @@ export default function PartyRoomPage() {
                 <span>{room.state === "waiting" ? "等待准备" : "对局进行中"}</span>
                 <span>{room.config.visibility === "private" ? "私密房" : "公开房"}</span>
                 <span>{room.config.voiceEnabled ? "语音已开启" : "文字房"}</span>
+                <span data-voice-mode={voiceModeState}>{getPartyVoiceModeLabel(voiceModeState)}</span>
+                <span data-voice-recovery={voiceRecoveryState}>
+                  {getPartyVoiceRecoveryLabel(voiceRecoveryState)}
+                </span>
                 {voiceDegraded ? (
                   <span data-voice-status={voiceStatus.state}>
                     {voiceBlocked ? "語音暫停" : "語音降級"}
@@ -887,16 +720,7 @@ export default function PartyRoomPage() {
                 <audio
                   key={userId}
                   autoPlay
-                  ref={(node) => {
-                    if (!node) {
-                      return;
-                    }
-                    remoteAudioRefs.current[userId] = node;
-                    if (node.srcObject !== stream) {
-                      node.srcObject = stream;
-                    }
-                    node.play?.().catch(() => null);
-                  }}
+                  ref={(node) => bindRemoteAudioRef(userId, node)}
                 />
               ))}
             </section>
@@ -1594,6 +1418,46 @@ function getVoiceButtonLabel({ voiceBlocked, voiceDegraded, hasSeat }) {
   }
 
   return "接通语音";
+}
+
+function getPartyVoiceModeLabel(mode) {
+  return mode === "relay-required" ? "稳定模式" : "直连优先";
+}
+
+function getPartyVoiceRecoveryState({ mySeat, voiceJoined, voiceMuted }) {
+  if (mySeat?.voiceRecovery?.autoResumeEligible) {
+    return "rejoin-ready";
+  }
+
+  if (voiceJoined) {
+    return voiceMuted ? "joined-muted" : "joined-live";
+  }
+
+  if (getPresenceState(mySeat) === "reconnecting") {
+    return "reconnecting";
+  }
+
+  return "idle";
+}
+
+function getPartyVoiceRecoveryLabel(state) {
+  if (state === "rejoin-ready") {
+    return "重连后将以静音恢复";
+  }
+
+  if (state === "joined-muted") {
+    return "已接入静音";
+  }
+
+  if (state === "joined-live") {
+    return "语音已接通";
+  }
+
+  if (state === "reconnecting") {
+    return "房间重连中";
+  }
+
+  return "等待接通";
 }
 
 function capitalize(value) {

@@ -1,13 +1,15 @@
 const { test, expect } = require("playwright/test");
-const { registerFreshUser } = require("./support/auth");
+const { registerFreshUserSession } = require("./support/auth");
 const { waitForConnectedPresence, waitForUndercoverRoomReady } = require("./support/room-sync");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
 test("undercover dedicated room route supports one clue and vote loop", async ({ page }) => {
+  test.slow();
+  test.setTimeout(150000);
   page.setDefaultTimeout(30000);
 
-  await registerFreshUser(page, FRONTEND_BASE_URL, "undercoversmoke");
+  await registerFreshUserSession(page, FRONTEND_BASE_URL, "undercoversmoke");
 
   await page.goto(`${FRONTEND_BASE_URL}/games/undercover`);
   await expect(page.getByRole("heading", { name: "誰是臥底", exact: true })).toBeVisible();
@@ -114,6 +116,21 @@ test("undercover active speaker can access the mic path when voice is degraded",
               }
             }
           },
+          voiceTransport: {
+            mode: "relay-required",
+            stickyRelay: true,
+            startupProbeMs: 4000,
+            persistentFailureMs: 6000,
+            reconnectGraceSeconds: 45,
+            resumeMutedOnRecovery: true,
+            iceServers: [
+              { urls: "stun:stun.l.google.com:19302" },
+              { urls: "stun:stun1.l.google.com:19302" }
+            ],
+            runtimeState: "degraded",
+            lastReasonCode: "voice-persistent-disconnect",
+            lastTransitionAt: "2026-04-23T00:00:05.000Z"
+          },
           ownerId: 9201,
           title: "誰是臥底",
           strapline: "詞題分歧、輪流描述、抓出那個不對勁的人",
@@ -182,6 +199,12 @@ test("undercover active speaker can access the mic path when voice is degraded",
             alive: true,
             voiceConnected: false,
             voiceMuted: true,
+            voiceRecovery: {
+              autoResumeEligible: false,
+              resumeMuted: true,
+              rejoinBy: null,
+              lastMode: "relay-required"
+            },
             role: "civilian",
             roleLabel: "平民",
             side: "civilian",
@@ -207,6 +230,10 @@ test("undercover active speaker can access the mic path when voice is degraded",
 
   await page.goto(`${FRONTEND_BASE_URL}/undercover/845612`);
 
+  await expect(page.locator('[data-voice-mode="relay-required"]').first()).toContainText(
+    "穩定模式"
+  );
+  await expect(page.locator('[data-voice-recovery="idle"]').first()).toContainText("等待接入");
   await expect(page.locator('[data-voice-status="degraded"]').first()).toBeVisible();
   await expect(page.locator('[data-safe-action="active-speaker-only"]').first()).toContainText(
     "輪到描述者再開咪"

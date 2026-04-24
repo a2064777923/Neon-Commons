@@ -298,6 +298,136 @@ test("party room detail keeps additive voice transport and recovery fields", asy
   );
 });
 
+test("party room voice reports promote sticky relay mode without reverting room transport", (t) => {
+  resetPartyRoomState();
+  t.after(resetPartyRoomState);
+
+  const manager = getPartyRoomManager();
+  const owner = { id: 911, username: "owner911", displayName: "Owner 911" };
+  const room = manager.createRoom(owner, "werewolf", {
+    visibility: "private",
+    maxPlayers: 8
+  });
+
+  manager.reportVoiceTransport(room.roomNo, owner.id, {
+    reason: "startup-timeout"
+  });
+
+  const serializedAfterStartupTimeout = manager.serializeRoom(room, owner.id);
+  assert.equal(serializedAfterStartupTimeout.voiceTransport.mode, "relay-required");
+  assert.equal(serializedAfterStartupTimeout.voiceTransport.stickyRelay, true);
+  assert.equal(serializedAfterStartupTimeout.voiceTransport.runtimeState, "degraded");
+  assert.equal(serializedAfterStartupTimeout.voiceTransport.lastReasonCode, "voice-startup-timeout");
+  assert.ok(serializedAfterStartupTimeout.voiceTransport.lastTransitionAt);
+  assert.equal(serializedAfterStartupTimeout.degradedState.subsystems.voice.state, "degraded");
+  assert.equal(
+    serializedAfterStartupTimeout.degradedState.subsystems.voice.reasonCode,
+    "voice-startup-timeout"
+  );
+
+  manager.reportVoiceTransport(room.roomNo, owner.id, {
+    reason: "persistent-disconnect"
+  });
+
+  const serializedAfterPersistentDisconnect = manager.serializeRoom(room, owner.id);
+  assert.equal(serializedAfterPersistentDisconnect.voiceTransport.mode, "relay-required");
+  assert.equal(
+    serializedAfterPersistentDisconnect.voiceTransport.lastReasonCode,
+    "voice-persistent-disconnect"
+  );
+});
+
+test("socket server wires voice report events to the party room manager", async () => {
+  const fakeRoomManager = {
+    attachIo() {},
+    unregisterSocket() {}
+  };
+  const fakeBoardManager = {
+    attachIo() {},
+    unregisterSocket() {}
+  };
+  const reported = [];
+  const fakePartyManager = {
+    attachIo() {},
+    unregisterSocket() {},
+    reportVoiceTransport(roomNo, userId, payload) {
+      reported.push({ roomNo, userId, payload });
+    }
+  };
+  const fakeIo = {
+    middleware: null,
+    connectionHandler: null,
+    use(handler) {
+      this.middleware = handler;
+    },
+    on(event, handler) {
+      if (event === "connection") {
+        this.connectionHandler = handler;
+      }
+    }
+  };
+
+  await withPatchedModuleExports(
+    [
+      [
+        "../lib/auth",
+        {
+          getSessionFromRequest: async () => ({
+            id: 712,
+            kind: "user"
+          })
+        }
+      ],
+      [
+        "../lib/game/room-manager",
+        {
+          getRoomManager: () => fakeRoomManager
+        }
+      ],
+      [
+        "../lib/board/manager",
+        {
+          getBoardRoomManager: () => fakeBoardManager
+        }
+      ],
+      [
+        "../lib/party/manager",
+        {
+          getPartyRoomManager: () => fakePartyManager
+        }
+      ]
+    ],
+    async () => {
+      const { registerSocketHandlers } = loadFreshModule("../lib/socket-server");
+      registerSocketHandlers(fakeIo);
+
+      const socket = createMockSocketConnection("voice-report-socket");
+      let middlewareError = null;
+      await fakeIo.middleware(socket, (error) => {
+        middlewareError = error || null;
+      });
+      assert.equal(middlewareError, null);
+
+      fakeIo.connectionHandler(socket);
+      socket.handlers[SOCKET_EVENTS.voice.report]({
+        roomNo: "612345",
+        reason: "startup-timeout"
+      });
+
+      assert.deepEqual(reported, [
+        {
+          roomNo: "612345",
+          userId: 712,
+          payload: {
+            reason: "startup-timeout",
+            reasonCode: undefined
+          }
+        }
+      ]);
+    }
+  );
+});
+
 test("admin template updates reject unsupported LAIZI activation before persistence", async () => {
   const queries = [];
 
@@ -567,6 +697,24 @@ function resetPartyRoomState() {
   clearTimerMap(global.partyRoomManager?.roomExpiryTimers);
   directoryTesting.resetRoomDirectory();
   delete global.partyRoomManager;
+}
+
+function createMockSocketConnection(id) {
+  return {
+    id,
+    handshake: {
+      headers: {}
+    },
+    handlers: {},
+    emitted: [],
+    join() {},
+    on(event, handler) {
+      this.handlers[event] = handler;
+    },
+    emit(event, payload) {
+      this.emitted.push({ event, payload });
+    }
+  };
 }
 
 function createHandlerResponse() {

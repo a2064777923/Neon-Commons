@@ -5,6 +5,7 @@ import MatchResultOverlay from "../../components/MatchResultOverlay";
 import SiteLayout from "../../components/SiteLayout";
 import GameIcon from "../../components/game-hub/GameIcon";
 import { API_ROUTES, SOCKET_EVENTS, apiFetch, getSocketUrl } from "../../lib/client/api";
+import { usePartyVoiceRuntime } from "../../lib/client/party-voice-runtime";
 import {
   clearPendingGuestMatchClaim,
   getDegradedSubsystem,
@@ -24,10 +25,6 @@ const { getGameMeta } = require("../../lib/games/catalog");
 let socket;
 const PARTY_EVENTS = SOCKET_EVENTS.party;
 const VOICE_EVENTS = SOCKET_EVENTS.voice;
-const ICE_SERVERS = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" }
-];
 
 export default function UndercoverRoomPage() {
   const router = useRouter();
@@ -39,20 +36,11 @@ export default function UndercoverRoomPage() {
   const [clueText, setClueText] = useState("");
   const [dismissedResultKey, setDismissedResultKey] = useState("");
   const [nowMs, setNowMs] = useState(Date.now());
-  const [voiceJoined, setVoiceJoined] = useState(false);
-  const [voiceMuted, setVoiceMuted] = useState(true);
-  const [voiceError, setVoiceError] = useState("");
-  const [remoteStreams, setRemoteStreams] = useState({});
   const [socketConnected, setSocketConnected] = useState(null);
   const [recoveryRestoreNotice, setRecoveryRestoreNotice] = useState("");
   const roomRef = useRef(null);
   const messageTimerRef = useRef(null);
   const recoveryTimerRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const peerConnectionsRef = useRef({});
-  const remoteAudioRefs = useRef({});
-  const joinedVoiceRef = useRef(false);
-  const voiceMutedRef = useRef(true);
   const guestClaimSyncRef = useRef("");
   const previousSocketConnectedRef = useRef(null);
 
@@ -99,6 +87,97 @@ export default function UndercoverRoomPage() {
   const resultOpen = Boolean(room?.lastResult) && dismissedResultKey !== resultKey;
   const recoveryBanner = getRecoveryBannerMessage(mySeat, socketConnected, nowMs);
   const recoveryNotice = recoveryBanner || recoveryRestoreNotice;
+  const {
+    voiceJoined,
+    voiceMuted,
+    voiceError,
+    remoteStreams,
+    bindRemoteAudioRef,
+    cleanupVoice,
+    enableVoice,
+    handleVoicePeers,
+    handleVoiceSignal,
+    handleVoiceUserLeft,
+    setVoiceError,
+    setVoiceMutedState
+  } = usePartyVoiceRuntime({
+    roomNo,
+    room,
+    viewer: mySeat,
+    socket,
+    initialMuted: true,
+    voiceEvents: VOICE_EVENTS,
+    subscribeToRoom() {
+      if (socket && roomNo) {
+        socket.emit(PARTY_EVENTS.subscribe, { roomNo });
+      }
+    },
+    getManualJoinOptions() {
+      if (!mySeat) {
+        return {
+          allowed: false,
+          error: "請先加入房間並入座，再接入語音。"
+        };
+      }
+
+      if (voiceBlocked) {
+        return {
+          allowed: false,
+          error: voiceStatus.message || "語音暫停中，請先等待恢復。"
+        };
+      }
+
+      if (room?.config?.voiceEnabled === false) {
+        return {
+          allowed: false,
+          error: "這個房間目前沒有開啟語音。"
+        };
+      }
+
+      if (room?.state !== "playing") {
+        return {
+          allowed: false,
+          error: "開局後再接入語音，輪到描述時再開咪。"
+        };
+      }
+
+      if (room?.round?.stage !== "clue") {
+        return {
+          allowed: false,
+          error: "公開投票階段先看票型，下一輪描述再接入語音。"
+        };
+      }
+
+      if (!socket) {
+        return {
+          allowed: false,
+          error: "房間連線尚未建立，請稍後再試。"
+        };
+      }
+
+      return {
+        allowed: true,
+        muted: !canTakeVoiceTurn,
+        receiveOnly: !canTakeVoiceTurn
+      };
+    },
+    getRecoveryJoinOptions() {
+      return {
+        allowed: canJoinVoice && Boolean(socket),
+        muted: true,
+        receiveOnly: true
+      };
+    },
+    permissionsErrorText: "麥克風權限未開啟或裝置不可用。",
+    negotiationErrorText: "語音連線協商失敗",
+    showMessage
+  });
+  const voiceModeState = room?.voiceTransport?.mode || "direct-preferred";
+  const voiceRecoveryState = getUndercoverVoiceRecoveryState({
+    mySeat,
+    voiceJoined,
+    voiceMuted
+  });
 
   useEffect(() => {
     if (!roomNo) {
@@ -175,24 +254,6 @@ export default function UndercoverRoomPage() {
       showMessage(error || "房間操作失敗");
     }
 
-    function onVoicePeers({ peers }) {
-      if (!joinedVoiceRef.current) {
-        return;
-      }
-
-      for (const peer of peers || []) {
-        if (peer.userId !== me.id) {
-          createOffer(peer.userId).catch(() => {
-            showMessage("語音連線協商失敗");
-          });
-        }
-      }
-    }
-
-    function onVoiceUserLeft(payload) {
-      detachRemotePeer(payload.userId);
-    }
-
     function onVoiceSignal(payload) {
       handleVoiceSignal(payload).catch(() => {
         showMessage("語音連線協商失敗");
@@ -209,8 +270,8 @@ export default function UndercoverRoomPage() {
     socket.on("disconnect", onDisconnect);
     socket.on(PARTY_EVENTS.update, onRoomUpdate);
     socket.on(PARTY_EVENTS.error, onRoomError);
-    socket.on(PARTY_EVENTS.voicePeers, onVoicePeers);
-    socket.on(PARTY_EVENTS.voiceUserLeft, onVoiceUserLeft);
+    socket.on(PARTY_EVENTS.voicePeers, handleVoicePeers);
+    socket.on(PARTY_EVENTS.voiceUserLeft, handleVoiceUserLeft);
     socket.on(VOICE_EVENTS.signal, onVoiceSignal);
 
     subscribeIfSeated();
@@ -220,11 +281,11 @@ export default function UndercoverRoomPage() {
       socket.off("disconnect", onDisconnect);
       socket.off(PARTY_EVENTS.update, onRoomUpdate);
       socket.off(PARTY_EVENTS.error, onRoomError);
-      socket.off(PARTY_EVENTS.voicePeers, onVoicePeers);
-      socket.off(PARTY_EVENTS.voiceUserLeft, onVoiceUserLeft);
+      socket.off(PARTY_EVENTS.voicePeers, handleVoicePeers);
+      socket.off(PARTY_EVENTS.voiceUserLeft, handleVoiceUserLeft);
       socket.off(VOICE_EVENTS.signal, onVoiceSignal);
     };
-  }, [roomNo, me]);
+  }, [roomNo, me, handleVoicePeers, handleVoiceUserLeft]);
 
   useEffect(() => {
     if (!roomNo || !mySeat || !socket) {
@@ -245,30 +306,20 @@ export default function UndercoverRoomPage() {
   }, [room?.phaseEndsAt]);
 
   useEffect(() => {
-    if (!voiceBlocked) {
-      return;
-    }
-
-    if (joinedVoiceRef.current) {
-      cleanupVoice(true, true);
-    }
-  }, [voiceBlocked]);
-
-  useEffect(() => {
-    if (!joinedVoiceRef.current || voiceMutedRef.current || canTakeVoiceTurn) {
+    if (!voiceJoined || voiceMuted || canTakeVoiceTurn) {
       return;
     }
 
     setVoiceMutedState(true, true);
-  }, [canTakeVoiceTurn, room?.round?.activeSeat, room?.round?.stage, room?.state]);
+  }, [canTakeVoiceTurn, room?.round?.activeSeat, room?.round?.stage, room?.state, voiceJoined, voiceMuted]);
 
   useEffect(() => {
-    if (!joinedVoiceRef.current || room?.state === "playing") {
+    if (!voiceJoined || room?.state === "playing") {
       return;
     }
 
     cleanupVoice(true, true);
-  }, [room?.state]);
+  }, [room?.state, voiceJoined]);
 
   useEffect(() => {
     if (me?.kind !== "user" || !roomNo) {
@@ -393,226 +444,6 @@ export default function UndercoverRoomPage() {
     socket?.emit(PARTY_EVENTS.action, { roomNo, payload });
   }
 
-  function setVoiceMutedState(nextMuted, notifyServer = false) {
-    voiceMutedRef.current = nextMuted;
-    setVoiceMuted(nextMuted);
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((track) => {
-        track.enabled = !nextMuted;
-      });
-    }
-
-    if (notifyServer && joinedVoiceRef.current) {
-      socket?.emit(VOICE_EVENTS.state, { roomNo, muted: nextMuted });
-    }
-  }
-
-  async function enableVoice() {
-    if (!mySeat) {
-      setVoiceError("請先加入房間並入座，再接入語音。");
-      return;
-    }
-
-    if (voiceBlocked) {
-      setVoiceError(voiceStatus.message || "語音暫停中，請先等待恢復。");
-      return;
-    }
-
-    if (room?.config?.voiceEnabled === false) {
-      setVoiceError("這個房間目前沒有開啟語音。");
-      return;
-    }
-
-    if (room?.state !== "playing") {
-      setVoiceError("開局後再接入語音，輪到描述時再開咪。");
-      return;
-    }
-
-    if (room?.round?.stage !== "clue") {
-      setVoiceError("公開投票階段先看票型，下一輪描述再接入語音。");
-      return;
-    }
-
-    if (!socket) {
-      setVoiceError("房間連線尚未建立，請稍後再試。");
-      return;
-    }
-
-    try {
-      setVoiceError("");
-      if (!localStreamRef.current) {
-        localStreamRef.current = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
-      }
-
-      const nextMuted = !canUseUndercoverMicTurn(roomRef.current || room, roomRef.current?.viewer || mySeat);
-      setVoiceMutedState(nextMuted, false);
-      socket.emit(PARTY_EVENTS.subscribe, { roomNo });
-      joinedVoiceRef.current = true;
-      setVoiceJoined(true);
-      socket.emit(VOICE_EVENTS.join, { roomNo, muted: nextMuted });
-    } catch (error) {
-      setVoiceError("麥克風權限未開啟或裝置不可用。");
-    }
-  }
-
-  function cleanupVoice(stopTracks = true, notifyServer = true) {
-    if (notifyServer && joinedVoiceRef.current) {
-      socket?.emit(VOICE_EVENTS.leave, { roomNo });
-    }
-
-    joinedVoiceRef.current = false;
-    setVoiceJoined(false);
-
-    Object.keys(peerConnectionsRef.current).forEach((userId) => detachRemotePeer(userId));
-
-    if (stopTracks && localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
-    }
-
-    voiceMutedRef.current = true;
-    setVoiceMuted(true);
-  }
-
-  function detachRemotePeer(userId) {
-    const pc = peerConnectionsRef.current[userId];
-    if (pc) {
-      pc.ontrack = null;
-      pc.onicecandidate = null;
-      pc.close();
-      delete peerConnectionsRef.current[userId];
-    }
-
-    delete remoteAudioRefs.current[userId];
-    setRemoteStreams((current) => {
-      if (!current[userId]) {
-        return current;
-      }
-      const next = { ...current };
-      delete next[userId];
-      return next;
-    });
-  }
-
-  function getOrCreatePeerConnection(userId) {
-    if (peerConnectionsRef.current[userId]) {
-      return peerConnectionsRef.current[userId];
-    }
-
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket?.emit(VOICE_EVENTS.signal, {
-          roomNo,
-          targetUserId: userId,
-          data: {
-            type: "candidate",
-            candidate: event.candidate
-          }
-        });
-      }
-    };
-    pc.ontrack = (event) => {
-      const [stream] = event.streams;
-      if (!stream) {
-        return;
-      }
-
-      setRemoteStreams((current) => ({
-        ...current,
-        [userId]: stream
-      }));
-
-      const audio = remoteAudioRefs.current[userId];
-      if (audio) {
-        if (audio.srcObject !== stream) {
-          audio.srcObject = stream;
-        }
-        audio.play?.().catch(() => null);
-      }
-    };
-    pc.onconnectionstatechange = () => {
-      if (["closed", "failed", "disconnected"].includes(pc.connectionState)) {
-        detachRemotePeer(userId);
-      }
-    };
-
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => {
-        pc.addTrack(track, localStreamRef.current);
-      });
-    }
-
-    peerConnectionsRef.current[userId] = pc;
-    return pc;
-  }
-
-  async function createOffer(targetUserId) {
-    if (!joinedVoiceRef.current) {
-      return;
-    }
-
-    const pc = getOrCreatePeerConnection(targetUserId);
-    if (pc.signalingState !== "stable") {
-      return;
-    }
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket?.emit(VOICE_EVENTS.signal, {
-      roomNo,
-      targetUserId,
-      data: {
-        type: "offer",
-        sdp: pc.localDescription
-      }
-    });
-  }
-
-  async function handleVoiceSignal({ fromUserId, data }) {
-    if (!joinedVoiceRef.current) {
-      return;
-    }
-
-    const pc = getOrCreatePeerConnection(fromUserId);
-    if (data.type === "offer") {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket?.emit(VOICE_EVENTS.signal, {
-        roomNo,
-        targetUserId: fromUserId,
-        data: {
-          type: "answer",
-          sdp: pc.localDescription
-        }
-      });
-      return;
-    }
-
-    if (data.type === "answer") {
-      if (pc.signalingState === "have-local-offer") {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-      }
-      return;
-    }
-
-    if (data.type === "candidate" && data.candidate) {
-      try {
-        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-      } catch (error) {
-        return;
-      }
-    }
-  }
-
   function toggleVoiceTurn() {
     if (!canTakeVoiceTurn) {
       setVoiceError(
@@ -627,7 +458,7 @@ export default function UndercoverRoomPage() {
     }
 
     setVoiceError("");
-    setVoiceMutedState(!voiceMutedRef.current, true);
+    setVoiceMutedState(!voiceMuted, true);
   }
 
   function submitClue(event) {
@@ -883,6 +714,12 @@ export default function UndercoverRoomPage() {
                 data-voice-status={voiceStatus.state}
                 data-availability-reason={voiceStatus.reasonCode || `voice:${voiceStatus.state}`}
               >
+                <span data-voice-mode={voiceModeState}>
+                  {getUndercoverVoiceModeLabel(voiceModeState)}
+                </span>
+                <span data-voice-recovery={voiceRecoveryState}>
+                  {getUndercoverVoiceRecoveryLabel(voiceRecoveryState)}
+                </span>
                 <span>
                   {getUndercoverVoiceTurnCopy({
                     room,
@@ -965,16 +802,7 @@ export default function UndercoverRoomPage() {
                 <audio
                   key={userId}
                   autoPlay
-                  ref={(node) => {
-                    if (!node) {
-                      return;
-                    }
-                    remoteAudioRefs.current[userId] = node;
-                    if (node.srcObject !== stream) {
-                      node.srcObject = stream;
-                    }
-                    node.play?.().catch(() => null);
-                  }}
+                  ref={(node) => bindRemoteAudioRef(userId, node)}
                 />
               ))}
             </section>
@@ -1206,6 +1034,46 @@ function getUndercoverVoiceToggleLabel({ canTakeVoiceTurn, voiceMuted, voiceDegr
   }
 
   return "收咪旁聽";
+}
+
+function getUndercoverVoiceModeLabel(mode) {
+  return mode === "relay-required" ? "穩定模式" : "直連優先";
+}
+
+function getUndercoverVoiceRecoveryState({ mySeat, voiceJoined, voiceMuted }) {
+  if (mySeat?.voiceRecovery?.autoResumeEligible) {
+    return "rejoin-ready";
+  }
+
+  if (voiceJoined) {
+    return voiceMuted ? "joined-muted" : "joined-live";
+  }
+
+  if (getPresenceState(mySeat) === "reconnecting") {
+    return "reconnecting";
+  }
+
+  return "idle";
+}
+
+function getUndercoverVoiceRecoveryLabel(state) {
+  if (state === "rejoin-ready") {
+    return "重連後會先旁聽";
+  }
+
+  if (state === "joined-muted") {
+    return "已接入旁聽";
+  }
+
+  if (state === "joined-live") {
+    return "已開咪描述";
+  }
+
+  if (state === "reconnecting") {
+    return "房間重連中";
+  }
+
+  return "等待接入";
 }
 
 function getResultTitle(room, mySeat) {

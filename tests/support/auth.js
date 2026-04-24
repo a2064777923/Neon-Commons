@@ -76,7 +76,7 @@ async function loginWithCredentials(page, baseUrl, credentials) {
   try {
     const loginResponse = await loginResponsePromise;
     const data = await loginResponse.json().catch(() => ({}));
-    if (!loginResponse.ok) {
+    if (!loginResponse.ok()) {
       throw new Error(data.error || "login request failed");
     }
 
@@ -103,11 +103,15 @@ async function loginWithCredentials(page, baseUrl, credentials) {
 
 async function registerFreshUserSession(page, baseUrl, prefix = "smoke") {
   const credentials = createFreshCredentials(prefix);
+  return registerFreshUserSessionWithCredentials(page, baseUrl, credentials);
+}
+
+async function registerFreshUserSessionWithCredentials(page, baseUrl, credentials) {
   const backendBaseUrl = String(baseUrl || "").replace(/:3100$/, ":3101");
   let response;
 
   try {
-    response = await requestFreshUserSession(`${backendBaseUrl}/api/auth/register`, credentials);
+    response = await requestSession(`${backendBaseUrl}/api/auth/register`, credentials);
   } catch (error) {
     if (isRetryableFetchError(error)) {
       return recoverFreshUserSession(page, baseUrl, credentials);
@@ -119,27 +123,12 @@ async function registerFreshUserSession(page, baseUrl, prefix = "smoke") {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (isDuplicateRegistrationError(data.error)) {
-      return loginWithCredentials(page, baseUrl, credentials);
+      return loginFreshUserSession(page, baseUrl, credentials);
     }
     throw new Error(data.error || "registration request failed");
   }
 
-  const setCookieHeader = response.headers.get("set-cookie") || "";
-  const cookieMatch = setCookieHeader.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
-  if (!cookieMatch) {
-    throw new Error("registration cookie missing");
-  }
-
-  await page.context().addCookies([
-    {
-      name: COOKIE_NAME,
-      value: cookieMatch[1],
-      url: `${String(baseUrl || "").replace(/\/+$/, "")}/`,
-      httpOnly: true,
-      sameSite: "Lax"
-    }
-  ]);
-
+  await applySessionCookie(page, baseUrl, response);
   await page.goto(`${baseUrl}/`);
   return credentials;
 }
@@ -149,7 +138,24 @@ module.exports = {
   registerFreshUserSession
 };
 
-async function requestFreshUserSession(url, credentials) {
+async function loginFreshUserSession(page, baseUrl, credentials) {
+  const backendBaseUrl = String(baseUrl || "").replace(/:3100$/, ":3101");
+  const response = await requestSession(`${backendBaseUrl}/api/auth/login`, {
+    account: credentials.username,
+    password: credentials.password
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "login request failed");
+  }
+
+  await applySessionCookie(page, baseUrl, response);
+  await page.goto(`${baseUrl}/`);
+  return credentials;
+}
+
+async function requestSession(url, payload) {
   let lastError = null;
 
   for (let attempt = 1; attempt <= SESSION_REGISTER_ATTEMPTS; attempt += 1) {
@@ -160,7 +166,7 @@ async function requestFreshUserSession(url, credentials) {
           "content-type": "application/json",
           connection: "close"
         },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(payload),
         signal: AbortSignal.timeout(SESSION_REGISTER_TIMEOUT_MS)
       });
     } catch (error) {
@@ -178,10 +184,36 @@ async function requestFreshUserSession(url, credentials) {
 
 async function recoverFreshUserSession(page, baseUrl, credentials) {
   try {
+    return await loginFreshUserSession(page, baseUrl, credentials);
+  } catch {}
+
+  try {
+    return await registerFreshUserSessionWithCredentials(page, baseUrl, credentials);
+  } catch {}
+
+  try {
     return await loginWithCredentials(page, baseUrl, credentials);
   } catch {
     return registerFreshUserWithCredentials(page, baseUrl, credentials);
   }
+}
+
+async function applySessionCookie(page, baseUrl, response) {
+  const setCookieHeader = response.headers.get("set-cookie") || "";
+  const cookieMatch = setCookieHeader.match(new RegExp(`${COOKIE_NAME}=([^;]+)`));
+  if (!cookieMatch) {
+    throw new Error("auth cookie missing");
+  }
+
+  await page.context().addCookies([
+    {
+      name: COOKIE_NAME,
+      value: cookieMatch[1],
+      url: `${String(baseUrl || "").replace(/\/+$/, "")}/`,
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
 }
 
 function isRetryableFetchError(error) {
