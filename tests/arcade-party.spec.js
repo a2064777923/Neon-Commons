@@ -179,6 +179,16 @@ test("party room surfaces blocked voice guidance without freezing gameplay", asy
             lastReasonCode: "",
             lastTransitionAt: null
           },
+          voiceDiagnostics: {
+            mode: "direct-preferred",
+            stickyRelay: true,
+            runtimeState: "healthy",
+            lastReasonCode: "",
+            lastTransitionAt: null,
+            lastRecoveredAt: null,
+            resumeMutedOnRecovery: true,
+            reconnectGraceSeconds: 45
+          },
           ownerId: 9001,
           title: "在线狼人杀",
           strapline: "夜晚神职操作、白天讨论投票、房内语音直连",
@@ -255,6 +265,7 @@ test("party room surfaces blocked voice guidance without freezing gameplay", asy
 
   await expect(page.getByText("房号 845612")).toBeVisible();
   await expect(page.locator('[data-voice-mode="direct-preferred"]').first()).toContainText("直连优先");
+  await expect(page.locator('[data-voice-runtime-state="healthy"]').first()).toContainText("语音正常");
   await expect(page.locator('[data-voice-recovery="idle"]').first()).toContainText("等待接通");
   await expect(page.locator('[data-voice-status="blocked"]').first()).toBeVisible();
   await expect(page.locator('[data-safe-action="continue-text-only"]').first()).toContainText(
@@ -263,6 +274,180 @@ test("party room surfaces blocked voice guidance without freezing gameplay", asy
   await expect(page.locator('[data-safe-action="wait"]').first()).toContainText("稍後再試");
   await expect(page.getByRole("button", { name: "語音暫停" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "准备开局" })).toBeVisible();
+});
+
+test("party room surfaces relay diagnostics and muted recovery after fallback", async ({ page }) => {
+  page.setDefaultTimeout(30000);
+
+  await page.route("**/api/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: {
+          id: 9002,
+          username: "voicerelay_tester",
+          displayName: "voicerelay_tester",
+          role: "player",
+          kind: "user",
+          coins: 10000,
+          wins: 0,
+          losses: 0,
+          rankScore: 1000
+        },
+        session: null
+      })
+    });
+  });
+
+  await page.route("**/api/party/rooms/845614", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        room: {
+          roomNo: "845614",
+          availability: "live",
+          degradedState: {
+            state: "degraded",
+            label: "降級中",
+            familyKey: "party",
+            roomAvailability: "live",
+            subsystems: {
+              entry: {
+                subsystem: "entry",
+                state: "healthy",
+                label: "正常",
+                reasonCode: "",
+                message: "",
+                safeActions: []
+              },
+              realtime: {
+                subsystem: "realtime",
+                state: "healthy",
+                label: "正常",
+                reasonCode: "",
+                message: "",
+                safeActions: []
+              },
+              voice: {
+                subsystem: "voice",
+                state: "degraded",
+                label: "降級中",
+                reasonCode: "voice-persistent-disconnect",
+                message: "語音已切到穩定模式，恢復後會先以靜音旁聽進房。",
+                safeActions: ["retry", "continue-text-only"],
+                scope: "family",
+                familyKey: "party",
+                configured: true
+              }
+            }
+          },
+          voiceTransport: {
+            mode: "relay-required",
+            stickyRelay: true,
+            startupProbeMs: 4000,
+            persistentFailureMs: 6000,
+            reconnectGraceSeconds: 45,
+            resumeMutedOnRecovery: true,
+            iceServers: [
+              { urls: "stun:stun.l.google.com:19302" },
+              { urls: "stun:stun1.l.google.com:19302" }
+            ],
+            runtimeState: "degraded",
+            lastReasonCode: "voice-persistent-disconnect",
+            lastTransitionAt: "2026-04-24T00:00:05.000Z"
+          },
+          voiceDiagnostics: {
+            mode: "relay-required",
+            stickyRelay: true,
+            runtimeState: "degraded",
+            lastReasonCode: "voice-persistent-disconnect",
+            lastTransitionAt: "2026-04-24T00:00:05.000Z",
+            lastRecoveredAt: "2026-04-24T00:00:20.000Z",
+            resumeMutedOnRecovery: true,
+            reconnectGraceSeconds: 45
+          },
+          ownerId: 9002,
+          title: "在线狼人杀",
+          strapline: "夜晚神职操作、白天讨论投票、房内语音直连",
+          gameKey: "werewolf",
+          state: "playing",
+          config: {
+            visibility: "private",
+            maxPlayers: 8,
+            minPlayers: 6,
+            rolePack: "standard",
+            voiceEnabled: true,
+            hunterSeconds: 20
+          },
+          createdAt: "2026-04-24T00:00:00.000Z",
+          phaseEndsAt: null,
+          phaseDurationMs: null,
+          lastResult: null,
+          feed: [
+            {
+              text: "voicerelay_tester 返回 在线狼人杀 房间",
+              type: "system"
+            }
+          ],
+          players: [
+            {
+              seatIndex: 0,
+              userId: 9002,
+              displayName: "voicerelay_tester",
+              isBot: false,
+              ready: true,
+              connected: true,
+              presenceState: "connected",
+              recoveryEligible: false,
+              reconnectGraceEndsAt: null,
+              alive: true,
+              voiceConnected: false,
+              voiceMuted: true,
+              roleLabel: "村民",
+              sideHint: null
+            }
+          ],
+          viewer: {
+            userId: 9002,
+            seatIndex: 0,
+            displayName: "voicerelay_tester",
+            isBot: false,
+            ready: true,
+            connected: true,
+            presenceState: "connected",
+            recoveryEligible: false,
+            reconnectGraceEndsAt: null,
+            alive: true,
+            voiceConnected: false,
+            voiceMuted: true,
+            voiceRecovery: {
+              autoResumeEligible: true,
+              resumeMuted: true,
+              rejoinBy: "2026-04-24T00:00:40.000Z",
+              lastMode: "relay-required"
+            },
+            role: null,
+            roleLabel: "村民",
+            side: null,
+            isOwner: true,
+            notes: []
+          },
+          round: null
+        }
+      })
+    });
+  });
+
+  await page.goto(`${FRONTEND_BASE_URL}/party/845614`);
+
+  await expect(page.locator('[data-voice-mode="relay-required"]').first()).toContainText("稳定模式");
+  await expect(page.locator('[data-voice-runtime-state="degraded"]').first()).toContainText("已切稳定");
+  await expect(page.locator('[data-voice-recovery="rejoin-ready"]').first()).toContainText(
+    "重连后将以静音恢复"
+  );
+  await expect(page.locator('[data-voice-status="degraded"]').first()).toBeVisible();
+  await expect(page.locator('[data-safe-action="retry"]').first()).toContainText("重新嘗試");
+  await expect(page.getByRole("button", { name: "重試語音" })).toBeVisible();
 });
 
 async function createPrivatePartyRoom(page, gameKey, options = {}) {

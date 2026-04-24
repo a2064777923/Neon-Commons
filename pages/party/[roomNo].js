@@ -159,7 +159,10 @@ export default function PartyRoomPage() {
     negotiationErrorText: "语音连接协商失败",
     showMessage
   });
-  const voiceModeState = room?.voiceTransport?.mode || "direct-preferred";
+  const voiceDiagnostics = room?.voiceDiagnostics || null;
+  const voiceModeState = voiceDiagnostics?.mode || room?.voiceTransport?.mode || "direct-preferred";
+  const voiceRuntimeState =
+    voiceDiagnostics?.runtimeState || room?.voiceTransport?.runtimeState || "healthy";
   const voiceRecoveryState = getPartyVoiceRecoveryState({ mySeat, voiceJoined, voiceMuted });
 
   useEffect(() => {
@@ -536,6 +539,9 @@ export default function PartyRoomPage() {
                 <span>{room.config.visibility === "private" ? "私密房" : "公开房"}</span>
                 <span>{room.config.voiceEnabled ? "语音已开启" : "文字房"}</span>
                 <span data-voice-mode={voiceModeState}>{getPartyVoiceModeLabel(voiceModeState)}</span>
+                <span data-voice-runtime-state={voiceRuntimeState}>
+                  {getPartyVoiceRuntimeLabel(voiceRuntimeState, voiceModeState)}
+                </span>
                 <span data-voice-recovery={voiceRecoveryState}>
                   {getPartyVoiceRecoveryLabel(voiceRecoveryState)}
                 </span>
@@ -1422,6 +1428,18 @@ function getVoiceButtonLabel({ voiceBlocked, voiceDegraded, hasSeat }) {
 
 function getPartyVoiceModeLabel(mode) {
   return mode === "relay-required" ? "稳定模式" : "直连优先";
+}
+
+function getPartyVoiceRuntimeLabel(state, mode) {
+  if (state === "blocked") {
+    return "语音暂停";
+  }
+
+  if (state === "degraded") {
+    return mode === "relay-required" ? "已切稳定" : "语音降级";
+  }
+
+  return "语音正常";
 }
 
 function getPartyVoiceRecoveryState({ mySeat, voiceJoined, voiceMuted }) {

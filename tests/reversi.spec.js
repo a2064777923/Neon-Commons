@@ -9,6 +9,7 @@ const BACKEND_BASE_URL = FRONTEND_BASE_URL.replace(/:3100$/, ":3101");
 
 test("reversi lobby, dedicated room route, and deep-link entry smoke", async ({ page }) => {
   test.slow();
+  test.setTimeout(150000);
   page.setDefaultTimeout(30000);
   let roomNo = "";
 

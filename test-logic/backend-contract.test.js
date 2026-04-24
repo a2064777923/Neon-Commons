@@ -282,6 +282,17 @@ test("party room detail keeps additive voice transport and recovery fields", asy
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" }
       ]);
+      assert.deepEqual(res.payload.room.voiceDiagnostics, {
+        mode: "direct-preferred",
+        stickyRelay: true,
+        runtimeState: "degraded",
+        lastReasonCode: "",
+        lastTransitionAt: null,
+        lastRecoveredAt: null,
+        resumeMutedOnRecovery: true,
+        reconnectGraceSeconds: 45
+      });
+      assert.equal(res.payload.room.voiceDiagnostics.iceServers, undefined);
       assert.deepEqual(res.payload.room.viewer.voiceRecovery, {
         autoResumeEligible: false,
         resumeMuted: true,

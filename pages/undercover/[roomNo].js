@@ -172,7 +172,10 @@ export default function UndercoverRoomPage() {
     negotiationErrorText: "語音連線協商失敗",
     showMessage
   });
-  const voiceModeState = room?.voiceTransport?.mode || "direct-preferred";
+  const voiceDiagnostics = room?.voiceDiagnostics || null;
+  const voiceModeState = voiceDiagnostics?.mode || room?.voiceTransport?.mode || "direct-preferred";
+  const voiceRuntimeState =
+    voiceDiagnostics?.runtimeState || room?.voiceTransport?.runtimeState || "healthy";
   const voiceRecoveryState = getUndercoverVoiceRecoveryState({
     mySeat,
     voiceJoined,
@@ -717,6 +720,9 @@ export default function UndercoverRoomPage() {
                 <span data-voice-mode={voiceModeState}>
                   {getUndercoverVoiceModeLabel(voiceModeState)}
                 </span>
+                <span data-voice-runtime-state={voiceRuntimeState}>
+                  {getUndercoverVoiceRuntimeLabel(voiceRuntimeState, voiceModeState)}
+                </span>
                 <span data-voice-recovery={voiceRecoveryState}>
                   {getUndercoverVoiceRecoveryLabel(voiceRecoveryState)}
                 </span>
@@ -1038,6 +1044,18 @@ function getUndercoverVoiceToggleLabel({ canTakeVoiceTurn, voiceMuted, voiceDegr
 
 function getUndercoverVoiceModeLabel(mode) {
   return mode === "relay-required" ? "穩定模式" : "直連優先";
+}
+
+function getUndercoverVoiceRuntimeLabel(state, mode) {
+  if (state === "blocked") {
+    return "語音暫停";
+  }
+
+  if (state === "degraded") {
+    return mode === "relay-required" ? "已切穩定" : "語音降級";
+  }
+
+  return "語音正常";
 }
 
 function getUndercoverVoiceRecoveryState({ mySeat, voiceJoined, voiceMuted }) {

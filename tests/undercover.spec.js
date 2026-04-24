@@ -131,6 +131,16 @@ test("undercover active speaker can access the mic path when voice is degraded",
             lastReasonCode: "voice-persistent-disconnect",
             lastTransitionAt: "2026-04-23T00:00:05.000Z"
           },
+          voiceDiagnostics: {
+            mode: "relay-required",
+            stickyRelay: true,
+            runtimeState: "degraded",
+            lastReasonCode: "voice-persistent-disconnect",
+            lastTransitionAt: "2026-04-23T00:00:05.000Z",
+            lastRecoveredAt: null,
+            resumeMutedOnRecovery: true,
+            reconnectGraceSeconds: 45
+          },
           ownerId: 9201,
           title: "誰是臥底",
           strapline: "詞題分歧、輪流描述、抓出那個不對勁的人",
@@ -233,6 +243,9 @@ test("undercover active speaker can access the mic path when voice is degraded",
   await expect(page.locator('[data-voice-mode="relay-required"]').first()).toContainText(
     "穩定模式"
   );
+  await expect(page.locator('[data-voice-runtime-state="degraded"]').first()).toContainText(
+    "已切穩定"
+  );
   await expect(page.locator('[data-voice-recovery="idle"]').first()).toContainText("等待接入");
   await expect(page.locator('[data-voice-status="degraded"]').first()).toBeVisible();
   await expect(page.locator('[data-safe-action="active-speaker-only"]').first()).toContainText(
@@ -320,6 +333,16 @@ test("undercover listeners are told to wait for their speaking turn", async ({ p
           phaseEndsAt: null,
           phaseDurationMs: null,
           lastResult: null,
+          voiceDiagnostics: {
+            mode: "direct-preferred",
+            stickyRelay: true,
+            runtimeState: "healthy",
+            lastReasonCode: "",
+            lastTransitionAt: null,
+            lastRecoveredAt: null,
+            resumeMutedOnRecovery: true,
+            reconnectGraceSeconds: 45
+          },
           feed: [
             {
               id: "f-2",
@@ -398,6 +421,9 @@ test("undercover listeners are told to wait for their speaking turn", async ({ p
   await page.goto(`${FRONTEND_BASE_URL}/undercover/845613`);
 
   await expect(page.locator('[data-voice-turn="listener"]').first()).toBeVisible();
+  await expect(page.locator('[data-voice-runtime-state="healthy"]').first()).toContainText(
+    "語音正常"
+  );
   await expect(page.locator('[data-voice-action="join"]')).toHaveText("接入旁聽");
   await expect(page.getByText("等待 房主 發言", { exact: false })).toBeVisible();
 });

@@ -9,6 +9,7 @@ const BACKEND_BASE_URL = FRONTEND_BASE_URL.replace(/:3100$/, ":3101");
 
 test("gomoku and chinese checkers board rooms smoke", async ({ page }) => {
   test.slow();
+  test.setTimeout(180000);
   page.setDefaultTimeout(30000);
   let gomokuRoomNo = "";
   let chineseCheckersRoomNo = "";

@@ -139,7 +139,18 @@ function loadModules(roomExpiryMs = 30) {
     filename: resolvedSystemConfigPath,
     loaded: true,
     exports: {
-      getRoomExpiryMs: () => roomExpiryMs
+      getRoomExpiryMs: () => roomExpiryMs,
+      getPartyVoiceTransportConfig: () => ({
+        stickyRelay: true,
+        startupProbeMs: 4000,
+        persistentFailureMs: 6000,
+        reconnectGraceSeconds: 45,
+        resumeMutedOnRecovery: true,
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" }
+        ]
+      })
     }
   };
 

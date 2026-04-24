@@ -14,10 +14,10 @@
     "lint": "next lint",
     "check": "node scripts/check.js",
     "test:logic": "node --test test-logic/ddz-logic.test.js",
-    "test:logic:liveops": "node --test test-logic/admin-control-plane.test.js test-logic/hub-room-entry.test.js test-logic/session-recovery.test.js test-logic/room-directory-persistence.test.js test-logic/room-expiry.test.js test-logic/live-room-ops.test.js",
-    "test:logic:critical": "node --test test-logic/backend-contract.test.js test-logic/backend-cors.test.js test-logic/client-network-contract.test.js test-logic/admin-control-plane.test.js test-logic/hub-room-entry.test.js test-logic/session-recovery.test.js test-logic/room-directory-persistence.test.js test-logic/room-expiry.test.js test-logic/live-room-ops.test.js test-logic/ddz-logic.test.js test-logic/party-config.test.js test-logic/board-config.test.js test-logic/chinesecheckers-logic.test.js test-logic/reversi-logic.test.js test-logic/sokoban-logic.test.js test-logic/undercover-logic.test.js",
+    "test:logic:liveops": "node --test test-logic/admin-control-plane.test.js test-logic/hub-room-entry.test.js test-logic/session-recovery.test.js test-logic/party-voice-recovery.test.js test-logic/room-directory-persistence.test.js test-logic/room-expiry.test.js test-logic/live-room-ops.test.js",
+    "test:logic:critical": "node --test test-logic/backend-contract.test.js test-logic/backend-cors.test.js test-logic/client-network-contract.test.js test-logic/admin-control-plane.test.js test-logic/hub-room-entry.test.js test-logic/session-recovery.test.js test-logic/party-voice-recovery.test.js test-logic/room-directory-persistence.test.js test-logic/room-expiry.test.js test-logic/live-room-ops.test.js test-logic/ddz-logic.test.js test-logic/party-config.test.js test-logic/board-config.test.js test-logic/chinesecheckers-logic.test.js test-logic/reversi-logic.test.js test-logic/sokoban-logic.test.js test-logic/undercover-logic.test.js",
     "test:ui": "playwright test tests --workers=1",
-    "test:ui:liveops": "playwright test tests/hub-entry.spec.js tests/admin-console.spec.js tests/arcade-party.spec.js --workers=1",
+    "test:ui:liveops": "playwright test tests/hub-entry.spec.js tests/admin-console.spec.js tests/arcade-party.spec.js tests/undercover.spec.js --workers=1",
     "test:ui:critical": "playwright test tests/hub-entry.spec.js tests/admin-console.spec.js tests/room-ui.spec.js tests/arcade-party.spec.js tests/board-games.spec.js tests/reversi.spec.js tests/sokoban.spec.js tests/undercover.spec.js --workers=1",
     "verify:release": "node scripts/verify-release.js"
   },
