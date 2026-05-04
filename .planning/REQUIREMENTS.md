@@ -4,15 +4,15 @@
 
 ### Card Games — 撿紅點 (Pick Red)
 
-- [ ] **PICK-01**: Player can create a Pick Red room from the hub with standard room options (visibility, max players, turn seconds)
-- [ ] **PICK-02**: Two players can join a Pick Red room via room-number entry flow with authentication
-- [ ] **PICK-03**: Game uses a standard 52-card deck with correct card values for ten-sum matching
-- [ ] **PICK-04**: Player can draw from the deck or pick up the last discarded card
-- [ ] **PICK-05**: Player can declare "撿紅點" when matching pairs that sum to 10 from red-suit cards
-- [ ] **PICK-06**: Scoring correctly counts red-card points (紅心/方塊) at round end
-- [ ] **PICK-07**: Game ends when the deck is exhausted; player with highest score wins
-- [ ] **PICK-08**: Turn timer enforces per-turn time limit with auto-pass on timeout
-- [ ] **PICK-09**: Pick Red room supports reconnection with hand state recovery
+- [x] **PICK-01**: Player can create a Pick Red room from the hub with standard room options (visibility, max players, turn seconds)
+- [x] **PICK-02**: Two players can join a Pick Red room via room-number entry flow with authentication
+- [x] **PICK-03**: Game uses a standard 52-card deck with correct card values for ten-sum matching
+- [x] **PICK-04**: Player can draw from the deck or pick up the last discarded card
+- [x] **PICK-05**: Player can declare "撿紅點" when matching pairs that sum to 10 from red-suit cards
+- [x] **PICK-06**: Scoring correctly counts red-card points (紅心/方塊) at round end
+- [x] **PICK-07**: Game ends when the deck is exhausted; player with highest score wins
+- [x] **PICK-08**: Turn timer enforces per-turn time limit with auto-pass on timeout
+- [x] **PICK-09**: Pick Red room supports reconnection with hand state recovery
 
 ### Card Games — 大老二 (Big Two)
 
@@ -31,16 +31,25 @@
 
 - [ ] **MJ-01**: Player can create a Mahjong room from the hub with standard room options
 - [ ] **MJ-02**: Four players can join a Mahjong room via room-number entry flow
-- [ ] **MJ-03**: Game uses a 144-tile set (萬/條/筒 1-9 × 4, 風牌, 箭牌, 花牌)
-- [ ] **MJ-04**: Wall building, dice rolling, and dealing follow standard Mahjong procedures
+- [x] **MJ-03
+**: Game uses a 144-tile set (萬/條/筒 1-9 × 4, 風牌, 箭牌, 花牌)
+- [x] **MJ-04
+**: Wall building, dice rolling, and dealing follow standard Mahjong procedures
 - [ ] **MJ-05**: Player can draw a tile from the wall or claim a discarded tile (吃/碰/槓)
-- [ ] **MJ-06**: Claiming priority: 槓 > 碰 > 吃, with the same-priority nearest player winning ties
-- [ ] **MJ-07**: Player can declare 胡 (win) when hand forms valid melds + pair
-- [ ] **MJ-08**: Hand recognition supports all standard winning patterns: basic form, seven pairs, thirteen orphans
-- [ ] **MJ-09**: Scoring system calculates 番 (fan) correctly for the chosen rule variant
-- [ ] **MJ-10**: 花牌 bonus tiles are replaced from the dead wall automatically
-- [ ] **MJ-11**: 槓 (kong) triggers an extra draw from the dead wall
-- [ ] **MJ-12**: Game handles draw (流局) when wall is exhausted without a winner
+- [x] **MJ-06
+**: Claiming priority: 槓 > 碰 > 吃, with the same-priority nearest player winning ties
+- [x] **MJ-07
+**: Player can declare 胡 (win) when hand forms valid melds + pair
+- [x] **MJ-08
+**: Hand recognition supports all standard winning patterns: basic form, seven pairs, thirteen orphans
+- [x] **MJ-09
+**: Scoring system calculates 番 (fan) correctly for the chosen rule variant
+- [x] **MJ-10
+**: 花牌 bonus tiles are replaced from the dead wall automatically
+- [x] **MJ-11
+**: 槓 (kong) triggers an extra draw from the dead wall
+- [x] **MJ-12
+**: Game handles draw (流局) when wall is exhausted without a winner
 - [ ] **MJ-13**: Mahjong room supports reconnection with hand and wall state recovery
 
 ### Action Games — 賽車 (Racing)
@@ -98,15 +107,15 @@
 
 | Requirement | Phase | Plan | Status |
 |-------------|-------|------|--------|
-| PICK-01 | 17 | — | Pending |
-| PICK-02 | 17 | — | Pending |
-| PICK-03 | 17 | — | Pending |
-| PICK-04 | 17 | — | Pending |
-| PICK-05 | 17 | — | Pending |
-| PICK-06 | 17 | — | Pending |
-| PICK-07 | 17 | — | Pending |
-| PICK-08 | 17 | — | Pending |
-| PICK-09 | 17 | — | Pending |
+| PICK-01 | 17 | 01 | Complete |
+| PICK-02 | 17 | 02 | Complete |
+| PICK-03 | 17 | 01 | Complete |
+| PICK-04 | 17 | 01 | Complete |
+| PICK-05 | 17 | 01 | Complete |
+| PICK-06 | 17 | 01 | Complete |
+| PICK-07 | 17 | 01 | Complete |
+| PICK-08 | 17 | 01 | Complete |
+| PICK-09 | 17 | 01 | Complete |
 | BIG2-01 | 18 | — | Pending |
 | BIG2-02 | 18 | — | Pending |
 | BIG2-03 | 18 | — | Pending |
@@ -149,10 +158,10 @@
 | FIGHT-08 | 21 | — | Pending |
 | FIGHT-09 | 21 | — | Pending |
 | FIGHT-10 | 21 | — | Pending |
-| PLAT-01 | 17 | — | Pending |
-| PLAT-02 | 17 | — | Pending |
-| PLAT-03 | 17 | — | Pending |
-| PLAT-04 | 17 | — | Pending |
-| PLAT-05 | 17 | — | Pending |
+| PLAT-01 | 17 | 01 | Complete |
+| PLAT-02 | 17 | 02 | Complete |
+| PLAT-03 | 17 | 02 | Complete |
+| PLAT-04 | 17 | 01 | Complete |
+| PLAT-05 | 17 | 01 | Complete |
 | PLAT-06 | 22 | — | Pending |
-| PLAT-07 | 17 | — | Pending |
+| PLAT-07 | 17 | 01 | Complete |

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
-status: planning
-stopped_at: null
-last_updated: "2026-05-04T14:00:00.000Z"
-last_activity: 2026-05-04
+status: executing
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-05-04T09:36:45.338Z"
+last_activity: 2026-05-04 -- Phase 18 Big Two completed, Phase 19 Mahjong executing
 progress:
   total_phases: 6
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 5
+  percent: 63
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-04)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** Phase 17 — Pick Red (first game of v1.3)
+**Current focus:** Phase 19 — Mahjong
 
 ## Current Position
 
-Phase: 17 of 22 (Pick Red)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-05-04 — Roadmap created for v1.3
+Phase: 19 (Mahjong) — EXECUTING
+Plan: Wave 1 (19-01 tile logic, 19-02 room manager) in progress
+Status: Phase 17-18 complete, Phase 19 Wave 1 executing
+Last activity: 2026-05-04 -- Phase 18 Big Two completed, Phase 19 Mahjong executing
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -51,6 +51,8 @@ Progress: [░░░░░░░░░░] 0%
 - Last shipped milestone: v1.2 大跃进
 - Trend: v1.2 delivered Flying Chess, voice reliability, admin HA, degraded-mode controls, and Wave 2 launch plumbing. v1.3 expands the game catalog with 5 new titles across card and action families.
 
+| Phase 19-mahjong P01 | 15 | 2 tasks | 2 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -66,6 +68,8 @@ Recent decisions affecting current work:
 - [v1.3 Roadmap]: Build order: Pick Red -> Big Two -> Mahjong -> Racing -> Fighting (complexity gradient, risk deferral)
 - [v1.3 Roadmap]: Card games (Pick Red, Big Two, Mahjong) use existing card family infrastructure with zero new dependencies
 - [v1.3 Roadmap]: Action games (Racing, Fighting) create a new light-3d family with real-time game loop; Three.js + cannon-es for Racing, PixiJS for Fighting
+- FAN_TABLE uses 'fan' field name for consistency
+- Fans stack (sum all applicable) without exclusion rules
 
 ### Pending Todos
 
@@ -92,10 +96,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T14:00:00.000Z
-Stopped at: Roadmap created; ready to plan Phase 17
+Last session: 2026-05-04T09:36:45.335Z
+Stopped at: Completed 19-01-PLAN.md
 Resume file: None
 
 **Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
 
-**Next recommended action:** Run `/gsd-plan-phase 17` to start planning Pick Red
+**Next recommended action:** Complete Phase 19 Wave 1, then launch Wave 2 (frontend + catalog)
