@@ -1,0 +1,710 @@
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.loading,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  font-size: 1.1rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.error {
+  color: var(--danger, #ef4444);
+}
+
+.recoveryBanner {
+  background: var(--warning-bg, rgba(251, 191, 36, 0.15));
+  border: 1px solid var(--warning-border, rgba(251, 191, 36, 0.3));
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--warning-text, #fbbf24);
+}
+
+.message {
+  background: var(--info-bg, rgba(59, 130, 246, 0.15));
+  border: 1px solid var(--info-border, rgba(59, 130, 246, 0.3));
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--info-text, #60a5fa);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.titleIcon {
+  width: 32px;
+  height: 32px;
+}
+
+.roomNo {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Waiting lobby */
+.waitingSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+.playerList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.playerItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--surface, rgba(255, 255, 255, 0.05));
+  border-radius: 8px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+}
+
+.playerName {
+  font-size: 1rem;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.readyBadge {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: var(--success-bg, rgba(34, 197, 94, 0.15));
+  color: var(--success-text, #22c55e);
+}
+
+.readyButton,
+.joinButton {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.readyButton {
+  background: var(--primary, #3b82f6);
+  color: white;
+}
+
+.readyButton:hover {
+  background: var(--primary-hover, #2563eb);
+}
+
+.joinButton {
+  background: var(--success, #22c55e);
+  color: white;
+}
+
+.joinButton:hover {
+  background: var(--success-hover, #16a34a);
+}
+
+.joinButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Game area */
+.gameArea {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+/* Opponents row */
+.opponentsArea {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.opponentCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: var(--surface, rgba(255, 255, 255, 0.05));
+  border-radius: 8px;
+  border: 2px solid var(--border, rgba(255, 255, 255, 0.1));
+  min-width: 100px;
+  transition: border-color 0.3s;
+}
+
+.opponentCard.activeOpponent {
+  border-color: var(--accent, #a855f7);
+  box-shadow: 0 0 8px var(--accent-bg, rgba(168, 85, 247, 0.3));
+}
+
+.opponentName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.handCount {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.turnBadge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background: var(--accent-bg, rgba(168, 85, 247, 0.15));
+  color: var(--accent-text, #a855f7);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.meldGroup {
+  display: flex;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+.meldTile {
+  width: 24px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+/* Table area */
+.tableArea {
+  padding: 1rem;
+  background: var(--surface, rgba(255, 255, 255, 0.05));
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tableInfo {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.discardSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.discardRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.discardLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+  min-width: 40px;
+  text-align: right;
+}
+
+.discardPile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.smallTile {
+  width: 28px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.lastDiscardHighlight {
+  border-color: var(--warning, #fbbf24);
+  box-shadow: 0 0 6px var(--warning-bg, rgba(251, 191, 36, 0.4));
+}
+
+/* My area */
+.myArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--surface, rgba(255, 255, 255, 0.05));
+  border-radius: 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+}
+
+.myInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.myName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.turnIndicator {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  background: var(--accent-bg, rgba(168, 85, 247, 0.15));
+  color: var(--accent-text, #a855f7);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.timer {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--warning-text, #fbbf24);
+  padding: 0.2rem 0.6rem;
+  background: var(--warning-bg, rgba(251, 191, 36, 0.1));
+  border-radius: 4px;
+}
+
+.timer.urgent {
+  animation: urgentPulse 0.5s ease-in-out infinite;
+  color: var(--danger, #ef4444);
+  background: var(--danger-bg, rgba(239, 68, 68, 0.1));
+}
+
+@keyframes urgentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Tile cards */
+.myHand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.tileCard {
+  width: 48px;
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8f4e8;
+  border: 1px solid #c0b090;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.tileCard:hover {
+  border-color: var(--primary, #3b82f6);
+  transform: translateY(-4px);
+}
+
+.tileCard.selectedTile {
+  border-color: var(--success, #22c55e);
+  box-shadow: 0 0 0 2px var(--success-bg, rgba(34, 197, 94, 0.3));
+  transform: translateY(-8px);
+}
+
+.tileLabel {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tileSuit {
+  font-size: 0.65rem;
+  line-height: 1;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+/* Suit colors */
+.tileWan {
+  color: #dc2626;
+}
+
+.tileTiao {
+  color: #16a34a;
+}
+
+.tileTong {
+  color: #2563eb;
+}
+
+.tileFeng {
+  color: #374151;
+}
+
+.tileJian {
+  color: #d97706;
+}
+
+.tileHua {
+  color: #ec4899;
+}
+
+/* Action buttons */
+.actionBar {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.actionButton,
+.passButton {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton {
+  background: var(--primary, #3b82f6);
+  color: white;
+}
+
+.actionButton:hover:not(:disabled) {
+  background: var(--primary-hover, #2563eb);
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.passButton {
+  background: var(--surface, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary, #f1f5f9);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+}
+
+.passButton:hover:not(:disabled) {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.15));
+}
+
+.passButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Claim bar */
+.claimBar {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  border: 1px solid var(--warning-border, rgba(251, 191, 36, 0.3));
+}
+
+.claimButton {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: white;
+}
+
+.claimChi {
+  background: #3b82f6;
+}
+
+.claimChi:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.claimPong {
+  background: #8b5cf6;
+}
+
+.claimPong:hover:not(:disabled) {
+  background: #7c3aed;
+}
+
+.claimKong {
+  background: #d97706;
+}
+
+.claimKong:hover:not(:disabled) {
+  background: #b45309;
+}
+
+.claimWin {
+  background: #dc2626;
+}
+
+.claimWin:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.claimPass {
+  background: var(--surface, rgba(255, 255, 255, 0.1));
+  color: var(--text-primary, #f1f5f9);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.15));
+}
+
+.claimPass:hover:not(:disabled) {
+  background: var(--surface-hover, rgba(255, 255, 255, 0.15));
+}
+
+.claimButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pendingClaimInfo {
+  font-size: 0.85rem;
+  color: var(--warning-text, #fbbf24);
+  text-align: center;
+}
+
+/* Result overlay */
+.resultOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100;
+}
+
+.resultCard {
+  background: var(--surface-elevated, #1e293b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+.resultHeadline {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.resultDetail {
+  font-size: 0.95rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.fanList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.fanItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
+  background: var(--surface, rgba(255, 255, 255, 0.05));
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.fanName {
+  color: var(--text-primary, #f1f5f9);
+}
+
+.fanValue {
+  color: var(--accent-text, #a855f7);
+  font-weight: 600;
+}
+
+.totalFan {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--warning-text, #fbbf24);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+}
+
+.playAgainButton {
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--success, #22c55e);
+  color: white;
+}
+
+.playAgainButton:hover {
+  background: var(--success-hover, #16a34a);
+}
+
+/* Feed area */
+.feedArea {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 80px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  background: var(--surface, rgba(255, 255, 255, 0.03));
+  border-radius: 6px;
+}
+
+.feedItem {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+/* Flowers area */
+.flowersArea {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flowerTile {
+  width: 24px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 3px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  user-select: none;
+  color: #ec4899;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .container {
+    padding: 0.5rem;
+  }
+
+  .opponentsArea {
+    gap: 0.5rem;
+  }
+
+  .opponentCard {
+    padding: 0.4rem 0.6rem;
+    min-width: 70px;
+  }
+
+  .tileCard {
+    width: 40px;
+    height: 54px;
+  }
+
+  .tileLabel {
+    font-size: 0.95rem;
+  }
+
+  .tileSuit {
+    font-size: 0.55rem;
+  }
+
+  .smallTile {
+    width: 22px;
+    height: 30px;
+    font-size: 0.5rem;
+  }
+
+  .meldTile {
+    width: 20px;
+    height: 28px;
+    font-size: 0.55rem;
+  }
+
+  .actionButton,
+  .passButton,
+  .claimButton {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+  }
+}

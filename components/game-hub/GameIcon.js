@@ -62,6 +62,49 @@ export default function GameIcon({ gameKey, className = "" }) {
     );
   }
 
+  if (gameKey === "flyingchess") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="飞行棋图标" className={className}>
+        <defs>
+          <linearGradient id="flyingBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#12284d" />
+            <stop offset="100%" stopColor="#08142b" />
+          </linearGradient>
+          <linearGradient id="flyingTrack" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffe3a4" />
+            <stop offset="100%" stopColor="#d59639" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#flyingBg)" />
+        <circle cx="80" cy="80" r="46" fill="none" stroke="url(#flyingTrack)" strokeWidth="8" opacity="0.95" />
+        <circle cx="80" cy="80" r="24" fill="none" stroke="#f6efd8" strokeOpacity="0.32" strokeWidth="4" />
+        <g fill="#ff845f">
+          <path d="M80 36l10 12-10 6-10-6z" />
+          <circle cx="80" cy="26" r="7" />
+        </g>
+        <g fill="#ffd35b">
+          <path d="M122 80l-12 10-6-10 6-10z" />
+          <circle cx="134" cy="80" r="7" />
+        </g>
+        <g fill="#58dc8c">
+          <path d="M80 124l10-12-10-6-10 6z" />
+          <circle cx="80" cy="134" r="7" />
+        </g>
+        <g fill="#79b5ff">
+          <path d="M38 80l12-10 6 10-6 10z" />
+          <circle cx="26" cy="80" r="7" />
+        </g>
+        <g transform="translate(58 58)">
+          <rect x="0" y="0" width="44" height="44" rx="12" fill="#f6f0dd" stroke="#c18a36" strokeWidth="4" />
+          <circle cx="14" cy="14" r="4" fill="#16335f" />
+          <circle cx="30" cy="14" r="4" fill="#16335f" />
+          <circle cx="14" cy="30" r="4" fill="#16335f" />
+          <circle cx="30" cy="30" r="4" fill="#16335f" />
+        </g>
+      </svg>
+    );
+  }
+
   if (gameKey === "sokoban") {
     return (
       <svg viewBox="0 0 160 160" role="img" aria-label="推箱子图标" className={className}>
@@ -87,6 +130,38 @@ export default function GameIcon({ gameKey, className = "" }) {
         <circle cx="112" cy="108" r="10" fill="#f7f3d1" stroke="#ad9152" strokeWidth="4" />
         <path d="M52 74c6-10 16-15 30-16" stroke="#f7f3d1" strokeWidth="6" strokeLinecap="round" fill="none" />
         <path d="M79 52l9 4-7 8" fill="none" stroke="#f7f3d1" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (gameKey === "pickred") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="撿紅點图标" className={className}>
+        <defs>
+          <linearGradient id="pickredBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#4a1020" />
+            <stop offset="100%" stopColor="#1a0810" />
+          </linearGradient>
+          <linearGradient id="pickredCard" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fff8f0" />
+            <stop offset="100%" stopColor="#f0e0d0" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#pickredBg)" />
+        <g transform="translate(28 22) rotate(-6)">
+          <rect x="0" y="0" width="52" height="76" rx="10" fill="url(#pickredCard)" />
+          <text x="10" y="24" fontSize="16" fontWeight="700" fill="#dc2626">A</text>
+          <text x="12" y="44" fontSize="20" fill="#dc2626">♥</text>
+        </g>
+        <g transform="translate(72 28) rotate(4)">
+          <rect x="0" y="0" width="52" height="76" rx="10" fill="url(#pickredCard)" />
+          <text x="8" y="24" fontSize="16" fontWeight="700" fill="#dc2626">9</text>
+          <text x="12" y="44" fontSize="20" fill="#dc2626">♦</text>
+        </g>
+        <g transform="translate(50 80)">
+          <text x="0" y="20" fontSize="28" fontWeight="800" fill="#ef4444" textAnchor="middle">10</text>
+          <text x="0" y="44" fontSize="14" fill="#fbbf24" textAnchor="middle">撿紅點</text>
+        </g>
       </svg>
     );
   }
@@ -143,6 +218,65 @@ export default function GameIcon({ gameKey, className = "" }) {
     );
   }
 
+  if (gameKey === "drawguess") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="你画我猜图标" className={className}>
+        <defs>
+          <linearGradient id="drawguessBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#0d2631" />
+            <stop offset="100%" stopColor="#140d25" />
+          </linearGradient>
+          <linearGradient id="drawguessNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#7ff4df" />
+            <stop offset="100%" stopColor="#ffd36b" />
+          </linearGradient>
+          <linearGradient id="drawguessCoral" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ff8a6b" />
+            <stop offset="100%" stopColor="#ff4f79" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#drawguessBg)" />
+        <rect
+          x="28"
+          y="28"
+          width="104"
+          height="74"
+          rx="18"
+          fill="rgba(255,255,255,0.06)"
+          stroke="url(#drawguessNeon)"
+          strokeWidth="5"
+        />
+        <path
+          d="M48 78c10-18 18-26 28-26 13 0 15 24 28 24 9 0 16-8 20-14"
+          fill="none"
+          stroke="url(#drawguessCoral)"
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="60" cy="58" r="7" fill="#7ff4df" />
+        <path
+          d="M96 118c0-14 11-25 25-25h7v17c0 15-12 27-27 27H84v-19z"
+          fill="#f8f3e8"
+          stroke="#1e2539"
+          strokeWidth="4"
+          strokeLinejoin="round"
+        />
+        <path d="M82 136l11-11" stroke="#1e2539" strokeWidth="5" strokeLinecap="round" />
+        <path d="M108 106h12" stroke="#19cbb2" strokeWidth="5" strokeLinecap="round" />
+        <path
+          d="M44 114h32l12 12v-12h12c8 0 14-6 14-14V90c0-8-6-14-14-14H44c-8 0-14 6-14 14v10c0 8 6 14 14 14z"
+          fill="rgba(255,255,255,0.08)"
+          stroke="url(#drawguessNeon)"
+          strokeWidth="4"
+        />
+        <circle cx="56" cy="95" r="5" fill="#ffd36b" />
+        <circle cx="74" cy="95" r="5" fill="#ffd36b" />
+        <circle cx="92" cy="95" r="5" fill="#ffd36b" />
+      </svg>
+    );
+  }
+
   if (gameKey === "werewolf") {
     return (
       <svg viewBox="0 0 160 160" role="img" aria-label="狼人杀图标" className={className}>
@@ -167,6 +301,66 @@ export default function GameIcon({ gameKey, className = "" }) {
           fill="#0e0d14"
         />
         <path d="M72 111c8 5 18 5 30 0-2 8-7 13-15 16-8-3-13-8-15-16z" fill="#8b2230" />
+      </svg>
+    );
+  }
+
+  if (gameKey === "bigtwo") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="大老二图标" className={className}>
+        <defs>
+          <linearGradient id="bigtwoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#2d1040" />
+            <stop offset="100%" stopColor="#0f0818" />
+          </linearGradient>
+          <linearGradient id="bigtwoCard" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fff8f0" />
+            <stop offset="100%" stopColor="#f0e0d0" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#bigtwoBg)" />
+        <g transform="translate(36 22) rotate(-6)">
+          <rect x="0" y="0" width="56" height="82" rx="12" fill="url(#bigtwoCard)" />
+          <text x="12" y="30" fontSize="22" fontWeight="800" fill="#1a1a2e">2</text>
+          <text x="16" y="56" fontSize="24" fill="#1a1a2e">♠</text>
+        </g>
+        <g transform="translate(68 32) rotate(4)">
+          <rect x="0" y="0" width="56" height="82" rx="12" fill="url(#bigtwoCard)" />
+          <text x="12" y="30" fontSize="22" fontWeight="800" fill="#dc2626">2</text>
+          <text x="16" y="56" fontSize="24" fill="#dc2626">♥</text>
+        </g>
+        <g transform="translate(50 86)">
+          <text x="0" y="20" fontSize="24" fontWeight="800" fill="#fbbf24" textAnchor="middle">大老二</text>
+        </g>
+      </svg>
+    );
+  }
+
+  if (gameKey === "mahjong") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="麻將图标" className={className}>
+        <defs>
+          <linearGradient id="mahjongBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#174d3a" />
+            <stop offset="100%" stopColor="#0a2318" />
+          </linearGradient>
+          <linearGradient id="mahjongTile" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f5f0e0" />
+            <stop offset="100%" stopColor="#d8cfa8" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#mahjongBg)" />
+        <g transform="translate(22 22)">
+          <rect x="0" y="0" width="50" height="70" rx="8" fill="url(#mahjongTile)" stroke="#b8a870" strokeWidth="2" />
+          <text x="25" y="30" fontSize="20" fontWeight="800" fill="#dc2626" textAnchor="middle">萬</text>
+          <text x="25" y="54" fontSize="14" fontWeight="700" fill="#dc2626" textAnchor="middle">一</text>
+        </g>
+        <g transform="translate(80 22)">
+          <rect x="0" y="0" width="50" height="70" rx="8" fill="url(#mahjongTile)" stroke="#b8a870" strokeWidth="2" />
+          <circle cx="25" cy="32" r="12" fill="none" stroke="#1d4ed8" strokeWidth="3" />
+          <circle cx="25" cy="32" r="5" fill="#1d4ed8" />
+        </g>
+        <text x="80" y="120" fontSize="22" fontWeight="800" fill="#fbbf24" textAnchor="middle">麻將</text>
       </svg>
     );
   }
