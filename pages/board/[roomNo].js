@@ -16,6 +16,7 @@ import {
 import styles from "../../styles/BoardRoom.module.css";
 
 const { getGameMeta, getBoardConfigSummary } = require("../../lib/games/catalog");
+const { getFlyingChessBoardGeometry } = require("../../lib/board/flyingchess");
 
 let socket;
 const BOARD_EVENTS = SOCKET_EVENTS.board;
@@ -23,12 +24,16 @@ const GOMOKU_SIZE = 15;
 const REVERSI_SIZE = 8;
 const CHINESE_CHECKERS_ROW_LENGTHS = [1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1];
 const CHINESE_VERTICAL_GAP = 0.8660254037844386;
+const ROOM_LOAD_RETRY_DELAYS_MS = [0, 350, 900];
+const RETRYABLE_ROOM_LOAD_STATUSES = new Set([404, 408, 425, 429, 500, 502, 503, 504]);
 
 export default function BoardRoomPage() {
   const router = useRouter();
   const { roomNo } = router.query;
   const [me, setMe] = useState(null);
   const [room, setRoom] = useState(null);
+  const [roomLoadState, setRoomLoadState] = useState("loading");
+  const [roomLoadError, setRoomLoadError] = useState("");
   const [socketConnected, setSocketConnected] = useState(null);
   const [message, setMessage] = useState("");
   const [joining, setJoining] = useState(false);
@@ -42,6 +47,8 @@ export default function BoardRoomPage() {
   const previousViewerCanMoveRef = useRef(false);
   const guestClaimSyncRef = useRef("");
   const previousSocketConnectedRef = useRef(null);
+  const roomLoadRequestRef = useRef(0);
+  const pendingReadyRef = useRef(null);
 
   const meta = useMemo(() => getGameMeta(room?.gameKey), [room?.gameKey]);
   const boardSummary = useMemo(
@@ -60,6 +67,11 @@ export default function BoardRoomPage() {
     () => Object.fromEntries(chineseProgress.map((item) => [item.seatIndex, item])),
     [chineseProgress]
   );
+  const flyingChessProgress = room?.gameKey === "flyingchess" ? room?.match?.progress || [] : [];
+  const flyingChessProgressBySeat = useMemo(
+    () => Object.fromEntries(flyingChessProgress.map((item) => [item.seatIndex, item])),
+    [flyingChessProgress]
+  );
   const socketReady = socketConnected === true;
   const recoveryBanner = getRecoveryBannerMessage(mySeat, socketConnected, nowMs);
   const recoveryNotice = recoveryBanner || recoveryRestoreNotice;
@@ -69,7 +81,7 @@ export default function BoardRoomPage() {
       return;
     }
 
-    loadRoom().catch(() => showMessage("读取房间失败"));
+    syncRoomState().catch(() => null);
 
     return () => {
       clearTimeout(messageTimerRef.current);
@@ -118,9 +130,22 @@ export default function BoardRoomPage() {
       socket.emit(BOARD_EVENTS.subscribe, { roomNo });
     }
 
+    function flushPendingReady() {
+      if (!socket?.connected || pendingReadyRef.current?.roomNo !== roomNo) {
+        return;
+      }
+
+      socket.emit(BOARD_EVENTS.ready, {
+        roomNo,
+        ready: pendingReadyRef.current.ready
+      });
+      pendingReadyRef.current = null;
+    }
+
     function onConnect() {
       setSocketConnected(true);
       subscribe();
+      flushPendingReady();
     }
 
     function onDisconnect() {
@@ -139,8 +164,10 @@ export default function BoardRoomPage() {
     if (socket.connected) {
       setSocketConnected(true);
       subscribe();
+      flushPendingReady();
     } else {
       setSocketConnected(null);
+      socket.connect();
     }
 
     socket.on("connect", onConnect);
@@ -181,11 +208,17 @@ export default function BoardRoomPage() {
     if (viewerCanMove && !previousViewerCanMoveRef.current) {
       setActivePanel(null);
       showMessage(
-        room?.gameKey === "chinesecheckers" ? "轮到你走子了，可借任意已占用棋子起跳" : "轮到你落子了"
+        room?.gameKey === "chinesecheckers"
+          ? "轮到你走子了，可借任意已占用棋子起跳"
+          : room?.gameKey === "flyingchess"
+            ? room?.match?.turnPhase === "move"
+              ? "你已擲出点数，选择棋子推进。"
+              : "轮到你擲骰了。"
+            : "轮到你落子了"
       );
     }
     previousViewerCanMoveRef.current = viewerCanMove;
-  }, [room?.match?.viewerCanMove, room?.gameKey]);
+  }, [room?.match?.turnPhase, room?.match?.viewerCanMove, room?.gameKey]);
 
   useEffect(() => {
     if (me?.kind !== "user" || !roomNo) {
@@ -248,30 +281,80 @@ export default function BoardRoomPage() {
     };
   }, [me?.kind, roomNo]);
 
-  async function loadRoom() {
+  async function syncRoomState() {
     if (!roomNo) {
       return;
     }
 
-    const [meResponse, roomResponse] = await Promise.all([
-      apiFetch(API_ROUTES.me()),
-      apiFetch(API_ROUTES.boardRooms.detail(roomNo))
-    ]);
+    const requestId = roomLoadRequestRef.current + 1;
+    roomLoadRequestRef.current = requestId;
+    setRoomLoadState("loading");
+    setRoomLoadError("");
 
-    const [meData, roomData] = await Promise.all([meResponse.json(), roomResponse.json()]);
-    const nextSession = meData.session || meData.user || null;
-    if (!nextSession) {
-      router.push(`/login?returnTo=${encodeURIComponent(getCurrentBoardRoute(router.asPath, roomNo))}`);
-      return;
+    let lastErrorMessage = "读取房间失败";
+    for (let attempt = 0; attempt < ROOM_LOAD_RETRY_DELAYS_MS.length; attempt += 1) {
+      if (ROOM_LOAD_RETRY_DELAYS_MS[attempt] > 0) {
+        await delay(ROOM_LOAD_RETRY_DELAYS_MS[attempt]);
+      }
+
+      try {
+        const [meResponse, roomResponse] = await Promise.all([
+          apiFetch(API_ROUTES.me()),
+          apiFetch(API_ROUTES.boardRooms.detail(roomNo))
+        ]);
+
+        const [meData, roomData] = await Promise.all([
+          meResponse.json().catch(() => ({})),
+          roomResponse.json().catch(() => ({}))
+        ]);
+
+        if (roomLoadRequestRef.current !== requestId) {
+          return;
+        }
+
+        const nextSession = meData.session || meData.user || null;
+        if (!nextSession) {
+          router.push(`/login?returnTo=${encodeURIComponent(getCurrentBoardRoute(router.asPath, roomNo))}`);
+          return;
+        }
+
+        if (roomResponse.ok && roomData.room) {
+          setMe(nextSession);
+          setRoom(roomData.room);
+          setRoomLoadState("ready");
+          setRoomLoadError("");
+          return;
+        }
+
+        lastErrorMessage = roomData.error || "房间不存在";
+        if (
+          attempt < ROOM_LOAD_RETRY_DELAYS_MS.length - 1 &&
+          shouldRetryRoomLoad(roomResponse.status)
+        ) {
+          continue;
+        }
+
+        setMe(nextSession);
+        setRoom(null);
+        setRoomLoadState("error");
+        setRoomLoadError(lastErrorMessage);
+        showMessage(lastErrorMessage);
+        return;
+      } catch {
+        if (roomLoadRequestRef.current !== requestId) {
+          return;
+        }
+
+        if (attempt < ROOM_LOAD_RETRY_DELAYS_MS.length - 1) {
+          continue;
+        }
+
+        setRoom(null);
+        setRoomLoadState("error");
+        setRoomLoadError(lastErrorMessage);
+        showMessage(lastErrorMessage);
+      }
     }
-
-    if (!roomResponse.ok) {
-      showMessage(roomData.error || "房间不存在");
-      return;
-    }
-
-    setMe(nextSession);
-    setRoom(roomData.room);
   }
 
   function showMessage(text, duration = 2600) {
@@ -282,7 +365,11 @@ export default function BoardRoomPage() {
 
   async function joinRoom() {
     setJoining(true);
-    const response = await apiFetch(API_ROUTES.boardRooms.join(roomNo), { method: "POST" });
+    const response = await apiFetch(API_ROUTES.boardRooms.join(roomNo), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
     const data = await response.json();
     setJoining(false);
 
@@ -297,9 +384,12 @@ export default function BoardRoomPage() {
 
   function emitReady(ready) {
     if (!socket?.connected) {
-      showMessage("实时连线同步中，请稍候");
+      pendingReadyRef.current = { roomNo, ready };
+      socket?.connect?.();
+      showMessage("实时连线同步中，连上后会自动送出准备");
       return;
     }
+    pendingReadyRef.current = null;
     socket?.emit(BOARD_EVENTS.ready, { roomNo, ready });
   }
 
@@ -326,6 +416,28 @@ export default function BoardRoomPage() {
 
     writePendingGuestMatchClaim(buildBoardGuestClaim(room, me, mySeat));
     router.push(`/login?returnTo=${encodeURIComponent(getCurrentBoardRoute(router.asPath, room.roomNo, meta))}`);
+  }
+
+  if (roomLoadState === "error" && !room) {
+    return (
+      <SiteLayout immersive>
+        <div className={styles.loadStateShell}>
+          <section className={styles.loadStateCard}>
+            <span className={styles.loadStateEyebrow}>ROOM RECOVERY</span>
+            <strong>{roomLoadError || "棋盘房间同步失败"}</strong>
+            <p>房间同步没有完成。你可以立即重试，或先回到游戏大厅重新进入。</p>
+            <div className={styles.loadStateActions}>
+              <button type="button" className={styles.primaryButton} onClick={() => syncRoomState()}>
+                重试同步
+              </button>
+              <button type="button" className={styles.hudButton} onClick={() => router.push(meta?.route || "/")}>
+                返回遊戲家族
+              </button>
+            </div>
+          </section>
+        </div>
+      </SiteLayout>
+    );
   }
 
   if (!room || !meta) {
@@ -362,7 +474,9 @@ export default function BoardRoomPage() {
                 <GameIcon gameKey={room.gameKey} />
               </div>
               <div>
-                <span className={styles.roomTag}>房号 {room.roomNo}</span>
+                <span className={styles.roomTag} data-room-no={room.roomNo}>
+                  房号 {room.roomNo}
+                </span>
                 <h1>{meta.title}</h1>
                 <p>
                   {meta.strapline} · {players.length}/{room.config.maxPlayers} 人
@@ -411,6 +525,23 @@ export default function BoardRoomPage() {
                   ))}
                 </div>
               </div>
+            ) : room.gameKey === "flyingchess" && flyingChessProgress.length > 0 ? (
+              <div className={styles.stageTopline}>
+                <div className={styles.progressRow}>
+                  {flyingChessProgress.map((item) => (
+                    <span
+                      key={`${room.roomNo}-flyingchess-progress-${item.seatIndex}`}
+                      className={styles.progressBadge}
+                      data-flyingchess-progress={`${item.seatIndex}:${item.progressText}`}
+                    >
+                      <strong>{item.pieceLabel}</strong>
+                      <span>
+                        进家 {item.progressText} · 终点线 {item.homeLaneCount} · 机库 {item.airportCount}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
             ) : null}
             <div
               className={`${styles.boardBody} ${isMyTurn ? styles.boardBodyActive : ""} ${
@@ -418,20 +549,34 @@ export default function BoardRoomPage() {
                   ? styles.boardBodyGomoku
                   : room.gameKey === "reversi"
                     ? styles.boardBodyReversi
+                    : room.gameKey === "flyingchess"
+                      ? styles.boardBodyFlyingchess
                     : styles.boardBodyChinese
               }`.trim()}
             >
               {room.state === "playing" ? (
-                <div className={`${styles.turnBanner} ${isMyTurn ? styles.turnBannerActive : ""}`.trim()}>
+                <div
+                  className={`${styles.turnBanner} ${isMyTurn ? styles.turnBannerActive : ""} ${
+                    room.gameKey === "flyingchess" ? styles.turnBannerInline : ""
+                  }`.trim()}
+                >
                   <span>{isMyTurn ? "你的操作窗口" : "当前行动者"}</span>
                   <strong>
                     {isMyTurn
                       ? room.gameKey === "chinesecheckers"
                         ? "现在走子，可借任意已占用棋子连跳"
+                        : room.gameKey === "flyingchess"
+                          ? room.match?.turnPhase === "move"
+                            ? `已擲出 ${room.match?.rollValue || 0} 点，选择棋子推进`
+                            : "先擲骰，再决定哪架棋子出发"
                         : room.gameKey === "reversi"
                           ? "现在落子，抢角与边线"
                           : "现在落子"
-                      : actingPlayerName}
+                      : room.gameKey === "flyingchess"
+                        ? `${actingPlayerName} ${
+                            room.match?.turnPhase === "move" ? "正在选子" : "准备擲骰"
+                          }`
+                        : actingPlayerName}
                   </strong>
                 </div>
               ) : null}
@@ -440,6 +585,14 @@ export default function BoardRoomPage() {
                 <GomokuBoard room={room} emitMove={emitMove} />
               ) : room.gameKey === "reversi" ? (
                 <ReversiBoard room={room} emitMove={emitMove} />
+              ) : room.gameKey === "flyingchess" ? (
+                <FlyingChessBoard
+                  room={room}
+                  selectedPiece={selectedPiece}
+                  setSelectedPiece={setSelectedPiece}
+                  emitMove={emitMove}
+                  playerBySeat={playerBySeat}
+                />
               ) : (
                 <ChineseCheckersBoard
                   room={room}
@@ -463,11 +616,12 @@ export default function BoardRoomPage() {
                       type="button"
                       className={styles.primaryButton}
                       onClick={() => emitReady(!mySeat.ready)}
-                      disabled={!socketReady}
                     >
                       {mySeat.ready ? "取消准备" : room.lastResult ? "准备再来" : "准备开局"}
                     </button>
-                    {mySeat?.isOwner && players.length < room.config.maxPlayers ? (
+                    {mySeat?.isOwner &&
+                    players.length < room.config.maxPlayers &&
+                    room.gameKey !== "flyingchess" ? (
                       <button
                         type="button"
                         className={styles.hudButton}
@@ -479,7 +633,9 @@ export default function BoardRoomPage() {
                     ) : null}
                   </div>
                   <span>
-                    当前 {players.filter((player) => player.ready).length}/{players.length} 人已准备
+                    {room.gameKey === "flyingchess"
+                      ? `当前 ${players.filter((player) => player.ready).length}/${players.length} 人已准备 · 飞行棋暂不支持 AI 补位`
+                      : `当前 ${players.filter((player) => player.ready).length}/${players.length} 人已准备`}
                   </span>
                 </div>
               ) : (
@@ -602,7 +758,12 @@ export default function BoardRoomPage() {
                 </div>
                 <div className={styles.seatList}>
                   {players.map((player) => {
-                    const progress = chineseProgressBySeat[player.seatIndex] || null;
+                    const progress =
+                      room.gameKey === "chinesecheckers"
+                        ? chineseProgressBySeat[player.seatIndex] || null
+                        : room.gameKey === "flyingchess"
+                          ? flyingChessProgressBySeat[player.seatIndex] || null
+                          : null;
 
                     return (
                     <div
@@ -630,12 +791,27 @@ export default function BoardRoomPage() {
                         <div
                           className={styles.seatProgress}
                           data-progress-seat={player.seatIndex}
-                          data-progress-value={`${progress.goalReached}/${progress.goalTotal}`}
+                          data-progress-value={
+                            room.gameKey === "flyingchess"
+                              ? progress.progressText
+                              : `${progress.goalReached}/${progress.goalTotal}`
+                          }
+                          data-flyingchess-progress={
+                            room.gameKey === "flyingchess"
+                              ? `${player.seatIndex}:${progress.progressText}`
+                              : undefined
+                          }
                         >
                           <strong>
-                            {progress.goalReached}/{progress.goalTotal}
+                            {room.gameKey === "flyingchess"
+                              ? progress.progressText
+                              : `${progress.goalReached}/${progress.goalTotal}`}
                           </strong>
-                          <span>剩余 {progress.remaining} 格</span>
+                          <span>
+                            {room.gameKey === "flyingchess"
+                              ? `终点线 ${progress.homeLaneCount} · 机库 ${progress.airportCount}`
+                              : `剩余 ${progress.remaining} 格`}
+                          </span>
                         </div>
                       ) : null}
                     </div>
@@ -1022,6 +1198,198 @@ function ChineseCheckersBoard({
   );
 }
 
+function FlyingChessBoard({
+  room,
+  selectedPiece,
+  setSelectedPiece,
+  emitMove,
+  playerBySeat
+}) {
+  const match = room.match;
+  const geometry = getFlyingChessBoardGeometry(room.config.maxPlayers);
+  const legalMoves = match?.viewerLegalMoves || {};
+  const selectedMove = selectedPiece ? legalMoves[selectedPiece] || null : null;
+  const targetCellId = selectedMove?.cellId || null;
+  const movablePieceIds = new Set(match?.movablePieceIds || []);
+  const piecesByCell = groupFlyingChessPiecesByCell(match?.pieces || []);
+  const progressBySeat = Object.fromEntries((match?.progress || []).map((item) => [item.seatIndex, item]));
+
+  function onPieceClick(pieceId) {
+    if (!match?.viewerCanMove || match?.turnPhase !== "move" || !movablePieceIds.has(pieceId)) {
+      return;
+    }
+
+    setSelectedPiece((current) => (current === pieceId ? null : pieceId));
+  }
+
+  function onCellClick(cellId) {
+    if (!match?.viewerCanMove || match?.turnPhase !== "move" || !selectedMove) {
+      return;
+    }
+
+    if (selectedMove.cellId !== cellId) {
+      setSelectedPiece(null);
+      return;
+    }
+
+    emitMove({ action: "move", pieceId: selectedMove.pieceId });
+    setSelectedPiece(null);
+  }
+
+  return (
+    <div className={styles.flyingChessWrap} data-flyingchess-board="true">
+      {!match ? (
+        <div className={styles.boardWaitingOverlay}>
+          <strong>等待棋手准备</strong>
+          <span>{room.config.maxPlayers} 位棋手全部准备后会点亮飞行棋航线。</span>
+        </div>
+      ) : null}
+
+      <div className={styles.flyingChessControls}>
+        <div
+          className={styles.flyingChessPhase}
+          data-flyingchess-phase={match?.turnPhase || "waiting"}
+        >
+          <span>当前阶段</span>
+          <strong>{getFlyingChessPhaseCopy(match, room, playerBySeat)}</strong>
+        </div>
+        <div
+          className={styles.flyingChessDice}
+          data-flyingchess-dice={String(match?.rollValue || 0)}
+        >
+          <span>骰面</span>
+          <strong>{match?.rollValue || "-"}</strong>
+        </div>
+        <button
+          type="button"
+          className={styles.flyingChessRollButton}
+          data-flyingchess-roll={match?.viewerCanRoll ? "ready" : "locked"}
+          disabled={!match?.viewerCanRoll}
+          onClick={() => emitMove({ action: "roll" })}
+        >
+          {match?.viewerCanRoll ? "擲骰開始" : match?.turnPhase === "move" ? "等待移動完成" : "等待對手"}
+        </button>
+      </div>
+
+      <div className={styles.flyingChessBoard}>
+        {geometry.seatMarkers.map((marker) => {
+          const player = playerBySeat[marker.seatIndex];
+          const progress = progressBySeat[marker.seatIndex] || null;
+          const isActive = match?.turnSeat === marker.seatIndex;
+
+          return (
+            <div
+              key={`flying-seat-${marker.seatIndex}`}
+              className={`${styles.flyingChessSeatBadge} ${isActive ? styles.flyingChessSeatBadgeActive : ""}`}
+              style={toFlyingChessStyle(marker.x, marker.y)}
+              data-flyingchess-seat={marker.seatIndex}
+            >
+              <strong>{player?.pieceLabel || player?.displayName || `席位 ${marker.seatIndex + 1}`}</strong>
+              <span>
+                {player?.displayName || `席位 ${marker.seatIndex + 1}`}
+                {progress ? ` · 进家 ${progress.progressText}` : ""}
+              </span>
+            </div>
+          );
+        })}
+
+        {geometry.ringCells.map((cell) => (
+          <button
+            key={cell.id}
+            type="button"
+            className={`${styles.flyingChessCell} ${styles.flyingChessRingCell} ${
+              targetCellId === cell.id ? styles.flyingChessTargetCell : ""
+            }`.trim()}
+            style={toFlyingChessStyle(cell.x, cell.y)}
+            data-flyingchess-target={targetCellId === cell.id ? cell.id : undefined}
+            data-flyingchess-cell={cell.id}
+            data-cell-color={cell.colorToken}
+            data-cell-flight={cell.isFlight ? "true" : "false"}
+            disabled={targetCellId !== cell.id}
+            onClick={() => onCellClick(cell.id)}
+          >
+            {cell.isFlight ? <span className={styles.flyingChessFlightMark}>✦</span> : null}
+          </button>
+        ))}
+
+        {geometry.homeCells.map((cell) => (
+          <button
+            key={cell.id}
+            type="button"
+            className={`${styles.flyingChessCell} ${styles.flyingChessHomeCell} ${
+              targetCellId === cell.id ? styles.flyingChessTargetCell : ""
+            }`.trim()}
+            style={toFlyingChessStyle(cell.x, cell.y)}
+            data-flyingchess-target={targetCellId === cell.id ? cell.id : undefined}
+            data-flyingchess-cell={cell.id}
+            data-home-seat={cell.seatIndex}
+            disabled={targetCellId !== cell.id}
+            onClick={() => onCellClick(cell.id)}
+          >
+            <span>{cell.homeStep}</span>
+          </button>
+        ))}
+
+        {geometry.airportSlots.map((cell) => (
+          <div
+            key={cell.id}
+            className={`${styles.flyingChessCell} ${styles.flyingChessAirportCell}`}
+            style={toFlyingChessStyle(cell.x, cell.y)}
+            data-flyingchess-cell={cell.id}
+            data-airport-seat={cell.seatIndex}
+          />
+        ))}
+
+        {(match?.pieces || []).map((piece) => {
+          const stack = piecesByCell.get(resolveFlyingChessPieceCellId(piece)) || [piece];
+          const stackIndex = stack.findIndex((entry) => entry.pieceId === piece.pieceId);
+          const { x, y } = resolveFlyingChessPiecePosition(piece, geometry, stackIndex, stack.length);
+          const canMove = movablePieceIds.has(piece.pieceId);
+
+          return (
+            <button
+              key={piece.pieceId}
+              type="button"
+              className={`${styles.flyingChessPiece} ${
+                canMove ? styles.flyingChessPieceMovable : ""
+              } ${selectedPiece === piece.pieceId ? styles.flyingChessPieceSelected : ""}`.trim()}
+              style={toFlyingChessStyle(x, y)}
+              data-flyingchess-piece={piece.pieceId}
+              data-flyingchess-seat={piece.seatIndex}
+              data-piece-zone={piece.zone}
+              data-piece-finished={piece.isFinished ? "true" : "false"}
+              data-piece-movable={canMove ? "true" : "false"}
+              disabled={!canMove}
+              onClick={() => onPieceClick(piece.pieceId)}
+            >
+              <span data-piece-accent={playerBySeat[piece.seatIndex]?.pieceAccent || "red"}>
+                {piece.order + 1}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={styles.flyingChessLegend}>
+        <div className={styles.flyingChessLegendCard}>
+          <strong>{selectedMove ? `${selectedMove.rollValue} 点落点` : "本回合提示"}</strong>
+          <span>
+                {selectedMove
+                  ? getFlyingChessMoveSummary(selectedMove)
+                  : match?.turnPhase === "move"
+                    ? "先点亮可移动棋子，再点高亮目标完成推进。"
+                    : "擲出 6 点可起飞；只要擲出 6 点，本回合都能再擲一次。"}
+              </span>
+            </div>
+        <div className={styles.flyingChessLegendCard}>
+          <strong>经典规则</strong>
+          <span>本色跳点 +4，飞线再冲 +12，撞到对手就送回机场。</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TurnTimer({ remainingMs, durationMs, label }) {
   const progress = Math.max(0, Math.min(1, remainingMs / Math.max(1, durationMs || 1)));
   return (
@@ -1037,6 +1405,114 @@ function TurnTimer({ remainingMs, durationMs, label }) {
       </div>
     </div>
   );
+}
+
+function toFlyingChessStyle(x, y) {
+  return {
+    left: `${(x / 760) * 100}%`,
+    top: `${(y / 760) * 100}%`
+  };
+}
+
+function groupFlyingChessPiecesByCell(pieces = []) {
+  const grouped = new Map();
+
+  for (const piece of pieces) {
+    const cellId = resolveFlyingChessPieceCellId(piece);
+    if (!grouped.has(cellId)) {
+      grouped.set(cellId, []);
+    }
+    grouped.get(cellId).push(piece);
+  }
+
+  return grouped;
+}
+
+function resolveFlyingChessPieceCellId(piece) {
+  if (piece.zone === "ring") {
+    return `ring-${piece.ringIndex}`;
+  }
+
+  if (piece.zone === "home") {
+    return `home-${piece.seatIndex}-${piece.homeStep}`;
+  }
+
+  return `airport-${piece.seatIndex}-${piece.airportSlot}`;
+}
+
+function resolveFlyingChessPiecePosition(piece, geometry, stackIndex, stackLength) {
+  const cellId = resolveFlyingChessPieceCellId(piece);
+  const cell = [...geometry.ringCells, ...geometry.homeCells, ...geometry.airportSlots].find(
+    (item) => item.id === cellId
+  );
+  const origin = cell || { x: 380, y: 380 };
+  const offset = getFlyingChessStackOffset(stackIndex, stackLength);
+
+  return {
+    x: origin.x + offset.x,
+    y: origin.y + offset.y
+  };
+}
+
+function getFlyingChessStackOffset(stackIndex, stackLength) {
+  if (stackLength <= 1) {
+    return { x: 0, y: 0 };
+  }
+
+  const spread = 12;
+  const presets = [
+    { x: -spread, y: -spread },
+    { x: spread, y: -spread },
+    { x: -spread, y: spread },
+    { x: spread, y: spread }
+  ];
+
+  return presets[stackIndex] || { x: 0, y: 0 };
+}
+
+function getFlyingChessPhaseCopy(match, room, playerBySeat) {
+  if (!match) {
+    return "等待起飞";
+  }
+
+  if (match.turnPhase === "move") {
+    return `已擲出 ${match.rollValue || 0} 点 · ${
+      playerBySeat[match.turnSeat]?.displayName || "当前棋手"
+    } 正在选子`;
+  }
+
+  return `${playerBySeat[match.turnSeat]?.displayName || "当前棋手"} 准备擲骰${
+    match.extraRoll ? " · 额外回合" : ""
+  }`;
+}
+
+function getFlyingChessMoveSummary(move) {
+  const parts = [];
+  if (move.takeoff) {
+    parts.push("起飞进入主航线");
+  } else if (move.destinationZone === "home") {
+    parts.push(`推进到终点线第 ${move.destinationHomeStep} 格`);
+  } else {
+    parts.push(`落在外环 ${move.destinationRingIndex}`);
+  }
+
+  if (move.jumped) {
+    parts.push("跳点 +4");
+  }
+
+  if (move.flew) {
+    parts.push("飞线 +12");
+  }
+
+  if (move.captureIds?.length) {
+    parts.push(`撞回 ${move.captureIds.length} 架对手棋子`);
+  }
+
+  if (move.finishes) {
+    parts.push("刚好进家");
+  }
+
+  return parts.join(" · ");
 }
 
 function getTurnHint(room, mySeat, selectedPiece) {
@@ -1058,6 +1534,19 @@ function getTurnHint(room, mySeat, selectedPiece) {
 
   if (room.gameKey === "reversi") {
     return "只能落在高亮位置，必須形成包夾翻面；若沒有合法落點會自動過手。";
+  }
+
+  if (room.gameKey === "flyingchess") {
+    if (room.match?.turnPhase === "roll") {
+      return "先擲骰；擲出 6 点可起飞，擲出 6 点即可再擲一次。";
+    }
+
+    if (selectedPiece && room.match?.viewerLegalMoves?.[selectedPiece]) {
+      const move = room.match.viewerLegalMoves[selectedPiece];
+      return `已选中棋子，点击高亮目标完成移动。${getFlyingChessMoveSummary(move)}`;
+    }
+
+    return `你擲出了 ${room.match?.rollValue || 0} 点，先点可移动棋子，再点高亮目标。`;
   }
 
   if (selectedPiece) {
@@ -1089,6 +1578,13 @@ function getViewerNotes(room, mySeat) {
         mySeat.seatIndex === 0 ? "先手" : "後手"
       }，開局四子固定落在棋盤中央。`,
       "角位最穩，邊線次之；沒有合法落點時系統會自動過手。"
+    ];
+  }
+
+  if (room.gameKey === "flyingchess") {
+    return [
+      `${mySeat.pieceLabel} 共 4 架棋子，擲出 6 点即可起飞，擲出 6 点必定可再擲一次。`,
+      "落在本色格会跳点，命中特殊飞线会再前冲 12 格；撞到对手就会把对方送回机场。"
     ];
   }
 
@@ -1383,7 +1879,13 @@ function getBoardResultBadges(room, mySeat) {
   }
 
   return [
-    room.gameKey === "gomoku" ? "五子棋" : room.gameKey === "reversi" ? "黑白棋" : "中国跳棋",
+    room.gameKey === "gomoku"
+      ? "五子棋"
+      : room.gameKey === "reversi"
+        ? "黑白棋"
+        : room.gameKey === "flyingchess"
+          ? "飞行棋"
+          : "中国跳棋",
     `房号 ${room.roomNo}`,
     mySeat
       ? typeof room.lastResult.winnerSeat === "number"
@@ -1460,7 +1962,19 @@ function getBoardThemeClass(gameKey) {
     return styles.themeReversi;
   }
 
+  if (gameKey === "flyingchess") {
+    return styles.themeFlyingchess;
+  }
+
   return styles.themeChinesecheckers;
+}
+
+function shouldRetryRoomLoad(status) {
+  return RETRYABLE_ROOM_LOAD_STATUSES.has(Number(status));
+}
+
+function delay(durationMs) {
+  return new Promise((resolve) => setTimeout(resolve, durationMs));
 }
 
 function getCurrentBoardRoute(asPath, roomNo, meta = null) {
