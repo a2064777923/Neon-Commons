@@ -10,7 +10,7 @@
 **Goal:** Push the platform toward higher availability while shipping a second wave of games, more reliable voice, and stronger backend/admin operating leverage.
 
 - **Status:** Requirements defined and roadmap initialized on 2026-04-23
-- **Execution status:** Phase 16 completed and verified on 2026-04-25; next active step is milestone wrap-up and subsequent game planning
+- **Execution status:** Phase 15 completed on 2026-05-04; Phase 16 completed and verified on 2026-04-25; next active step is milestone wrap-up
 - **Phases:** 6
 - **Requirements coverage:** 10 / 10 mapped
 
@@ -95,9 +95,9 @@
 
 **Plans:**
 
-- [ ] 15-01: Implement the first Wave 2 title's runtime, rules, and shared room integration
-- [ ] 15-02: Ship UI, entry, admin hooks, and regression coverage for the first Wave 2 title
-- [ ] 15-03: Fix review blockers (entry retry, extra-roll-on-6) and close deployed smoke (T-15-08)
+- [x] 15-01: Implement the first Wave 2 title's runtime, rules, and shared room integration
+- [x] 15-02: Ship UI, entry, admin hooks, and regression coverage for the first Wave 2 title
+- [x] 15-03: Fix review blockers (entry retry, extra-roll-on-6) and close deployed smoke (T-15-08)
 
 ### Phase 16: Wave 2 Delivery Set B & Milestone Hardening
 
@@ -125,7 +125,7 @@
 | VOICE-01 | Phase 12 | Complete |
 | VOICE-02 | Phase 12 | Complete |
 | WAVE-01 | Phase 14 | Pending |
-| WAVE-02 | Phase 15 | Pending |
+| WAVE-02 | Phase 15 | Complete |
 | WAVE-03 | Phase 16 | Complete |
 | ADMIN-01 | Phase 13 | Pending |
 | ADMIN-02 | Phase 13 | Pending |

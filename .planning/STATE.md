@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 大跃进
 status: planning
-stopped_at: Phase 15 plan 03 added
+stopped_at: Phase 15 plan 03 executed
 last_updated: "2026-05-04T00:00:00.000Z"
-last_activity: 2026-05-04 -- Phase 15 plan 03 added (review blockers + deployed smoke)
+last_activity: 2026-05-04 -- Phase 15 plan 03 executed (WR-01, WR-02 fixed, T-15-08 closed)
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 15
-  completed_plans: 12
-  percent: 80
+  completed_plans: 13
+  percent: 87
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 
 ## Current Position
 
-Phase: 14 completed
-Plan: 14-01 and 14-02 completed
-Status: Phase 14 executed, deployed, and verified; ready to plan Phase 15
-Last activity: 2026-04-24 -- Phase 14 launch contract completed, deployed, and browser-verified
+Phase: 15 plans 01-03 executed
+Plan: 15-03 completed
+Status: Phase 15 fully executed; WR-01, WR-02 resolved; T-15-08 closed in security register
+Last activity: 2026-05-04 -- Phase 15 plan 03 executed (entry retry, extra-roll legend, smoke hardening)
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -49,7 +49,7 @@ Progress: [████████░░] 75%
 | 12 | 3/3 | - | - |
 | 13 | 3/3 | - | - |
 | 14 | 2/2 | - | - |
-| 15 | 0/3 | - | - |
+| 15 | 3/3 | - | - |
 | 16 | 0/2 | - | - |
 
 **Recent Trend:**
@@ -58,6 +58,7 @@ Progress: [████████░░] 75%
 - Trend: the repo now has backend-authored Wave 2 launch plumbing and is ready to move from discovery staging into actual title delivery
 
 | Phase 14 P01-P02 | latest | 2 tasks | backend launch contract, hub/lobby UI, browser verification |
+| Phase 15 P01-P03 | latest | 9 tasks | Flying Chess runtime, UI, entry retry, extra-roll fix, smoke hardening |
 
 ## Accumulated Context
 
@@ -91,6 +92,8 @@ Recent decisions affecting current work:
 - [Phase 11]: Keep room availability truth separate from degraded subsystem state — Lets snapshot-only recovery and operator-driven degradation coexist without rewriting shipped availability semantics
 - [14-01]: Build one additive backend-owned launchContract in discovery synthesis so hub and admin surfaces share the same Wave 2 launch truth
 - [14-02]: Make homepage and lobby pages obey launchContract for routability and room-creation gating, and fail closed for staged titles on direct URLs
+- [15-03]: Use `data-entry-action="retry"` to distinguish authenticated retry from login redirect in the entry page DOM
+- [15-03]: Increase smoke test entry timeout to 45s with retry-button fallback instead of indefinite polling
 
 ### Pending Todos
 
@@ -112,11 +115,11 @@ None yet.
 ## Session Continuity
 
 Last session: --stopped-at
-Stopped at: Phase 15 plan 03 added
+Stopped at: Phase 15 plan 03 executed
 Resume file: --resume-file
 
-**Last completed phase:** 14 (Wave 2 Launch Contract) — 2 plans — 2026-04-24
+**Last completed phase:** 15 (Wave 2 Delivery Set A) — 3 plans — 2026-05-04
 
-**Next recommended action:** Run `/gsd-execute-phase 15` to execute all 3 plans
+**Next recommended action:** Run `/gsd-execute-phase 16` to execute Phase 16 plans
 
-**Planned Phase:** 15 (Wave 2 Delivery Set A) — 3 plans — 2026-05-04
+**Planned Phase:** 16 (Wave 2 Delivery Set B & Milestone Hardening) — 2 plans — pending
