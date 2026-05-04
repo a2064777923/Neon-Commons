@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
 status: completed
-stopped_at: Completed 19-03-PLAN.md
-last_updated: "2026-05-04T09:50:53.085Z"
-last_activity: 2026-05-04 -- Phase 19 Plan 02 Room Manager + API completed
+stopped_at: Completed 19-04-PLAN.md
+last_updated: "2026-05-04T09:50:00Z"
+last_activity: 2026-05-04 -- Phase 19 Plan 04 Hub Icon + Integration Tests completed
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-04)
 ## Current Position
 
 Phase: 19 (Mahjong) — EXECUTING
-Plan: Wave 1 (19-01 tile logic, 19-02 room manager) complete, Wave 2 next
-Status: Phase 17-18 complete, Phase 19 Wave 1 complete
-Last activity: 2026-05-04 -- Phase 19 Plan 02 Room Manager + API completed
+Plan: Wave 1 + Wave 2 complete (19-01 through 19-04)
+Status: Phase 17-18 complete, Phase 19 all plans complete
+Last activity: 2026-05-04 -- Phase 19 Plan 04 Hub Icon + Integration Tests completed
 
-Progress: [█████████░] 88%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -53,6 +53,8 @@ Progress: [█████████░] 88%
 
 | Phase 19-mahjong P01 | 15 | 2 tasks | 2 files |
 | Phase 19-mahjong P02 | 18 | 2 tasks | 9 files |
+| Phase 19-mahjong P03 | — | 2 tasks | 3 files |
+| Phase 19-mahjong P04 | 5m | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -103,10 +105,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T09:50:52.556Z
-Stopped at: Completed 19-03-PLAN.md
+Last session: 2026-05-04T09:50:00Z
+Stopped at: Completed 19-04-PLAN.md
 Resume file: None
 
 **Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
 
-**Next recommended action:** Complete Phase 19 Wave 1, then launch Wave 2 (frontend + catalog)
+**Next recommended action:** Phase 19 Mahjong is complete. All 4 plans delivered (tile logic, room manager, frontend, hub icon + tests). Ready for UAT or next milestone.

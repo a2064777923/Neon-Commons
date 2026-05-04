@@ -3,7 +3,7 @@
 ## Shipped Milestones
 
 - [x] **v1.2 大跃进** - shipped 2026-05-04. 6 phases, 17 plans, 51 tasks. Archives: [v1.2 roadmap](./milestones/v1.2-ROADMAP.md), [v1.2 requirements](./milestones/v1.2-REQUIREMENTS.md)
-- [x] **v1.1 Live Ops & Reliability** - shipped 2026-04-23. 4 phases, 9 plans, 18 tasks. Archives: [v1.1 roadmap](./milestones/v1.1-ROADMAP.md), [v1.1 requirements](./milestones/v1.1-REQUIREMENTS.md)
+- [x] **v1.1 Live Ops & Reliability** - shipped 2026-04-23. 4 phases, 9 plans, 18 tasks. Archives: [v1.1 roadmap](./milestones/v1.1-ROADMAP.md), [v1.1 requirements](./milestones/v1.2-REQUIREMENTS.md)
 - [x] **v1.0 milestone** - shipped 2026-04-22. 7 phases, 21 plans, 50 tasks. Archives: [v1.0 roadmap](./milestones/v1.0-ROADMAP.md), [v1.0 requirements](./milestones/v1.0-REQUIREMENTS.md)
 
 ## Current Milestone: v1.3 Wave 3 遊戲擴充
@@ -74,7 +74,12 @@ Plans:
   3. Server validates car positions at 20Hz with delta-state broadcasting; all players see consistent race state
   4. Game tracks laps and declares a winner when all laps are complete; spectators can watch with read-only state stream
   5. Racing appears in the hub and admin can manage its rooms; reconnection recovers position state
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 20-01-PLAN.md — Risk spike: install three + cannon-es, verify CJS compat, add network contract + catalog entries
+- [ ] 20-02-PLAN.md — Backend: RacingRoomManager with 20Hz physics loop, API handlers, socket registration
+- [ ] 20-03-PLAN.md — Frontend: Three.js 3D scene, car/track rendering, input handling, HUD, touch controls
+- [ ] 20-04-PLAN.md — Integration: GameIcon SVG, admin control plane, catalog finalization
 **UI hint**: yes
 
 ### Phase 21: Fighting (打斗)
@@ -109,6 +114,6 @@ Phases execute in numeric order: 17 -> 18 -> 19 -> 20 -> 21 -> 22
 | 17. Pick Red | 0/TBD | Not started | - |
 | 18. Big Two | 0/TBD | Not started | - |
 | 19. Mahjong | 0/TBD | Not started | - |
-| 20. Racing | 0/TBD | Not started | - |
+| 20. Racing | 0/4 | Planning complete | - |
 | 21. Fighting | 0/TBD | Not started | - |
 | 22. Release Verification | 0/TBD | Not started | - |
