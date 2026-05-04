@@ -10,7 +10,7 @@
 **Goal:** Push the platform toward higher availability while shipping a second wave of games, more reliable voice, and stronger backend/admin operating leverage.
 
 - **Status:** Requirements defined and roadmap initialized on 2026-04-23
-- **Execution status:** Phase 11, 12, and 13 completed on 2026-04-24; next active step is planning Phase 14
+- **Execution status:** Phase 16 completed and verified on 2026-04-25; next active step is milestone wrap-up and subsequent game planning
 - **Phases:** 6
 - **Requirements coverage:** 10 / 10 mapped
 
@@ -97,10 +97,11 @@
 
 - [ ] 15-01: Implement the first Wave 2 title's runtime, rules, and shared room integration
 - [ ] 15-02: Ship UI, entry, admin hooks, and regression coverage for the first Wave 2 title
+- [ ] 15-03: Fix review blockers (entry retry, extra-roll-on-6) and close deployed smoke (T-15-08)
 
 ### Phase 16: Wave 2 Delivery Set B & Milestone Hardening
 
-**Goal:** Ship the second Wave 2 title and fold all new voice, availability, and content surfaces into the canonical release gate.
+**Goal:** Ship `drawguess` as the second Wave 2 title and fold all new voice, availability, and content surfaces into the canonical release gate.
 **Requirements:** WAVE-03
 
 **Success Criteria:**
@@ -111,8 +112,8 @@
 
 **Plans:**
 
-- [ ] 16-01: Implement the second Wave 2 title on the shared launch contract
-- [ ] 16-02: Expand critical suites, release routines, and docs for Wave 2 plus HA/voice changes
+- [x] 16-01: Implement the second Wave 2 title on the shared launch contract (completed 2026-04-25)
+- [x] 16-02: Expand critical suites, release routines, and docs for Wave 2 plus HA/voice changes (completed 2026-04-25)
 
 ## Requirement Coverage
 
@@ -125,7 +126,7 @@
 | VOICE-02 | Phase 12 | Complete |
 | WAVE-01 | Phase 14 | Pending |
 | WAVE-02 | Phase 15 | Pending |
-| WAVE-03 | Phase 16 | Pending |
+| WAVE-03 | Phase 16 | Complete |
 | ADMIN-01 | Phase 13 | Pending |
 | ADMIN-02 | Phase 13 | Pending |
 
