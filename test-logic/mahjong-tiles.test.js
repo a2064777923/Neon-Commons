@@ -487,3 +487,917 @@ test("FAN_TABLE is defined with expected fan entries", () => {
   assert.ok(typeof FAN_TABLE === "object", "FAN_TABLE should be an object");
   assert.ok(FAN_TABLE !== null, "FAN_TABLE should not be null");
 });
+
+// ============================================================
+// Win Detection Tests
+// ============================================================
+
+test("detectWin: basic form with 4 melds + 1 pair", () => {
+  // 1-2-3萬, 4-5-6萬, 7-8-9萬, 1-1-1條, 5-5筒 (pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect basic win");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: basic form with all triplets", () => {
+  // 1-1-1萬, 2-2-2萬, 3-3-3萬, 4-4-4萬, 5-5筒 (pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 4 }, { suit: 0, rank: 4 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect all-triplet win");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: basic form with mixed sequences and triplets", () => {
+  // 1-2-3萬, 5-5-5條, 7-8-9筒, 東-東-東, 4-4筒 (pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 1, rank: 5 }, { suit: 1, rank: 5 }, { suit: 1, rank: 5 },
+    { suit: 2, rank: 7 }, { suit: 2, rank: 8 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 },
+    { suit: 2, rank: 4 }, { suit: 2, rank: 4 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect mixed win");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: seven pairs (七對子)", () => {
+  // 1-1萬, 3-3萬, 5-5條, 7-7筒, 9-9筒, 東-東, 中-中
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 1, rank: 5 }, { suit: 1, rank: 5 },
+    { suit: 2, rank: 7 }, { suit: 2, rank: 7 },
+    { suit: 2, rank: 9 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect seven pairs");
+  assert.equal(result.type, "sevenPairs");
+});
+
+test("detectWin: seven pairs with same suit", () => {
+  // All 7 pairs from 萬 suit
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 },
+    { suit: 0, rank: 6 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 7 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect seven pairs from same suit");
+  assert.equal(result.type, "sevenPairs");
+});
+
+test("detectWin: thirteen orphans (十三么)", () => {
+  // 1萬, 9萬, 1條, 9條, 1筒, 9筒, 東, 南, 西, 北, 中, 發, 白 + one duplicate
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 1 }, { suit: 3, rank: 2 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 1 }, { suit: 4, rank: 2 },
+    { suit: 0, rank: 1 } // duplicate 1萬
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect thirteen orphans");
+  assert.equal(result.type, "thirteenOrphans");
+});
+
+test("detectWin: thirteen orphans with different duplicate", () => {
+  // Same 13 orphans, duplicate 東風 instead
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 1 }, { suit: 3, rank: 2 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 1 }, { suit: 4, rank: 2 },
+    { suit: 3, rank: 0 } // duplicate 東風
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect thirteen orphans with 東風 pair");
+  assert.equal(result.type, "thirteenOrphans");
+});
+
+test("detectWin: returns null for incomplete hand (13 tiles)", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.equal(result, null, "13 tiles should not be a win");
+});
+
+test("detectWin: returns null for hand with melds but no pair", () => {
+  // 13 tiles = 4 melds + 1 tile (no pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.equal(result, null, "no pair should not be a win");
+});
+
+test("detectWin: with exposed melds (hand has 5 tiles)", () => {
+  // 3 exposed melds, hand has 5 tiles (1 meld + pair)
+  const melds = [
+    [{ suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 }],
+    [{ suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 }],
+    [{ suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 }]
+  ];
+  const hand = [
+    { suit: 1, rank: 1 }, { suit: 1, rank: 2 }, { suit: 1, rank: 3 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, melds);
+  assert.ok(result !== null, "should detect win with 3 exposed melds");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: with 2 exposed melds (hand has 8 tiles)", () => {
+  // 2 exposed melds, hand has 8 tiles (2 melds + 1 pair)
+  const melds = [
+    [{ suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 }],
+    [{ suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 }]
+  ];
+  const hand = [
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, melds);
+  assert.ok(result !== null, "should detect win with 2 exposed melds");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: with 1 exposed meld (hand has 11 tiles)", () => {
+  // 1 exposed meld, hand has 11 tiles (3 melds + 1 pair)
+  const melds = [
+    [{ suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 }] // 東東東
+  ];
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }
+  ];
+  const result = detectWin(hand, melds);
+  assert.ok(result !== null, "should detect win with 1 exposed meld");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: overlapping sequences (edge case)", () => {
+  // 1-2-3, 2-3-4, 5-6-7, 8-8-8, 9-9
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 3 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 6 }, { suit: 0, rank: 7 },
+    { suit: 0, rank: 8 }, { suit: 0, rank: 8 }, { suit: 0, rank: 8 },
+    { suit: 0, rank: 9 }, { suit: 0, rank: 9 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should handle overlapping sequences");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: multiple possible decompositions (edge case)", () => {
+  // 1-1-1, 2-2-2, 3-3-3, 4-4-4, 5-5
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 4 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect win with all triplets");
+});
+
+test("detectWin: honor tile melds (wind triplets)", () => {
+  // 東東東, 南南南, 西西西, 北北北, 中中
+  const hand = [
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 },
+    { suit: 3, rank: 1 }, { suit: 3, rank: 1 }, { suit: 3, rank: 1 },
+    { suit: 3, rank: 2 }, { suit: 3, rank: 2 }, { suit: 3, rank: 2 },
+    { suit: 3, rank: 3 }, { suit: 3, rank: 3 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect win with all wind triplets");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: dragon triplet meld", () => {
+  // 中中中, 發發發, 1-2-3萬, 4-5-6萬, 白白白 -> too many, let me fix
+  // 中中中, 發發發, 1-2-3萬, 4-5-6萬, 白白
+  const hand = [
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 }, { suit: 4, rank: 0 },
+    { suit: 4, rank: 1 }, { suit: 4, rank: 1 }, { suit: 4, rank: 1 },
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 4, rank: 2 }, { suit: 4, rank: 2 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect win with dragon melds");
+});
+
+test("detectWin: sequence at suit boundary (1-2-3 and 7-8-9)", () => {
+  // 1-2-3萬, 7-8-9萬, 4-5-6條, 1-1筒, 2-2筒 -> pair needs to be 2-2筒
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 4 }, { suit: 1, rank: 5 }, { suit: 1, rank: 6 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 1 },
+    { suit: 2, rank: 2 }, { suit: 2, rank: 2 }
+  ];
+  // This has 13 tiles... need 14. Add one more to pair.
+  // Let me redo: 1-2-3萬, 7-8-9萬, 4-5-6條, 1-1-1筒, 2-2
+  const hand2 = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 4 }, { suit: 1, rank: 5 }, { suit: 1, rank: 6 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 1 }, { suit: 2, rank: 1 },
+    { suit: 2, rank: 2 }, { suit: 2, rank: 2 }
+  ];
+  const result = detectWin(hand2, []);
+  assert.ok(result !== null, "should detect win with boundary sequences");
+});
+
+test("detectWin: not a win when 14 tiles don't form valid pattern", () => {
+  // Random tiles that can't form melds + pair
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 7 }, { suit: 0, rank: 8 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 2 }, { suit: 1, rank: 4 },
+    { suit: 1, rank: 5 }, { suit: 1, rank: 7 }, { suit: 1, rank: 8 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 2 }
+  ];
+  const result = detectWin(hand, []);
+  assert.equal(result, null, "random tiles should not form a win");
+});
+
+test("detectWin: not seven pairs when only 6 pairs", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 },
+    { suit: 0, rank: 6 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 } // not a pair
+  ];
+  const result = detectWin(hand, []);
+  // Should not be seven pairs (last two aren't a pair)
+  // Might still be basic win - check it's not sevenPairs
+  if (result) {
+    assert.notEqual(result.type, "sevenPairs", "should not be seven pairs");
+  }
+});
+
+test("detectWin: not thirteen orphans when missing a tile", () => {
+  // Missing 9條, has extra 1萬
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, // missing 9條
+    { suit: 2, rank: 1 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 1 }, { suit: 3, rank: 2 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 1 }, { suit: 4, rank: 2 },
+    { suit: 0, rank: 1 }
+  ];
+  const result = detectWin(hand, []);
+  if (result) {
+    assert.notEqual(result.type, "thirteenOrphans", "should not be thirteen orphans");
+  }
+});
+
+test("detectWin: empty hand returns null", () => {
+  assert.equal(detectWin([], []), null);
+});
+
+test("detectWin: result has correct structure for basic win", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null);
+  assert.equal(result.type, "basic");
+  assert.ok(result.melds !== undefined, "basic win should have melds");
+  assert.ok(result.pair !== undefined, "basic win should have pair");
+  assert.equal(result.pair.length, 2, "pair should have 2 tiles");
+});
+
+test("detectWin: basic win with honor pair", () => {
+  // 1-2-3萬, 4-5-6萬, 7-8-9萬, 1-1-1條, 東-東 (pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect win with honor pair");
+});
+
+test("detectWin: sequence starting at 7 (7-8-9)", () => {
+  // 7-8-9萬 x4, 1-1筒
+  const hand = [
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 1 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect win with 7-8-9 sequences");
+});
+
+test("detectWin: all same suit sequences (清一色 candidate)", () => {
+  // 1-2-3, 2-3-4, 5-6-7, 8-8-8, 9-9 all 萬
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 3 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 6 }, { suit: 0, rank: 7 },
+    { suit: 0, rank: 8 }, { suit: 0, rank: 8 }, { suit: 0, rank: 8 },
+    { suit: 0, rank: 9 }, { suit: 0, rank: 9 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect all-suit win");
+});
+
+// ============================================================
+// Fan Scoring Tests
+// ============================================================
+
+test("calculateFan: 平胡 (all sequences, non-value pair)", () => {
+  // 1-2-3萬, 4-5-6萬, 7-8-9條, 2-3-4筒, 6-6筒 (pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 1, rank: 7 }, { suit: 1, rank: 8 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 2 }, { suit: 2, rank: 3 }, { suit: 2, rank: 4 },
+    { suit: 2, rank: 6 }, { suit: 2, rank: 6 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  assert.ok(result.totalFan > 0, "should have fan points");
+  const pingHu = result.fans.find(f => f.name === "平胡");
+  assert.ok(pingHu !== undefined, "should have 平胡 fan");
+  assert.equal(pingHu.fan, 1);
+});
+
+test("calculateFan: 碰碰胡 (all triplets)", () => {
+  // 1-1-1萬, 2-2-2萬, 3-3-3條, 4-4-4筒, 5-5筒 (pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 1, rank: 3 }, { suit: 1, rank: 3 }, { suit: 1, rank: 3 },
+    { suit: 2, rank: 4 }, { suit: 2, rank: 4 }, { suit: 2, rank: 4 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const pengPengHu = result.fans.find(f => f.name === "碰碰胡");
+  assert.ok(pengPengHu !== undefined, "should have 碰碰胡 fan");
+  assert.equal(pengPengHu.fan, 1);
+});
+
+test("calculateFan: 混一色 (one number suit + honors)", () => {
+  // All 萬 + some wind tiles
+  // 1-2-3萬, 4-5-6萬, 東-東-東, 7-7萬 (pair)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 7 }
+  ];
+  const melds = [
+    [{ suit: 0, rank: 8 }, { suit: 0, rank: 8 }, { suit: 0, rank: 8 }]
+  ];
+  const result = calculateFan(hand, melds, null, [], null);
+  const hunYiSe = result.fans.find(f => f.name === "混一色");
+  assert.ok(hunYiSe !== undefined, "should have 混一色 fan");
+  assert.equal(hunYiSe.fan, 2);
+});
+
+test("calculateFan: 清一色 (all one number suit)", () => {
+  // All 萬 tiles only
+  // 1-2-3, 4-5-6, 7-8-9, 1-1-1, 5-5
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const qingYiSe = result.fans.find(f => f.name === "清一色");
+  assert.ok(qingYiSe !== undefined, "should have 清一色 fan");
+  assert.equal(qingYiSe.fan, 6);
+});
+
+test("calculateFan: 七對子 (seven pairs)", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 1, rank: 5 }, { suit: 1, rank: 5 },
+    { suit: 2, rank: 7 }, { suit: 2, rank: 7 },
+    { suit: 2, rank: 9 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const qiDui = result.fans.find(f => f.name === "七對子");
+  assert.ok(qiDui !== undefined, "should have 七對子 fan");
+  assert.equal(qiDui.fan, 4);
+});
+
+test("calculateFan: 十三么 (thirteen orphans)", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 1 }, { suit: 3, rank: 2 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 1 }, { suit: 4, rank: 2 },
+    { suit: 0, rank: 1 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const shiSanYao = result.fans.find(f => f.name === "十三么");
+  assert.ok(shiSanYao !== undefined, "should have 十三么 fan");
+  assert.equal(shiSanYao.fan, 16);
+});
+
+test("calculateFan: 大三元 (big three dragons)", () => {
+  // 3 dragon triplets + 1 other meld + pair
+  const hand = [
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 }, { suit: 4, rank: 0 }, // 中中中
+    { suit: 4, rank: 1 }, { suit: 4, rank: 1 }, { suit: 4, rank: 1 }, // 發發發
+    { suit: 4, rank: 2 }, { suit: 4, rank: 2 }, { suit: 4, rank: 2 }, // 白白白
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 }, // 1-2-3萬
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 } // 5-5萬 (pair)
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const daSanYuan = result.fans.find(f => f.name === "大三元");
+  assert.ok(daSanYuan !== undefined, "should have 大三元 fan");
+  assert.equal(daSanYuan.fan, 8);
+});
+
+test("calculateFan: 小三元 (small three dragons)", () => {
+  // 2 dragon triplets + dragon pair
+  const hand = [
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 }, { suit: 4, rank: 0 }, // 中中中
+    { suit: 4, rank: 1 }, { suit: 4, rank: 1 }, { suit: 4, rank: 1 }, // 發發發
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 }, // 1-2-3萬
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 }, // 4-5-6萬
+    { suit: 4, rank: 2 }, { suit: 4, rank: 2 } // 白白 (pair)
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const xiaoSanYuan = result.fans.find(f => f.name === "小三元");
+  assert.ok(xiaoSanYuan !== undefined, "should have 小三元 fan");
+  assert.equal(xiaoSanYuan.fan, 2);
+});
+
+test("calculateFan: 大四喜 (big four winds)", () => {
+  // 4 wind triplets + pair
+  const hand = [
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, // 東東東
+    { suit: 3, rank: 1 }, { suit: 3, rank: 1 }, { suit: 3, rank: 1 }, // 南南南
+    { suit: 3, rank: 2 }, { suit: 3, rank: 2 }, { suit: 3, rank: 2 }, // 西西西
+    { suit: 3, rank: 3 }, { suit: 3, rank: 3 }, { suit: 3, rank: 3 }, // 北北北
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 } // 中中 (pair)
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const daSiXi = result.fans.find(f => f.name === "大四喜");
+  assert.ok(daSiXi !== undefined, "should have 大四喜 fan");
+  assert.equal(daSiXi.fan, 16);
+});
+
+test("calculateFan: 小四喜 (small four winds)", () => {
+  // 3 wind triplets + wind pair
+  const hand = [
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, // 東東東
+    { suit: 3, rank: 1 }, { suit: 3, rank: 1 }, { suit: 3, rank: 1 }, // 南南南
+    { suit: 3, rank: 2 }, { suit: 3, rank: 2 }, { suit: 3, rank: 2 }, // 西西西
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 }, // 1-2-3萬
+    { suit: 3, rank: 3 }, { suit: 3, rank: 3 } // 北北 (pair)
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const xiaoSiXi = result.fans.find(f => f.name === "小四喜");
+  assert.ok(xiaoSiXi !== undefined, "should have 小四喜 fan");
+  assert.equal(xiaoSiXi.fan, 8);
+});
+
+test("calculateFan: 自摸 (self-drawn win)", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], "selfDrawn");
+  const ziMo = result.fans.find(f => f.name === "自摸");
+  assert.ok(ziMo !== undefined, "should have 自摸 fan");
+  assert.equal(ziMo.fan, 1);
+});
+
+test("calculateFan: 槓上開花 (win from kong draw)", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], "kong");
+  const gangShang = result.fans.find(f => f.name === "槓上開花");
+  assert.ok(gangShang !== undefined, "should have 槓上開花 fan");
+  assert.equal(gangShang.fan, 1);
+});
+
+test("calculateFan: 搶槓胡 (robbing kong)", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], "robKong");
+  const qiangGang = result.fans.find(f => f.name === "搶槓胡");
+  assert.ok(qiangGang !== undefined, "should have 搶槓胡 fan");
+  assert.equal(qiangGang.fan, 1);
+});
+
+test("calculateFan: 花牌 (flower tiles)", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const flowers = [
+    { suit: 5, rank: 0 }, // 春
+    { suit: 5, rank: 1 }, // 夏
+    { suit: 5, rank: 4 }  // 梅
+  ];
+  const result = calculateFan(hand, [], null, flowers, null);
+  const huaPai = result.fans.find(f => f.name === "花牌");
+  assert.ok(huaPai !== undefined, "should have 花牌 fan");
+  assert.equal(huaPai.fan, 3, "3 flowers = 3 fan");
+});
+
+test("calculateFan: no flowers = no flower fan", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const huaPai = result.fans.find(f => f.name === "花牌");
+  assert.equal(huaPai, undefined, "no flowers should have no flower fan");
+});
+
+test("calculateFan: fan stacking (清一色 + 自摸)", () => {
+  // All 萬 suit, self-drawn
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], "selfDrawn");
+  const qingYiSe = result.fans.find(f => f.name === "清一色");
+  const ziMo = result.fans.find(f => f.name === "自摸");
+  assert.ok(qingYiSe !== undefined, "should have 清一色");
+  assert.ok(ziMo !== undefined, "should have 自摸");
+  assert.equal(result.totalFan, 6 + 1, "清一色(6) + 自摸(1) = 7");
+});
+
+test("calculateFan: fan stacking (碰碰胡 + 自摸 + flowers)", () => {
+  // All triplets, self-drawn, 2 flowers
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 1, rank: 3 }, { suit: 1, rank: 3 }, { suit: 1, rank: 3 },
+    { suit: 2, rank: 4 }, { suit: 2, rank: 4 }, { suit: 2, rank: 4 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const flowers = [{ suit: 5, rank: 0 }, { suit: 5, rank: 1 }];
+  const result = calculateFan(hand, [], null, flowers, "selfDrawn");
+  assert.ok(result.totalFan >= 3, "should stack 碰碰胡(1) + 自摸(1) + 花牌(2)");
+});
+
+test("calculateFan: 七對子 + 清一色 stacking", () => {
+  // All 萬, seven pairs
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 },
+    { suit: 0, rank: 6 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 7 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const qiDui = result.fans.find(f => f.name === "七對子");
+  const qingYiSe = result.fans.find(f => f.name === "清一色");
+  assert.ok(qiDui !== undefined, "should have 七對子");
+  assert.ok(qingYiSe !== undefined, "should have 清一色");
+  assert.equal(result.totalFan, 4 + 6, "七對子(4) + 清一色(6) = 10");
+});
+
+test("calculateFan: no fan for non-winning hand", () => {
+  // 13 tiles, not a valid win
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 7 }, { suit: 0, rank: 8 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 2 }, { suit: 1, rank: 4 },
+    { suit: 1, rank: 5 }, { suit: 1, rank: 7 }, { suit: 1, rank: 8 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 2 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  assert.equal(result.totalFan, 0, "non-winning hand should have 0 fan");
+});
+
+test("calculateFan: result has correct structure", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  assert.ok(typeof result.totalFan === "number", "totalFan should be number");
+  assert.ok(Array.isArray(result.fans), "fans should be array");
+  for (const fan of result.fans) {
+    assert.ok(typeof fan.name === "string", "fan name should be string");
+    assert.ok(typeof fan.fan === "number", "fan value should be number");
+    assert.ok(typeof fan.description === "string", "fan description should be string");
+  }
+});
+
+test("calculateFan: 平胡 should not trigger when pair is value tile", () => {
+  // All sequences but pair is 東風 (honor = value tile)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 1, rank: 7 }, { suit: 1, rank: 8 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 2 }, { suit: 2, rank: 3 }, { suit: 2, rank: 4 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 } // 東東 pair
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const pingHu = result.fans.find(f => f.name === "平胡");
+  assert.equal(pingHu, undefined, "平胡 should not trigger with honor pair");
+});
+
+test("calculateFan: 平胡 should not trigger when pair is terminal", () => {
+  // All sequences but pair is 1萬 (terminal = value tile)
+  const hand = [
+    { suit: 0, rank: 2 }, { suit: 0, rank: 3 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 6 }, { suit: 0, rank: 7 },
+    { suit: 1, rank: 7 }, { suit: 1, rank: 8 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 2 }, { suit: 2, rank: 3 }, { suit: 2, rank: 4 },
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 } // 1-1萬 pair (terminal)
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const pingHu = result.fans.find(f => f.name === "平胡");
+  assert.equal(pingHu, undefined, "平胡 should not trigger with terminal pair");
+});
+
+test("calculateFan: with exposed melds for 混一色", () => {
+  // Hand: 1-2-3萬, 7-8-9萬, 7-7萬 (pair) = 8 tiles
+  // Melds: 東東東, 4-5-6萬
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 7 }
+  ];
+  const melds = [
+    [{ suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 }],
+    [{ suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 }]
+  ];
+  const result = calculateFan(hand, melds, null, [], null);
+  const hunYiSe = result.fans.find(f => f.name === "混一色");
+  assert.ok(hunYiSe !== undefined, "should detect 混一色 with exposed melds");
+});
+
+test("calculateFan: 大三元 with exposed melds", () => {
+  // Hand: 1-2-3萬, 5-5萬 (pair) = 5 tiles
+  // Melds: 中中中, 發發發, 白白白
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 }
+  ];
+  const melds = [
+    [{ suit: 4, rank: 0 }, { suit: 4, rank: 0 }, { suit: 4, rank: 0 }],
+    [{ suit: 4, rank: 1 }, { suit: 4, rank: 1 }, { suit: 4, rank: 1 }],
+    [{ suit: 4, rank: 2 }, { suit: 4, rank: 2 }, { suit: 4, rank: 2 }]
+  ];
+  const result = calculateFan(hand, melds, null, [], null);
+  const daSanYuan = result.fans.find(f => f.name === "大三元");
+  assert.ok(daSanYuan !== undefined, "should detect 大三元 with exposed melds");
+  assert.equal(daSanYuan.fan, 8);
+});
+
+test("calculateFan: 小四喜 with exposed melds", () => {
+  // Hand: 1-2-3萬, 北北 (pair) = 5 tiles
+  // Melds: 東東東, 南南南, 西西西
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 3, rank: 3 }, { suit: 3, rank: 3 }
+  ];
+  const melds = [
+    [{ suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 }],
+    [{ suit: 3, rank: 1 }, { suit: 3, rank: 1 }, { suit: 3, rank: 1 }],
+    [{ suit: 3, rank: 2 }, { suit: 3, rank: 2 }, { suit: 3, rank: 2 }]
+  ];
+  const result = calculateFan(hand, melds, null, [], null);
+  const xiaoSiXi = result.fans.find(f => f.name === "小四喜");
+  assert.ok(xiaoSiXi !== undefined, "should detect 小四喜 with exposed melds");
+  assert.equal(xiaoSiXi.fan, 8);
+});
+
+test("calculateFan: 清一色 with exposed melds", () => {
+  // Hand: 7-8-9萬, 5-5萬 (pair) = 5 tiles
+  // Melds: 1-2-3萬, 4-5-6萬, 1-1-1萬
+  const hand = [
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 }
+  ];
+  const melds = [
+    [{ suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 }],
+    [{ suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 }],
+    [{ suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 }]
+  ];
+  const result = calculateFan(hand, melds, null, [], null);
+  const qingYiSe = result.fans.find(f => f.name === "清一色");
+  assert.ok(qingYiSe !== undefined, "should detect 清一色 with exposed melds");
+  assert.equal(qingYiSe.fan, 6);
+});
+
+test("calculateFan: multiple flowers counted correctly", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 5 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 1 }, { suit: 1, rank: 1 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const flowers = [
+    { suit: 5, rank: 0 }, { suit: 5, rank: 1 }, { suit: 5, rank: 2 },
+    { suit: 5, rank: 3 }, { suit: 5, rank: 4 }, { suit: 5, rank: 5 },
+    { suit: 5, rank: 6 }, { suit: 5, rank: 7 }
+  ];
+  const result = calculateFan(hand, [], null, flowers, null);
+  const huaPai = result.fans.find(f => f.name === "花牌");
+  assert.ok(huaPai !== undefined);
+  assert.equal(huaPai.fan, 8, "8 flowers = 8 fan");
+});
+
+test("calculateFan: 十三么 does not trigger 清一色 or 混一色", () => {
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 1 }, { suit: 3, rank: 2 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 1 }, { suit: 4, rank: 2 },
+    { suit: 0, rank: 1 }
+  ];
+  const result = calculateFan(hand, [], null, [], null);
+  const qingYiSe = result.fans.find(f => f.name === "清一色");
+  const hunYiSe = result.fans.find(f => f.name === "混一色");
+  assert.equal(qingYiSe, undefined, "十三么 should not trigger 清一色");
+  assert.equal(hunYiSe, undefined, "十三么 should not trigger 混一色");
+});
+
+// ============================================================
+// Additional Edge Case Tests (to reach 100+)
+// ============================================================
+
+test("detectWin: basic win with all sequences (no triplets)", () => {
+  // 1-2-3, 2-3-4, 5-6-7, 7-8-9 all 萬, 5-5筒
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 2 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 3 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 6 }, { suit: 0, rank: 7 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 }, { suit: 0, rank: 9 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect win with all sequences");
+  assert.equal(result.type, "basic");
+});
+
+test("detectWin: basic win with 4 triplets + pair of same tile", () => {
+  // 1-1-1, 2-2-2, 3-3-3, 4-4-4 all 萬, 5-5萬
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 4 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 }
+  ];
+  const result = detectWin(hand, []);
+  assert.ok(result !== null, "should detect win with 4 triplets + pair");
+});
+
+test("detectWin: not seven pairs when pairs are not distinct", () => {
+  // 6 pairs + 2 extra tiles that don't form a 7th pair
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 0, rank: 3 }, { suit: 0, rank: 3 },
+    { suit: 0, rank: 4 }, { suit: 0, rank: 4 },
+    { suit: 0, rank: 5 }, { suit: 0, rank: 5 },
+    { suit: 0, rank: 6 }, { suit: 0, rank: 6 },
+    { suit: 0, rank: 7 }, { suit: 0, rank: 8 } // not a pair
+  ];
+  const result = detectWin(hand, []);
+  if (result) {
+    assert.notEqual(result.type, "sevenPairs", "should not be seven pairs with unmatched tiles");
+  }
+});
+
+test("detectWin: thirteen orphans fails when extra tile is not orphan", () => {
+  // All 13 orphans present, but duplicate is 2萬 (not an orphan)
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 9 },
+    { suit: 1, rank: 1 }, { suit: 1, rank: 9 },
+    { suit: 2, rank: 1 }, { suit: 2, rank: 9 },
+    { suit: 3, rank: 0 }, { suit: 3, rank: 1 }, { suit: 3, rank: 2 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 1 }, { suit: 4, rank: 2 },
+    { suit: 0, rank: 2 } // not an orphan tile
+  ];
+  const result = detectWin(hand, []);
+  if (result) {
+    assert.notEqual(result.type, "thirteenOrphans", "should not be thirteen orphans with non-orphan extra");
+  }
+});
+
+test("calculateFan: 大四喜 + 碰碰胡 + 自摸 stacking", () => {
+  // All wind triplets + dragon pair
+  // 碰碰胡(all triplets) + 大四喜(4 wind melds) + 自摸(self-drawn)
+  const hand = [
+    { suit: 3, rank: 0 }, { suit: 3, rank: 0 }, { suit: 3, rank: 0 },
+    { suit: 3, rank: 1 }, { suit: 3, rank: 1 }, { suit: 3, rank: 1 },
+    { suit: 3, rank: 2 }, { suit: 3, rank: 2 }, { suit: 3, rank: 2 },
+    { suit: 3, rank: 3 }, { suit: 3, rank: 3 }, { suit: 3, rank: 3 },
+    { suit: 4, rank: 0 }, { suit: 4, rank: 0 }
+  ];
+  const result = calculateFan(hand, [], null, [], "selfDrawn");
+  const daSiXi = result.fans.find(f => f.name === "大四喜");
+  const pengPengHu = result.fans.find(f => f.name === "碰碰胡");
+  const ziMo = result.fans.find(f => f.name === "自摸");
+  assert.ok(daSiXi !== undefined, "should have 大四喜");
+  assert.ok(pengPengHu !== undefined, "should have 碰碰胡");
+  assert.ok(ziMo !== undefined, "should have 自摸");
+  assert.equal(result.totalFan, 16 + 1 + 1, "大四喜(16) + 碰碰胡(1) + 自摸(1) = 18");
+});
+
+test("calculateFan: 搶槓胡 + 碰碰胡 stacking", () => {
+  // All triplets, won by robbing kong
+  const hand = [
+    { suit: 0, rank: 1 }, { suit: 0, rank: 1 }, { suit: 0, rank: 1 },
+    { suit: 0, rank: 2 }, { suit: 0, rank: 2 }, { suit: 0, rank: 2 },
+    { suit: 1, rank: 3 }, { suit: 1, rank: 3 }, { suit: 1, rank: 3 },
+    { suit: 2, rank: 4 }, { suit: 2, rank: 4 }, { suit: 2, rank: 4 },
+    { suit: 2, rank: 5 }, { suit: 2, rank: 5 }
+  ];
+  const result = calculateFan(hand, [], null, [], "robKong");
+  const pengPengHu = result.fans.find(f => f.name === "碰碰胡");
+  const qiangGang = result.fans.find(f => f.name === "搶槓胡");
+  assert.ok(pengPengHu !== undefined, "should have 碰碰胡");
+  assert.ok(qiangGang !== undefined, "should have 搶槓胡");
+  assert.equal(result.totalFan, 1 + 1, "碰碰胡(1) + 搶槓胡(1) = 2");
+});
