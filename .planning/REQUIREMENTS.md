@@ -29,13 +29,13 @@
 
 ### Card Games — 麻將 (Mahjong)
 
-- [ ] **MJ-01**: Player can create a Mahjong room from the hub with standard room options
-- [ ] **MJ-02**: Four players can join a Mahjong room via room-number entry flow
+- [x] **MJ-01**: Player can create a Mahjong room from the hub with standard room options
+- [x] **MJ-02**: Four players can join a Mahjong room via room-number entry flow
 - [x] **MJ-03
 **: Game uses a 144-tile set (萬/條/筒 1-9 × 4, 風牌, 箭牌, 花牌)
 - [x] **MJ-04
 **: Wall building, dice rolling, and dealing follow standard Mahjong procedures
-- [ ] **MJ-05**: Player can draw a tile from the wall or claim a discarded tile (吃/碰/槓)
+- [x] **MJ-05**: Player can draw a tile from the wall or claim a discarded tile (吃/碰/槓)
 - [x] **MJ-06
 **: Claiming priority: 槓 > 碰 > 吃, with the same-priority nearest player winning ties
 - [x] **MJ-07
@@ -50,7 +50,7 @@
 **: 槓 (kong) triggers an extra draw from the dead wall
 - [x] **MJ-12
 **: Game handles draw (流局) when wall is exhausted without a winner
-- [ ] **MJ-13**: Mahjong room supports reconnection with hand and wall state recovery
+- [x] **MJ-13**: Mahjong room supports reconnection with hand and wall state recovery
 
 ### Action Games — 賽車 (Racing)
 

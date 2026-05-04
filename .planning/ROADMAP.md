@@ -60,7 +60,7 @@
 **Plans**: 4 plans
 Plans:
 - [ ] 19-01-PLAN.md — Tile logic module (encoding, wall, claims, win detection, fan scoring)
-- [ ] 19-02-PLAN.md — Room manager + backend API handlers
+- [x] 19-02-PLAN.md — Room manager + backend API handlers (completed 2026-05-04, 18min)
 - [ ] 19-03-PLAN.md — Frontend room page + CSS
 - [ ] 19-04-PLAN.md — Catalog, icon, admin, integration tests
 

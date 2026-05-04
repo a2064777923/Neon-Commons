@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-05-04T09:36:45.338Z"
-last_activity: 2026-05-04 -- Phase 18 Big Two completed, Phase 19 Mahjong executing
+stopped_at: Completed 19-02-PLAN.md
+last_updated: "2026-05-04T09:38:46.000Z"
+last_activity: 2026-05-04 -- Phase 19 Plan 02 Room Manager + API completed
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 8
-  completed_plans: 5
-  percent: 63
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-04)
 ## Current Position
 
 Phase: 19 (Mahjong) — EXECUTING
-Plan: Wave 1 (19-01 tile logic, 19-02 room manager) in progress
-Status: Phase 17-18 complete, Phase 19 Wave 1 executing
-Last activity: 2026-05-04 -- Phase 18 Big Two completed, Phase 19 Mahjong executing
+Plan: Wave 1 (19-01 tile logic, 19-02 room manager) complete, Wave 2 next
+Status: Phase 17-18 complete, Phase 19 Wave 1 complete
+Last activity: 2026-05-04 -- Phase 19 Plan 02 Room Manager + API completed
 
-Progress: [██████░░░░] 63%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [██████░░░░] 63%
 - Trend: v1.2 delivered Flying Chess, voice reliability, admin HA, degraded-mode controls, and Wave 2 launch plumbing. v1.3 expands the game catalog with 5 new titles across card and action families.
 
 | Phase 19-mahjong P01 | 15 | 2 tasks | 2 files |
+| Phase 19-mahjong P02 | 18 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [v1.3 Roadmap]: Action games (Racing, Fighting) create a new light-3d family with real-time game loop; Three.js + cannon-es for Racing, PixiJS for Fighting
 - FAN_TABLE uses 'fan' field name for consistency
 - Fans stack (sum all applicable) without exclusion rules
+- [19-02]: Added mahjong to game catalog (Rule 2 deviation - manager requires getGameMeta)
+- [19-02]: Created functional mahjong-tiles.js stub until plan 19-01 delivers authoritative version
+- [19-02]: 3-second claim window with auto-pass on timeout (per D-05)
 
 ### Pending Todos
 
@@ -93,11 +97,12 @@ None yet.
 | Game | Multiple Mahjong rule variants | Out of scope | 2026-05-04 |
 | Game | Racing track editor / vehicle customization | Out of scope | 2026-05-04 |
 | Game | Fighting rollback netcode / tutorial mode | Out of scope | 2026-05-04 |
+| Game | Replace mahjong-tiles.js stub with plan 19-01 authoritative version | Pending | 2026-05-04 |
 
 ## Session Continuity
 
-Last session: 2026-05-04T09:36:45.335Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-05-04T09:38:46.000Z
+Stopped at: Completed 19-02-PLAN.md
 Resume file: None
 
 **Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
