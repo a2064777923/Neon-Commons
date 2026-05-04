@@ -1,43 +1,43 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: 大跃进
+milestone: v1.3
+milestone_name: Wave 3 遊戲擴充
 status: planning
-stopped_at: context exhaustion at 81% (2026-05-04)
-last_updated: "2026-05-04T02:24:59.797Z"
+stopped_at: null
+last_updated: "2026-05-04T12:00:00.000Z"
 last_activity: 2026-05-04
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-23)
+See: .planning/PROJECT.md (updated 2026-05-04)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** Phase 15 — Wave 2 Delivery Set A planning
+**Current focus:** Wave 3 new game delivery
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-05-04
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-04 — Milestone v1.3 started
 
-Progress: [█████████░] 87%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Last milestone plans completed: 9
-- Current milestone plans completed: 12
+- Last milestone plans completed: 17
+- Current milestone plans completed: 0
 - Average duration: —
 - Total execution time: —
 
@@ -45,20 +45,11 @@ Progress: [█████████░] 87%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 11 | 4/4 | - | - |
-| 12 | 3/3 | - | - |
-| 13 | 3/3 | - | - |
-| 14 | 2/2 | - | - |
-| 15 | 3 | - | - |
-| 16 | 0/2 | - | - |
 
 **Recent Trend:**
 
-- Last shipped milestone: v1.1 Live Ops & Reliability
-- Trend: the repo now has backend-authored Wave 2 launch plumbing and is ready to move from discovery staging into actual title delivery
-
-| Phase 14 P01-P02 | latest | 2 tasks | backend launch contract, hub/lobby UI, browser verification |
-| Phase 15 P01-P03 | latest | 9 tasks | Flying Chess runtime, UI, entry retry, extra-roll fix, smoke hardening |
+- Last shipped milestone: v1.2 大跃进
+- Trend: v1.2 delivered Flying Chess, voice reliability, admin HA, degraded-mode controls, and Wave 2 launch plumbing. v1.3 expands the game catalog with 5 new titles across traditional and 3D/action genres.
 
 ## Accumulated Context
 
@@ -70,30 +61,8 @@ Recent decisions affecting current work:
 - [Init]: Use the current shipped game/admin capability as the validated baseline
 - [Init]: Keep the separated frontend/backend runtime in one repository for now
 - [Init]: Prioritize game/backend expansion over another platform rewrite
-- [01-03]: Use `docs/architecture/backend-contract.md` as the canonical split-runtime contract note
-- [01-03]: Treat same-origin reverse proxy deployment as the default production shape, with `NEXT_PUBLIC_*` overrides documented for split-port and isolated verification runs
 - [03-02]: Use one shared in-memory room directory as the universal room-number and share-link resolver across all shipped families
-- [03-03]: Keep Dou Dizhu login-only while private party/board invite links may branch into scoped guest sessions with post-match claim sync
-- [Phase 03.1]: Inserted New Game Delivery Wave 1 ahead of Phase 4 — User shifted priority from deepening existing card/party games to shipping new games first
-- [06-01]: Expose the shipped regression surface through `test:logic:critical` and `test:ui:critical`
-- [06-02]: Treat `npm run deploy:3100` plus `npm run verify:release` as the canonical release gate
-- [06-03]: Refresh operator docs and requirement traceability only after the release commands are real
-- [v1.1 Init]: Prioritize live room operations and single-node recovery before starting another new-content wave
-- [07-01]: Standardize additive recovery metadata across `/api/me` and all room detail payloads before touching reconnect runtime behavior
-- [07-02]: Model human seat continuity as `connected` → `reconnecting` → `disconnected`, while keeping Dou Dizhu trustee behavior intact
-- [07-03]: Reuse shared client recovery helpers and stable `data-presence-state` selectors so shipped room pages and smoke tests cover refresh continuity without a new entry flow
-- [09-01]: Persist shared room-directory snapshots in PostgreSQL and reload them at backend startup without fabricating live room-manager state
-- [09-02]: Use one cached `roomExpiryMinutes` policy for zero-human room cleanup across card, party, and board managers, after reconnect grace completes
-- [09-03]: Expose `live` / `snapshot-only` availability across hub and room-entry flows, and fail closed for snapshot-only guest/direct-entry paths
-- [10-01]: Absorb the minimum truthful Phase 8 room-ops surface into Phase 10 execution because release verification cannot prove operator interventions against nonexistent UI/API paths
-- [10-02]: Keep `npm run verify:release` as the single pre-ship command, and add narrow live-ops helpers only for post-failure diagnosis
-- [10-03]: Treat roadmap and requirement status as shipped-artifact traceability, not just original plan ordering
-- [v1.2 Init]: Push the next milestone toward higher availability through degraded-mode controls, voice reliability, Wave 2 content, and stronger operator tooling instead of attempting full distributed room recovery immediately
-- [Phase 11]: Keep room availability truth separate from degraded subsystem state — Lets snapshot-only recovery and operator-driven degradation coexist without rewriting shipped availability semantics
-- [14-01]: Build one additive backend-owned launchContract in discovery synthesis so hub and admin surfaces share the same Wave 2 launch truth
-- [14-02]: Make homepage and lobby pages obey launchContract for routability and room-creation gating, and fail closed for staged titles on direct URLs
-- [15-03]: Use `data-entry-action="retry"` to distinguish authenticated retry from login redirect in the entry page DOM
-- [15-03]: Increase smoke test entry timeout to 45s with retry-button fallback instead of indefinite polling
+- [v1.3 Init]: Ship Wave 3 games (Mahjong, Pick Red, Big Two, Racing, 2.5D Fighting) in staged delivery through the shared hub contract
 
 ### Pending Todos
 
@@ -101,8 +70,8 @@ None yet.
 
 ### Blockers/Concerns
 
-- Multi-node room recovery is still deferred, so v1.2 must improve resilience honestly without implying full distributed failover.
-- Wave 2 content should reuse the shipped release and admin contract instead of introducing one-off launch plumbing.
+- 3D/action games (Racing, 2.5D Fighting) may require a new runtime family beyond the existing card/party/board families
+- Wave B games need WebGL/Canvas integration assessment before committing to a delivery phase
 
 ## Deferred Items
 
@@ -114,12 +83,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T02:24:59.794Z
-Stopped at: context exhaustion at 81% (2026-05-04)
+Last session: 2026-05-04T12:00:00.000Z
+Stopped at: null
 Resume file: None
 
-**Last completed phase:** 15 (Wave 2 Delivery Set A) — 3 plans — 2026-05-04
+**Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
 
-**Next recommended action:** Run `/gsd-execute-phase 16` to execute Phase 16 plans
-
-**Planned Phase:** 16 (Wave 2 Delivery Set B & Milestone Hardening) — 2 plans — pending
+**Next recommended action:** Run `/gsd-plan-phase 17` to start planning the first phase

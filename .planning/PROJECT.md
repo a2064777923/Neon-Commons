@@ -52,7 +52,23 @@ FRONTEND_BASE_URL=http://127.0.0.1:3100 npm run test:ui:liveops
 
 Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
 
-## Current Milestone: v1.2 大跃进
+## Current Milestone: v1.3 Wave 3 遊戲擴充
+
+**Goal:** 在現有的 hub、room-entry、recovery、rollout 合約上，新增五款遊戲，分波交付。
+
+**Target features:**
+
+Wave A（傳統桌遊/卡牌）:
+- 麻將 (Mahjong) — 四人國粹，完整牌型判斷、番數計算
+- 撿紅點 (Pick Red) — 兩人卡牌，湊十配對
+- 大老二 (Big Two) — 四人撲克牌，牌型比較與出牌策略
+
+Wave B（3D/動作類）:
+- 賽車 (Racing) — 3D 賽車遊戲
+- 2.5D 打斗 (Fighting) — 類死神VS火影風格格鬥遊戲
+
+<details>
+<summary>Archived v1.2 milestone framing</summary>
 
 **Goal:** Push the platform toward higher availability while shipping a second wave of games, more reliable voice, and stronger backend/admin operating leverage.
 
@@ -61,6 +77,8 @@ Players can jump from the hub into stable real-time social game rooms with as li
 - Ship Wave 2 new games through the shared hub, room-entry, recovery, and rollout contract
 - Improve party-room voice reliability with fallback transport, reconnect handling, and clearer degraded-state signaling
 - Expand the backend/admin surface for health visibility, degraded modes, rollout control, and auditability
+
+</details>
 
 <details>
 <summary>Archived v1.1 milestone framing</summary>
@@ -101,7 +119,8 @@ Players can jump from the hub into stable real-time social game rooms with as li
 | Start v1.1 with live ops and single-node reliability instead of another content wave | The shipped game surface was broad enough that operational depth became the limiting factor | Validated in v1.1 |
 | Expose `snapshot-only` as an explicit availability state across hub and room-entry flows | Restart recovery should stay visible without pretending a room is fully live | Validated in v1.1 |
 | Keep `npm run verify:release` as the single canonical pre-ship command | Operators need one stable release habit even as diagnostics widen | Validated in v1.1 |
-| Push v1.2 toward higher availability through degraded-mode and voice hardening before full multi-node recovery | The next safe step is to improve resilience and operator control without overstating runtime guarantees | — Pending |
+| Push v1.2 toward higher availability through degraded-mode and voice hardening before full multi-node recovery | The next safe step is to improve resilience and operator control without overstating runtime guarantees | Validated in v1.2 |
+| Ship Wave 3 games (Mahjong, Pick Red, Big Two, Racing, 2.5D Fighting) in staged delivery through the shared hub contract | Expand the game catalog while reusing the validated room-entry, recovery, and rollout plumbing | — Pending |
 
 ## Evolution
 
@@ -122,10 +141,11 @@ This document evolves at phase transitions and milestone boundaries.
 
 ## Milestone History
 
+- **v1.2 shipped on 2026-05-04**: Flying Chess runtime and UI, voice reliability, admin HA, degraded-mode controls, Wave 2 launch contract, entry retry, deployed smoke hardening
 - **v1.1 shipped on 2026-04-23**: session recovery, host-visible presence, snapshot-only restart recovery, stale-room expiry, live-room operator tooling, and release verification for live ops
 - **v1.0 shipped on 2026-04-22**: backend contract hardening, admin control plane expansion, hub and room-entry unification, Wave 1 new games, gameplay expansion, and release hardening
 
-For detailed archived planning context, see [MILESTONES.md](./MILESTONES.md), [v1.1 roadmap archive](./milestones/v1.1-ROADMAP.md), and [v1.0 roadmap archive](./milestones/v1.0-ROADMAP.md).
+For detailed archived planning context, see [MILESTONES.md](./MILESTONES.md), [v1.2 roadmap archive](./milestones/v1.2-ROADMAP.md), [v1.1 roadmap archive](./milestones/v1.1-ROADMAP.md), and [v1.0 roadmap archive](./milestones/v1.0-ROADMAP.md).
 
 ---
-*Last updated: 2026-04-23 after starting the v1.2 milestone*
+*Last updated: 2026-05-04 after starting the v1.3 milestone*
