@@ -57,7 +57,12 @@
   3. Player can declare win when hand forms valid melds + pair, seven pairs, or thirteen orphans; fan scoring calculates correctly
   4. Flower tiles auto-replace from the dead wall; kong triggers extra draw; game handles draw (liuju) when wall is exhausted
   5. Mahjong appears in the hub and admin can manage its rooms; reconnection recovers hand and wall state
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 19-01-PLAN.md — Tile logic module (encoding, wall, claims, win detection, fan scoring)
+- [ ] 19-02-PLAN.md — Room manager + backend API handlers
+- [ ] 19-03-PLAN.md — Frontend room page + CSS
+- [ ] 19-04-PLAN.md — Catalog, icon, admin, integration tests
 
 ### Phase 20: Racing (賽車)
 **Goal**: Players can create, join, and race in real-time 3D rooms with physics, lap tracking, and spectator support
