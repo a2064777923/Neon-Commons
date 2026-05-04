@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import SiteLayout from "../../../components/SiteLayout";
 import GameIcon from "../../../components/game-hub/GameIcon";
@@ -13,6 +13,21 @@ import {
 } from "../../../lib/client/room-entry";
 import styles from "../../../styles/UtilityPages.module.css";
 
+const USER_AUTO_JOIN_RETRY_DELAYS_MS = [0, 450, 1100, 2200];
+const ROOM_ENTRY_AUTO_REQUEST_TIMEOUT_MS = 4500;
+const ROOM_ENTRY_MANUAL_REQUEST_TIMEOUT_MS = 8000;
+const EMPTY_JSON_POST_OPTIONS = Object.freeze({
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: "{}"
+});
+const USER_AUTO_JOIN_FATAL_ERRORS = [
+  /房间人数已满/,
+  /此操作需要登入帳號/,
+  /帳號不可用/,
+  /你不在該房間內/
+];
+
 export default function RoomEntryPage() {
   const router = useRouter();
   const { gameKey, roomNo } = router.query;
@@ -21,6 +36,10 @@ export default function RoomEntryPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [userJoinRetryReady, setUserJoinRetryReady] = useState(false);
+  const [autoJoinAttempt, setAutoJoinAttempt] = useState(0);
+  const autoEnterAttemptKeyRef = useRef("");
+  const autoEnterTimerRef = useRef(null);
   const isSnapshotOnly = entry?.availability === "snapshot-only";
   const entryStatus = getDegradedSubsystem(entry, "entry");
   const voiceStatus = getDegradedSubsystem(entry, "voice");
@@ -33,6 +52,14 @@ export default function RoomEntryPage() {
   const canAutoEnterLiveRoom = canEnterLiveRoom(entry) && !entryBlocked;
 
   useEffect(() => {
+    return () => {
+      if (autoEnterTimerRef.current) {
+        clearTimeout(autoEnterTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!gameKey || !roomNo) {
       return;
     }
@@ -42,6 +69,10 @@ export default function RoomEntryPage() {
     async function load() {
       setLoading(true);
       setError("");
+      setUserJoinRetryReady(false);
+      setAutoJoinAttempt(0);
+      autoEnterAttemptKeyRef.current = "";
+      clearScheduledAutoEnter(autoEnterTimerRef);
 
       const [entryResponse, meResponse] = await Promise.all([
         apiFetch(API_ROUTES.roomEntry.resolve(roomNo, gameKey)),
@@ -65,11 +96,6 @@ export default function RoomEntryPage() {
       setSession(nextSession);
       setLoading(false);
 
-      if (!nextEntryBlocked && canEnterLiveRoom(entryData) && nextSession?.kind === "user") {
-        await autoEnter(entryData.joinRoute, entryData.detailRoute);
-        return;
-      }
-
       if (
         !nextEntryBlocked &&
         canEnterLiveRoom(entryData) &&
@@ -77,6 +103,24 @@ export default function RoomEntryPage() {
         canRecoverRoomSession(nextSession, entryData)
       ) {
         router.replace(entryData.detailRoute);
+        return;
+      }
+
+      if (
+        !nextEntryBlocked &&
+        canEnterLiveRoom(entryData) &&
+        nextSession?.kind === "user"
+      ) {
+        const attemptKey = `${entryData.roomNo}:${
+          nextSession.id || nextSession.username || "user"
+        }:${entryData.joinRoute}`;
+        autoEnterAttemptKeyRef.current = attemptKey;
+        setAutoJoinAttempt(1);
+        autoEnter(entryData.joinRoute, entryData.detailRoute, {
+          auto: true,
+          attemptIndex: 0,
+          attemptKey
+        }).catch(() => null);
       }
     }
 
@@ -92,18 +136,114 @@ export default function RoomEntryPage() {
     };
   }, [gameKey, roomNo]);
 
-  async function autoEnter(joinRoute, detailRoute) {
-    setBusy(true);
-    const response = await apiFetch(joinRoute, { method: "POST" });
-    const data = await response.json();
-    setBusy(false);
-
-    if (!response.ok) {
-      setError(data.error || "進房失敗");
+  useEffect(() => {
+    if (!entry || loading || session?.kind !== "user" || entryBlocked || !canEnterLiveRoom(entry)) {
       return;
     }
 
-    router.replace(detailRoute);
+    const attemptKey = `${entry.roomNo}:${session.id || session.username || "user"}:${entry.joinRoute}`;
+    if (autoEnterAttemptKeyRef.current === attemptKey) {
+      return;
+    }
+
+    autoEnterAttemptKeyRef.current = attemptKey;
+    setAutoJoinAttempt(1);
+    autoEnter(entry.joinRoute, entry.detailRoute, {
+      auto: true,
+      attemptIndex: 0,
+      attemptKey
+    }).catch(() => null);
+  }, [entry, entryBlocked, loading, session]);
+
+  async function autoEnter(joinRoute, detailRoute, options = {}) {
+    const { auto = false, attemptIndex = 0, attemptKey = "" } = options;
+    let keepBusy = false;
+
+    setBusy(true);
+    if (!auto) {
+      clearScheduledAutoEnter(autoEnterTimerRef);
+      setAutoJoinAttempt(0);
+      setError("");
+      setUserJoinRetryReady(false);
+    }
+    try {
+      const response = await apiFetchWithTimeout(joinRoute, EMPTY_JSON_POST_OPTIONS, {
+        timeoutMs: auto
+          ? ROOM_ENTRY_AUTO_REQUEST_TIMEOUT_MS
+          : ROOM_ENTRY_MANUAL_REQUEST_TIMEOUT_MS
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (
+          auto &&
+          shouldRetryUserAutoEnter({
+            status: response.status,
+            errorMessage: data.error,
+            attemptIndex
+          })
+        ) {
+          keepBusy = scheduleUserAutoEnterRetry({
+            autoEnter,
+            autoEnterTimerRef,
+            joinRoute,
+            detailRoute,
+            attemptKey,
+            nextAttemptIndex: attemptIndex + 1,
+            setAutoJoinAttempt
+          });
+          if (keepBusy) {
+            return;
+          }
+        }
+
+        clearScheduledAutoEnter(autoEnterTimerRef);
+        setAutoJoinAttempt(0);
+        setError(data.error || "進房失敗");
+        if (session?.kind === "user") {
+          setUserJoinRetryReady(true);
+        }
+        return;
+      }
+
+      clearScheduledAutoEnter(autoEnterTimerRef);
+      setAutoJoinAttempt(0);
+      setUserJoinRetryReady(false);
+      router.replace(detailRoute);
+    } catch {
+      if (
+        auto &&
+        shouldRetryUserAutoEnter({
+          status: 0,
+          errorMessage: "",
+          attemptIndex
+        })
+      ) {
+        keepBusy = scheduleUserAutoEnterRetry({
+          autoEnter,
+          autoEnterTimerRef,
+          joinRoute,
+          detailRoute,
+          attemptKey,
+          nextAttemptIndex: attemptIndex + 1,
+          setAutoJoinAttempt
+        });
+        if (keepBusy) {
+          return;
+        }
+      }
+
+      clearScheduledAutoEnter(autoEnterTimerRef);
+      setAutoJoinAttempt(0);
+      setError("進房失敗");
+      if (session?.kind === "user") {
+        setUserJoinRetryReady(true);
+      }
+    } finally {
+      if (!keepBusy) {
+        setBusy(false);
+      }
+    }
   }
 
   async function enterAsGuest() {
@@ -114,18 +254,20 @@ export default function RoomEntryPage() {
       return;
     }
 
-    setBusy(true);
-    setError("");
-    const response = await apiFetch(API_ROUTES.roomEntry.guest(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        roomNo: entry.roomNo,
-        gameKey: entry.gameKey
-      })
-    });
-    const data = await response.json();
-    setBusy(false);
+  setBusy(true);
+  setError("");
+  const response = await apiFetchWithTimeout(API_ROUTES.roomEntry.guest(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      roomNo: entry.roomNo,
+      gameKey: entry.gameKey
+    })
+  }, {
+    timeoutMs: ROOM_ENTRY_MANUAL_REQUEST_TIMEOUT_MS
+  });
+  const data = await response.json();
+  setBusy(false);
 
     if (!response.ok) {
       setError(data.error || "遊客入場失敗");
@@ -140,6 +282,11 @@ export default function RoomEntryPage() {
       if (entryBlocked) {
         setError(entryStatus.message || "入口暫時停用，請稍後再試。");
       }
+      return;
+    }
+
+    if (session?.kind === "user" && entry) {
+      autoEnter(entry.joinRoute, entry.detailRoute).catch(() => null);
       return;
     }
 
@@ -247,12 +394,19 @@ export default function RoomEntryPage() {
               <button
                 type="button"
                 className="primary-button"
-                data-entry-action="login"
+                data-entry-action={session?.kind === "user" && userJoinRetryReady ? "retry" : "login"}
                 data-entry-status={entryStatus.state}
                 disabled={busy || loading || !canAutoEnterLiveRoom}
                 onClick={enterWithLogin}
               >
-                {getLoginEntryLabel({ canAutoEnterLiveRoom, isSnapshotOnly })}
+                {getLoginEntryLabel({
+                  busy,
+                  canAutoEnterLiveRoom,
+                  isSnapshotOnly,
+                  sessionKind: session?.kind,
+                  userJoinRetryReady,
+                  autoJoinAttempt
+                })}
               </button>
             </div>
 
@@ -312,7 +466,11 @@ export default function RoomEntryPage() {
             ) : null}
             {!isSnapshotOnly && !entryBlocked && session?.kind === "user" ? (
               <p className={styles.entryNotice} data-entry-notice="recovery">
-                已檢測到可恢復的登入身份，系統會自動帶你回到房內。
+                {userJoinRetryReady
+                  ? "已檢測到登入身份，但這次自動進房沒有完成；可直接重試，不必重新登入。"
+                  : autoJoinAttempt > 1
+                    ? `已檢測到可恢復的登入身份，系統正在第 ${autoJoinAttempt}/${USER_AUTO_JOIN_RETRY_DELAYS_MS.length} 次嘗試進房。`
+                    : "已檢測到可恢復的登入身份，系統會自動帶你回到房內。"}
               </p>
             ) : null}
             {!isSnapshotOnly && !entryBlocked && session?.kind === "guest" ? (
@@ -372,10 +530,91 @@ function getGuestEntryLabel({ busy, canAutoEnterLiveRoom, isSnapshotOnly }) {
   return "以遊客進入";
 }
 
-function getLoginEntryLabel({ canAutoEnterLiveRoom, isSnapshotOnly }) {
+function getLoginEntryLabel({
+  busy,
+  canAutoEnterLiveRoom,
+  isSnapshotOnly,
+  sessionKind,
+  userJoinRetryReady,
+  autoJoinAttempt
+}) {
+  if (busy && sessionKind === "user") {
+    return userJoinRetryReady || autoJoinAttempt > 1 ? "重試進房中..." : "進房中...";
+  }
+
   if (!canAutoEnterLiveRoom) {
     return isSnapshotOnly ? "等待房間恢復" : "等待重新開放";
   }
 
+  if (sessionKind === "user") {
+    return userJoinRetryReady ? "重試加入" : "以當前帳號進房";
+  }
+
   return "登入後進入";
+}
+
+function clearScheduledAutoEnter(timerRef) {
+  if (!timerRef.current) {
+    return;
+  }
+
+  clearTimeout(timerRef.current);
+  timerRef.current = null;
+}
+
+function scheduleUserAutoEnterRetry({
+  autoEnter,
+  autoEnterTimerRef,
+  joinRoute,
+  detailRoute,
+  attemptKey,
+  nextAttemptIndex,
+  setAutoJoinAttempt
+}) {
+  const delay = USER_AUTO_JOIN_RETRY_DELAYS_MS[nextAttemptIndex];
+  if (!Number.isFinite(delay)) {
+    return false;
+  }
+
+  clearScheduledAutoEnter(autoEnterTimerRef);
+  setAutoJoinAttempt(nextAttemptIndex + 1);
+  autoEnterTimerRef.current = window.setTimeout(() => {
+    autoEnterTimerRef.current = null;
+    autoEnter(joinRoute, detailRoute, {
+      auto: true,
+      attemptIndex: nextAttemptIndex,
+      attemptKey
+    }).catch(() => null);
+  }, delay);
+  return true;
+}
+
+function shouldRetryUserAutoEnter({ status, errorMessage, attemptIndex }) {
+  if (attemptIndex >= USER_AUTO_JOIN_RETRY_DELAYS_MS.length - 1) {
+    return false;
+  }
+
+  if (status === 401 || status === 403) {
+    return false;
+  }
+
+  return !USER_AUTO_JOIN_FATAL_ERRORS.some((pattern) => pattern.test(String(errorMessage || "")));
+}
+
+async function apiFetchWithTimeout(path, options = {}, { timeoutMs = ROOM_ENTRY_MANUAL_REQUEST_TIMEOUT_MS } = {}) {
+  const controller = typeof AbortController === "function" ? new AbortController() : null;
+  const timerId = controller
+    ? window.setTimeout(() => controller.abort(), timeoutMs)
+    : null;
+
+  try {
+    return await apiFetch(path, {
+      ...options,
+      ...(controller ? { signal: controller.signal } : {})
+    });
+  } finally {
+    if (timerId) {
+      window.clearTimeout(timerId);
+    }
+  }
 }
