@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 大跃进
-status: planning
+status: ready_to_plan
 stopped_at: Phase 15 plan 03 executed
 last_updated: "2026-05-04T00:00:00.000Z"
 last_activity: 2026-05-04 -- Phase 15 plan 03 executed (WR-01, WR-02 fixed, T-15-08 closed)
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 15
   completed_plans: 13
-  percent: 87
+  percent: 83
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-23)
 
 ## Current Position
 
-Phase: 15 plans 01-03 executed
-Plan: 15-03 completed
-Status: Phase 15 fully executed; WR-01, WR-02 resolved; T-15-08 closed in security register
-Last activity: 2026-05-04 -- Phase 15 plan 03 executed (entry retry, extra-roll legend, smoke hardening)
+Phase: 16
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-05-04
 
 Progress: [█████████░] 87%
 
@@ -49,7 +49,7 @@ Progress: [█████████░] 87%
 | 12 | 3/3 | - | - |
 | 13 | 3/3 | - | - |
 | 14 | 2/2 | - | - |
-| 15 | 3/3 | - | - |
+| 15 | 3 | - | - |
 | 16 | 0/2 | - | - |
 
 **Recent Trend:**

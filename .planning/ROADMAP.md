@@ -95,7 +95,7 @@
 
 **Plans:**
 
-- [x] 15-01: Implement the first Wave 2 title's runtime, rules, and shared room integration
+3/3 plans complete
 - [x] 15-02: Ship UI, entry, admin hooks, and regression coverage for the first Wave 2 title
 - [x] 15-03: Fix review blockers (entry retry, extra-roll-on-6) and close deployed smoke (T-15-08)
 
