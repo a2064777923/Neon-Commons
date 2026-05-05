@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-05T15:10:00Z",
+  "phase": "21",
+  "phase_name": "Fighting",
+  "phase_dir": ".planning/phases/21-fighting",
+  "plan": 0,
+  "task": 0,
+  "total_tasks": 0,
+  "status": "paused",
+  "completed_tasks": [],
+  "remaining_tasks": [],
+  "blockers": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "Phase 20 Racing complete with all 4 plans", "rationale": "All backend, frontend, integration delivered; 26 tests passing", "phase": "20"},
+    {"decision": "Phase 21 Fighting is next", "rationale": "Roadmap order: Pick Red -> Big Two -> Mahjong -> Racing -> Fighting", "phase": "21"}
+  ],
+  "uncommitted_files": [],
+  "next_action": "Run /gsd-discuss-phase 21 to start interactive discussion about Fighting game implementation",
+  "context_notes": "Phase 20 complete. Context at ~80%. Good stopping point before starting Phase 21 discussion which requires interactive questioning."
+}
