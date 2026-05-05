@@ -91,6 +91,47 @@ export default function GameIcon({ gameKey, className = "" }) {
     );
   }
 
+  if (gameKey === "racing") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="賽車图标" className={className}>
+        <defs>
+          <linearGradient id="racingBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#0c1a3d" />
+            <stop offset="100%" stopColor="#060e1f" />
+          </linearGradient>
+          <linearGradient id="racingTrack" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffe39a" />
+            <stop offset="100%" stopColor="#c9852a" />
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="144" height="144" rx="34" fill="url(#racingBg)" />
+        {/* Oval track */}
+        <ellipse cx="80" cy="80" rx="50" ry="36" fill="none" stroke="url(#racingTrack)" strokeWidth="8" />
+        {/* Car body */}
+        <rect x="72" y="38" width="16" height="24" rx="4" fill="#ef4444" />
+        {/* Windshield */}
+        <rect x="74" y="42" width="12" height="8" rx="2" fill="#fca5a5" />
+        {/* Speed lines */}
+        <line x1="80" y1="66" x2="80" y2="76" stroke="#ffd36b" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
+        <line x1="74" y1="68" x2="74" y2="74" stroke="#ffd36b" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+        <line x1="86" y1="68" x2="86" y2="74" stroke="#ffd36b" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+        {/* Checkered flag at bottom */}
+        <g transform="translate(58 108)">
+          <rect x="0" y="0" width="8" height="8" fill="#f8f7f3" />
+          <rect x="8" y="0" width="8" height="8" fill="#1a1a2e" />
+          <rect x="0" y="8" width="8" height="8" fill="#1a1a2e" />
+          <rect x="8" y="8" width="8" height="8" fill="#f8f7f3" />
+          <rect x="16" y="0" width="8" height="8" fill="#f8f7f3" />
+          <rect x="24" y="0" width="8" height="8" fill="#1a1a2e" />
+          <rect x="16" y="8" width="8" height="8" fill="#1a1a2e" />
+          <rect x="24" y="8" width="8" height="8" fill="#f8f7f3" />
+        </g>
+        {/* Title */}
+        <text x="80" y="132" fontSize="14" fontWeight="700" fill="#ffe39a" textAnchor="middle">RACING</text>
+      </svg>
+    );
+  }
+
   if (gameKey === "reversi") {
     return (
       <svg viewBox="0 0 160 160" role="img" aria-label="黑白棋图标" className={className}>
