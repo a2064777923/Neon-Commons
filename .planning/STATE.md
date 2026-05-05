@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
-status: completed
-stopped_at: Completed 19-04-PLAN.md
-last_updated: "2026-05-04T09:50:00Z"
-last_activity: 2026-05-04 -- Phase 19 Plan 04 Hub Icon + Integration Tests completed
+status: executing
+stopped_at: Phase 20 wave 0 complete
+last_updated: "2026-05-05T12:00:00Z"
+last_activity: 2026-05-05 -- Phase 20 Racing plan 20-01 complete (risk spike)
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_plans: 16
+  completed_plans: 9
+  percent: 56
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-04)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** Phase 19 — Mahjong
+**Current focus:** Phase 20 — Racing
 
 ## Current Position
 
-Phase: 19 (Mahjong) — EXECUTING
-Plan: Wave 1 + Wave 2 complete (19-01 through 19-04)
-Status: Phase 17-18 complete, Phase 19 all plans complete
-Last activity: 2026-05-04 -- Phase 19 Plan 04 Hub Icon + Integration Tests completed
+Phase: 20 (Racing) — EXECUTING
+Plan: 1 of 4 complete
+Status: Phase 17-19 complete, Phase 20 executing (20-01 done, 20-02 next)
+Last activity: 2026-05-05 -- Phase 20 Racing plan 20-01 complete (risk spike: cannon-es CJS verified)
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 56%
 
 ## Performance Metrics
 
@@ -105,10 +105,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-04T09:50:00Z
-Stopped at: Completed 19-04-PLAN.md
+Last session: 2026-05-05T12:00:00Z
+Stopped at: Phase 20 Wave 0 complete (20-01 done)
 Resume file: None
 
 **Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
 
-**Next recommended action:** Phase 19 Mahjong is complete. All 4 plans delivered (tile logic, room manager, frontend, hub icon + tests). Ready for UAT or next milestone.
+**Next recommended action:** Continue Phase 20 execution — Wave 1 (Plan 20-02: backend RacingRoomManager with 20Hz physics loop).
