@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
 status: executing
-stopped_at: Phase 20 wave 2 complete
-last_updated: "2026-05-05T14:00:00Z"
-last_activity: 2026-05-05 -- Phase 20 Racing plan 20-03 complete (frontend)
+stopped_at: Phase 20 complete
+last_updated: "2026-05-05T15:00:00Z"
+last_activity: 2026-05-05 -- Phase 20 Racing all 4 plans complete
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 11
-  percent: 69
+  completed_plans: 12
+  percent: 75
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-05-04)
 
 ## Current Position
 
-Phase: 20 (Racing) — EXECUTING
-Plan: 3 of 4 complete
-Status: Phase 17-19 complete, Phase 20 executing (20-01 to 20-03 done, 20-04 next)
-Last activity: 2026-05-05 -- Phase 20 Racing plan 20-03 complete (frontend: Three.js scene, HUD, touch controls)
+Phase: 20 (Racing) — COMPLETE
+Plan: 4 of 4 complete
+Status: Phase 17-20 complete, Phase 21 (Fighting) next
+Last activity: 2026-05-05 -- Phase 20 Racing all 4 plans complete (risk spike, backend, frontend, integration)
 
-Progress: [███████░░░] 69%
+Progress: [███████░░░] 75%
 
 ## Performance Metrics
 
@@ -105,10 +105,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-05T13:00:00Z
-Stopped at: Phase 20 Wave 1 complete (20-01, 20-02 done)
+Last session: 2026-05-05T15:00:00Z
+Stopped at: Phase 20 complete (all 4 plans delivered)
 Resume file: None
 
 **Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
 
-**Next recommended action:** Continue Phase 20 execution — Wave 2 (Plan 20-03: frontend Three.js 3D scene, car/track rendering, input, HUD).
+**Next recommended action:** Phase 20 Racing is complete. Run /gsd-discuss-phase 21 to start the Fighting game, or /gsd-execute-phase 20 --wave 3 if verification is needed.
