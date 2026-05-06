@@ -588,22 +588,20 @@ it("reconnection recovers hand state", () => {
 | A4 | Big Two `playHand()` accepts an array of card IDs for all valid hand types | Full-Round Big Two | May need to verify the exact API signature |
 | A5 | Hub discovery test assertions in `test-logic/hub-room-entry.test.js` reference `state` values for the 5 new games | Rollout Flip Pitfall | If assertions don't reference these games, no update needed |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Do Racing and Fighting managers expose `finishRace()` / `finishRound()` as public methods?**
-   - What we know: Grep found `finishRace` and `finishRound` in the manager files
-   - What's unclear: Whether these are public or private, and what arguments they require
-   - Recommendation: Read the method signatures before writing tests; if private, use the simulation approach (manipulate game state to trigger automatic win detection)
+1. **Do Racing and Fighting managers expose `finishRace()` / `finishRound()` as public methods?** — **RESOLVED**
+   - Racing: `finishRace(room, winner)` is defined at line 283 of `lib/racing/manager.js` and exported via `module.exports` at line 794. Public method.
+   - Fighting: `handleRoundEnd(room, winnerSeatIndex)` is defined at line 358 of `lib/fighting/manager.js` and exported via `module.exports` at line 899. Public method.
+   - Both are callable from tests.
 
-2. **Should the rollout flip be a separate plan or combined with test creation?**
-   - What we know: CONTEXT.md D-04 says "all at once in a single commit after all tests pass"
-   - What's unclear: Whether to create the tests first, then flip, or do both in one plan
-   - Recommendation: Create tests first (verify they pass with current `coming-soon` state where applicable), then flip catalog in a final plan
+2. **Should the rollout flip be a separate plan or combined with test creation?** — **RESOLVED**
+   - Plans use separate Plan 03 at wave 2 (after Plans 01 and 02 complete). Matches D-04 "all at once after all tests pass."
 
-3. **Do existing hub-entry Playwright tests assert `coming-soon` state for the 5 new games?**
-   - What we know: `hub-entry.spec.js` uses mocked API responses, so it may not be affected
-   - What's unclear: Whether the mock data references the specific game states
-   - Recommendation: Check after catalog flip; update mocks if needed
+3. **Do existing hub-entry tests assert `coming-soon` state for the 5 new games?** — **RESOLVED**
+   - `test-logic/hub-room-entry.test.js` line 94: `assert.equal(uno.state, "coming-soon")` — will need updating after catalog flip.
+   - Line 1512: counts `coming-soon` entries — will also need updating.
+   - Plan 03 Task 2 addresses these updates.
 
 ## Metadata
 
