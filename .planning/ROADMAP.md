@@ -96,7 +96,7 @@ Plans:
 Plans:
 - [x] 21-01-PLAN.md — Risk spike: install pixi.js + @pixi/react, add network contract + catalog entries, socket handler stubs (completed 2026-05-06)
 - [x] 21-02-PLAN.md — Backend game logic: character state machine, hitbox combat, platform physics, delta-state (completed 2026-05-06)
-- [ ] 21-03-PLAN.md — Backend room manager: FightingRoomManager with 60Hz loop, API handlers, socket wiring
+- [x] 21-03-PLAN.md — Backend room manager: FightingRoomManager with 60Hz loop, API handlers, socket wiring (completed 2026-05-06)
 - [ ] 21-04-PLAN.md — Frontend: PixiJS scene, sprite rendering, HUD, touch controls, room page
 - [ ] 21-05-PLAN.md — Integration: GameIcon SVG, admin control plane, catalog finalization
 **UI hint**: yes
@@ -121,5 +121,5 @@ Phases execute in numeric order: 17 -> 18 -> 19 -> 20 -> 21 -> 22
 | 18. Big Two | 0/TBD | Not started | - |
 | 19. Mahjong | 0/TBD | Not started | - |
 | 20. Racing | 0/4 | Planning complete | - |
-| 21. Fighting | 2/5 | Executing | - |
+| 21. Fighting | 3/5 | Executing | - |
 | 22. Release Verification | 0/TBD | Not started | - |
