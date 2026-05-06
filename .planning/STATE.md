@@ -4,14 +4,14 @@ milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
 status: executing
 stopped_at: null
-last_updated: "2026-05-06T05:38:00.000Z"
-last_activity: 2026-05-06 -- Phase 21 Fighting execution started
+last_updated: "2026-05-06T06:00:00.000Z"
+last_activity: 2026-05-06 -- Phase 21 Fighting complete (5/5 plans)
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 17
-  completed_plans: 12
-  percent: 71
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-04)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** Phase 21 — Fighting (executing, 5 plans)
+**Current focus:** Phase 22 — Release Verification (pending)
 
 ## Current Position
 
-Phase: 21 (Fighting) — EXECUTING
-Plan: 0 of 5
-Status: Executing Wave 1
-Last activity: 2026-05-06 -- Phase 21 Fighting execution started
+Phase: 22 (Release Verification) — PENDING
+Plan: 0 of TBD
+Status: Ready to start
+Last activity: 2026-05-06 -- Phase 21 Fighting complete (5/5 plans)
 
 Progress: [██████████] 100%
 
@@ -111,4 +111,4 @@ Resume file: None
 
 **Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
 
-**Next recommended action:** Phase 21 Fighting is planned (5 plans). Run /gsd-execute-phase 21 to execute all plans, or /gsd-execute-phase 21 --wave 1 to execute the risk spike first.
+**Next recommended action:** Phase 21 Fighting is complete. Run /gsd-progress to see the updated roadmap, or /gsd-discuss-phase 22 to start Release Verification.

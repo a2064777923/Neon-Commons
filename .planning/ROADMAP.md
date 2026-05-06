@@ -18,7 +18,7 @@
 - [ ] **Phase 18: Big Two (大老二)** - Four-player poker with non-standard hand types and ranking
 - [ ] **Phase 19: Mahjong (麻將)** - Four-player tile game with chi/pong/kong claiming and fan scoring
 - [x] **Phase 20: Racing (賽車)** - Real-time 3D racing with action family infrastructure (Three.js + cannon-es) — completed 2026-05-05
-- [ ] **Phase 21: Fighting (打斗)** - 2.5D fighting game with sprite animation and hitbox system (PixiJS)
+- [x] **Phase 21: Fighting (打斗)** - 2.5D fighting game with sprite animation and hitbox system (PixiJS) — completed 2026-05-06
 - [ ] **Phase 22: Release Verification** - Deployed smoke tests and integration verification for all 5 games
 
 ## Phase Details
@@ -98,7 +98,7 @@ Plans:
 - [x] 21-02-PLAN.md — Backend game logic: character state machine, hitbox combat, platform physics, delta-state (completed 2026-05-06)
 - [x] 21-03-PLAN.md — Backend room manager: FightingRoomManager with 60Hz loop, API handlers, socket wiring (completed 2026-05-06)
 - [x] 21-04-PLAN.md — Frontend: PixiJS scene, sprite rendering, HUD, touch controls, room page (completed 2026-05-06)
-- [ ] 21-05-PLAN.md — Integration: GameIcon SVG, admin control plane, catalog finalization
+- [x] 21-05-PLAN.md — Integration: GameIcon SVG, admin control plane, catalog finalization (completed 2026-05-06)
 **UI hint**: yes
 
 ### Phase 22: Release Verification
@@ -121,5 +121,5 @@ Phases execute in numeric order: 17 -> 18 -> 19 -> 20 -> 21 -> 22
 | 18. Big Two | 0/TBD | Not started | - |
 | 19. Mahjong | 0/TBD | Not started | - |
 | 20. Racing | 0/4 | Planning complete | - |
-| 21. Fighting | 4/5 | Executing | - |
+| 21. Fighting | 5/5 | Complete | 2026-05-06 |
 | 22. Release Verification | 0/TBD | Not started | - |
