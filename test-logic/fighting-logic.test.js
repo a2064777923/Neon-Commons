@@ -55,7 +55,7 @@ describe("Catalog integration - Fighting entry", () => {
     assert.equal(meta.key, "fighting");
     assert.equal(meta.title, "打斗");
     assert.equal(meta.familyKey, "light-3d");
-    assert.equal(meta.launchState, "coming-soon");
+    assert.equal(meta.launchState, "live");
   });
 
   it("getGameLimits('fighting') returns { minPlayers: 2, maxPlayers: 2 }", () => {

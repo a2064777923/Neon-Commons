@@ -428,6 +428,42 @@ export default function GameIcon({ gameKey, className = "" }) {
     );
   }
 
+  if (gameKey === "fighting") {
+    return (
+      <svg viewBox="0 0 160 160" role="img" aria-label="打斗图标" className={className}>
+        <defs>
+          <linearGradient id="fightBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#8b1a1a" />
+            <stop offset="100%" stopColor="#4a0e0e" />
+          </linearGradient>
+        </defs>
+        {/* Background circle */}
+        <circle cx="80" cy="80" r="70" fill="url(#fightBg)" />
+        {/* Two fighter silhouettes facing each other */}
+        <g transform="translate(45, 40)">
+          {/* Left fighter - punching stance */}
+          <circle cx="15" cy="15" r="10" fill="#ff6b6b" />
+          <rect x="8" y="25" width="14" height="25" rx="4" fill="#ff6b6b" />
+          <rect x="22" y="28" width="18" height="6" rx="3" fill="#ff6b6b" />
+          <rect x="5" y="50" width="8" height="18" rx="3" fill="#ff6b6b" />
+          <rect x="17" y="50" width="8" height="18" rx="3" fill="#ff6b6b" />
+        </g>
+        <g transform="translate(85, 40) scale(-1, 1)">
+          {/* Right fighter - blocking stance */}
+          <circle cx="15" cy="15" r="10" fill="#4ecdc4" />
+          <rect x="8" y="25" width="14" height="25" rx="4" fill="#4ecdc4" />
+          <rect x="22" y="22" width="6" height="18" rx="3" fill="#4ecdc4" />
+          <rect x="5" y="50" width="8" height="18" rx="3" fill="#4ecdc4" />
+          <rect x="17" y="50" width="8" height="18" rx="3" fill="#4ecdc4" />
+        </g>
+        {/* Impact lines */}
+        <line x1="72" y1="55" x2="62" y2="45" stroke="#ffe66d" strokeWidth="3" strokeLinecap="round" />
+        <line x1="88" y1="55" x2="98" y2="45" stroke="#ffe66d" strokeWidth="3" strokeLinecap="round" />
+        <line x1="80" y1="48" x2="80" y2="36" stroke="#ffe66d" strokeWidth="3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 160 160" role="img" aria-label="斗地主图标" className={className}>
       <defs>
