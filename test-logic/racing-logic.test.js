@@ -1,4 +1,4 @@
-const { describe, it } = require("node:test");
+const { describe, it, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 const CANNON = require("cannon-es");
 
@@ -7,6 +7,7 @@ const { SOCKET_EVENTS, API_ROUTE_PATTERNS, API_ROUTES } = require("../lib/shared
 const { createRacingWorld, createCarBody, createTrackBodies, applyCarInput, createLapDetector } = require("../lib/racing/physics");
 const { TRACK_DEFINITION, TRACK_WIDTH, TRACK_LENGTH } = require("../lib/racing/track");
 const { computeDelta, computeRaceOrder } = require("../lib/racing/delta");
+const { getRacingRoomManager } = require("../lib/racing/manager");
 
 describe("Catalog integration - Racing entry", () => {
   it("getGameMeta('racing') returns entry with title", () => {
@@ -295,5 +296,108 @@ describe("Lap detection", () => {
     const cleanup = createLapDetector(bodies.triggerBody, room);
     assert.equal(typeof cleanup, "function", "should return cleanup function");
     cleanup();
+  });
+});
+
+function createTestUser(id, name) {
+  return { id, username: name, displayName: name };
+}
+
+describe("RacingRoomManager", () => {
+  let manager;
+
+  beforeEach(() => {
+    global.racingRoomManager = null;
+    manager = getRacingRoomManager();
+    manager.io = {
+      to: () => ({ emit: () => {} })
+    };
+  });
+
+  afterEach(() => {
+    if (manager) {
+      for (const room of manager.rooms.values()) {
+        if (room.loopTimer) {
+          clearInterval(room.loopTimer);
+          room.loopTimer = null;
+        }
+        if (room.countdownTimer) {
+          clearInterval(room.countdownTimer);
+          room.countdownTimer = null;
+        }
+      }
+      for (const timer of manager.reconnectTimers.values()) {
+        clearTimeout(timer);
+      }
+      for (const timer of manager.roomExpiryTimers.values()) {
+        clearTimeout(timer);
+      }
+      manager.reconnectTimers.clear();
+      manager.roomExpiryTimers.clear();
+      manager.rooms.clear();
+    }
+  });
+
+  it("createRoom creates room with correct gameKey, familyKey, state", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+
+    assert.equal(room.gameKey, "racing");
+    assert.equal(room.familyKey, "light-3d");
+    assert.equal(room.state, "waiting");
+    assert.equal(room.ownerId, "u1");
+    assert.equal(room.players.length, 1);
+    assert.equal(room.players[0].userId, "u1");
+    assert.ok(room.roomNo);
+  });
+
+  it("full race produces a winner", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+    const roomNo = room.roomNo;
+
+    manager.joinRoom(roomNo, createTestUser("u2", "Bob"));
+    manager.setReady(roomNo, "u1", true);
+    manager.setReady(roomNo, "u2", true);
+
+    // Start the race (starts 20Hz loop)
+    manager.startRace(room);
+
+    // Immediately stop the game loop
+    if (room.loopTimer) {
+      clearInterval(room.loopTimer);
+      room.loopTimer = null;
+    }
+
+    // Finish race with player 0 as winner
+    manager.finishRace(room, room.players[0]);
+
+    assert.ok(room.lastResult, "should have lastResult");
+    assert.equal(room.lastResult.winnerSeat, 0, "winner should be seat 0");
+    assert.equal(room.state, "waiting", "room should return to waiting");
+  });
+
+  it("reconnection recovers room state", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+    const roomNo = room.roomNo;
+
+    manager.joinRoom(roomNo, createTestUser("u2", "Bob"));
+
+    // Register socket
+    const mockSocket1 = { id: "recon-1", join: () => {} };
+    manager.registerSocket(roomNo, "u1", mockSocket1);
+
+    // Unregister socket (simulate disconnect)
+    manager.unregisterSocket("recon-1");
+    const seat = room.players[0];
+    assert.equal(seat.connected, false, "seat should be disconnected");
+
+    // Reconnect with new socket
+    const mockSocket2 = { id: "recon-2", join: () => {} };
+    manager.registerSocket(roomNo, "u1", mockSocket2);
+
+    assert.equal(seat.connected, true, "seat should be reconnected");
+    assert.equal(seat.reconnectGraceEndsAt, null, "reconnect grace should be cleared");
   });
 });

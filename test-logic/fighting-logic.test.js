@@ -1,9 +1,10 @@
 "use strict";
 
-const { describe, it } = require("node:test");
+const { describe, it, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 
 const { getGameMeta, getGameLimits, getFightingDefaultConfig } = require("../lib/games/catalog");
+const { getFightingRoomManager } = require("../lib/fighting/manager");
 const { SOCKET_EVENTS, API_ROUTE_PATTERNS, API_ROUTES } = require("../lib/shared/network-contract");
 
 const {
@@ -893,5 +894,118 @@ describe("Round management (placeholder)", () => {
     assert.equal(char.roundWins, 0);
     char.roundWins += 1;
     assert.equal(char.roundWins, 1);
+  });
+});
+
+function createTestUser(id, name) {
+  return { id, username: name, displayName: name };
+}
+
+describe("FightingRoomManager", () => {
+  let manager;
+
+  beforeEach(() => {
+    global.fightingRoomManager = null;
+    manager = getFightingRoomManager();
+    manager.io = {
+      to: () => ({ emit: () => {} })
+    };
+  });
+
+  afterEach(() => {
+    if (manager) {
+      for (const room of manager.rooms.values()) {
+        if (room.loopTimer) {
+          clearInterval(room.loopTimer);
+          room.loopTimer = null;
+        }
+        if (room.countdownTimer) {
+          clearInterval(room.countdownTimer);
+          room.countdownTimer = null;
+        }
+      }
+      for (const timer of manager.reconnectTimers.values()) {
+        clearTimeout(timer);
+      }
+      for (const timer of manager.roomExpiryTimers.values()) {
+        clearTimeout(timer);
+      }
+      manager.reconnectTimers.clear();
+      manager.roomExpiryTimers.clear();
+      manager.rooms.clear();
+    }
+  });
+
+  it("createRoom creates room with correct gameKey, familyKey, state", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+
+    assert.equal(room.gameKey, "fighting");
+    assert.equal(room.familyKey, "light-3d");
+    assert.equal(room.state, "waiting");
+    assert.equal(room.ownerId, "u1");
+    assert.equal(room.players.length, 1);
+    assert.equal(room.players[0].userId, "u1");
+    assert.ok(room.roomNo);
+  });
+
+  it("full match produces a winner (best of 3)", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+    const roomNo = room.roomNo;
+
+    manager.joinRoom(roomNo, createTestUser("u2", "Bob"));
+    manager.setReady(roomNo, "u1", true);
+    manager.setReady(roomNo, "u2", true);
+
+    // Start the fight (starts 60Hz loop)
+    manager.startFight(room);
+
+    // Immediately stop the game loop
+    if (room.loopTimer) {
+      clearInterval(room.loopTimer);
+      room.loopTimer = null;
+    }
+
+    // Player 0 wins round 1
+    manager.handleRoundEnd(room, 0);
+    assert.equal(room.roundWins.get(0), 1, "player 0 should have 1 round win");
+
+    // Player 0 wins round 2 (best of 3: need 2 wins)
+    // Need to start fight again for next round
+    manager.startFight(room);
+    if (room.loopTimer) {
+      clearInterval(room.loopTimer);
+      room.loopTimer = null;
+    }
+    manager.handleRoundEnd(room, 0);
+
+    assert.ok(room.lastResult, "should have lastResult");
+    assert.equal(room.lastResult.winnerSeat, 0, "winner should be seat 0");
+    assert.equal(room.state, "waiting", "room should return to waiting");
+  });
+
+  it("reconnection recovers room state", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+    const roomNo = room.roomNo;
+
+    manager.joinRoom(roomNo, createTestUser("u2", "Bob"));
+
+    // Register socket
+    const mockSocket1 = { id: "recon-1", join: () => {} };
+    manager.registerSocket(roomNo, "u1", mockSocket1);
+
+    // Unregister socket (simulate disconnect)
+    manager.unregisterSocket("recon-1");
+    const seat = room.players[0];
+    assert.equal(seat.connected, false, "seat should be disconnected");
+
+    // Reconnect with new socket
+    const mockSocket2 = { id: "recon-2", join: () => {} };
+    manager.registerSocket(roomNo, "u1", mockSocket2);
+
+    assert.equal(seat.connected, true, "seat should be reconnected");
+    assert.equal(seat.reconnectGraceEndsAt, null, "reconnect grace should be cleared");
   });
 });

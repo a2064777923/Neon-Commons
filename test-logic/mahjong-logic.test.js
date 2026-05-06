@@ -412,4 +412,66 @@ describe("MahjongRoomManager", () => {
     assert.equal(seat.reconnectGraceEndsAt, null, "reconnect grace should be cleared");
     assert.ok(seat.socketIds.has("socket-2"), "new socket should be registered");
   });
+
+  it("full round reaches conclusion (draw)", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+    const roomNo = room.roomNo;
+
+    manager.joinRoom(roomNo, createTestUser("u2", "Bob"));
+    manager.joinRoom(roomNo, createTestUser("u3", "Charlie"));
+    manager.joinRoom(roomNo, createTestUser("u4", "Dave"));
+
+    manager.setReady(roomNo, "u1", true);
+    manager.setReady(roomNo, "u2", true);
+    manager.setReady(roomNo, "u3", true);
+    manager.setReady(roomNo, "u4", true);
+
+    assert.equal(room.state, "playing");
+
+    // Empty the wall to force a draw (liuju)
+    room.round.wall.length = 0;
+
+    // Attempt to draw - should trigger draw
+    manager.drawTile(roomNo, "u1");
+
+    assert.equal(room.state, "waiting", "room should return to waiting after liuju");
+    assert.ok(room.lastResult, "should have a lastResult");
+    assert.equal(room.lastResult.winMethod, "draw", "winMethod should be 'draw'");
+  });
+
+  it("reconnection recovers hand state after mid-game disconnect", () => {
+    const owner = createTestUser("u1", "Alice");
+    const room = manager.createRoom(owner, {});
+    const roomNo = room.roomNo;
+
+    manager.joinRoom(roomNo, createTestUser("u2", "Bob"));
+    manager.joinRoom(roomNo, createTestUser("u3", "Charlie"));
+    manager.joinRoom(roomNo, createTestUser("u4", "Dave"));
+
+    manager.setReady(roomNo, "u1", true);
+    manager.setReady(roomNo, "u2", true);
+    manager.setReady(roomNo, "u3", true);
+    manager.setReady(roomNo, "u4", true);
+
+    // Capture hand before disconnect
+    const handBefore = [...room.round.hands[0]];
+
+    // Register socket
+    const mockSocket1 = { id: "recon-1", join: () => {} };
+    manager.registerSocket(roomNo, "u1", mockSocket1);
+
+    // Unregister socket (simulate disconnect)
+    manager.unregisterSocket("recon-1");
+    const seat = room.players[0];
+    assert.equal(seat.connected, false, "seat should be disconnected");
+
+    // Reconnect with new socket
+    const mockSocket2 = { id: "recon-2", join: () => {} };
+    manager.registerSocket(roomNo, "u1", mockSocket2);
+
+    assert.equal(seat.connected, true, "seat should be reconnected");
+    assert.equal(seat.reconnectGraceEndsAt, null, "reconnect grace should be cleared");
+    assert.deepEqual(room.round.hands[0], handBefore, "hand should be preserved after reconnect");
+  });
 });
