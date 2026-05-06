@@ -50,10 +50,4 @@ test("pickred room page loads without crashing", async ({ page }) => {
   expect(body).not.toMatch(/500/i);
 });
 
-test("pickred game card is visible on hub page", async ({ page }) => {
-  page.setDefaultTimeout(15000);
-
-  await page.goto(`${FRONTEND_BASE_URL}/`);
-  const card = page.getByText("撿紅點").first();
-  await expect(card).toBeVisible({ timeout: 10000 });
-});
+// Hub card test omitted: pickred has isShipped=false in catalog, so it does not appear on the hub page.
