@@ -17,7 +17,7 @@
 - [ ] **Phase 17: Pick Red (撿紅點)** - Two-player card game with ten-sum matching; validates card family manager extension
 - [ ] **Phase 18: Big Two (大老二)** - Four-player poker with non-standard hand types and ranking
 - [ ] **Phase 19: Mahjong (麻將)** - Four-player tile game with chi/pong/kong claiming and fan scoring
-- [ ] **Phase 20: Racing (賽車)** - Real-time 3D racing with action family infrastructure (Three.js + cannon-es)
+- [x] **Phase 20: Racing (賽車)** - Real-time 3D racing with action family infrastructure (Three.js + cannon-es) — completed 2026-05-05
 - [ ] **Phase 21: Fighting (打斗)** - 2.5D fighting game with sprite animation and hitbox system (PixiJS)
 - [ ] **Phase 22: Release Verification** - Deployed smoke tests and integration verification for all 5 games
 
@@ -76,10 +76,10 @@ Plans:
   5. Racing appears in the hub and admin can manage its rooms; reconnection recovers position state
 **Plans**: 4 plans
 Plans:
-- [ ] 20-01-PLAN.md — Risk spike: install three + cannon-es, verify CJS compat, add network contract + catalog entries
-- [ ] 20-02-PLAN.md — Backend: RacingRoomManager with 20Hz physics loop, API handlers, socket registration
-- [ ] 20-03-PLAN.md — Frontend: Three.js 3D scene, car/track rendering, input handling, HUD, touch controls
-- [ ] 20-04-PLAN.md — Integration: GameIcon SVG, admin control plane, catalog finalization
+- [x] 20-01-PLAN.md — Risk spike: install three + cannon-es, verify CJS compat, add network contract + catalog entries (completed 2026-05-05)
+- [x] 20-02-PLAN.md — Backend: RacingRoomManager with 20Hz physics loop, API handlers, socket registration (completed 2026-05-05)
+- [x] 20-03-PLAN.md — Frontend: Three.js 3D scene, car/track rendering, input handling, HUD, touch controls (completed 2026-05-05)
+- [x] 20-04-PLAN.md — Integration: GameIcon SVG, admin control plane, catalog finalization (completed 2026-05-05)
 **UI hint**: yes
 
 ### Phase 21: Fighting (打斗)
