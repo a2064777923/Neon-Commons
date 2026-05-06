@@ -51,7 +51,7 @@ test("discovery catalog surfaces approved upcoming games and exact hub card stat
     "飛行棋",
     "推箱子",
     "保齡球",
-    "迷你賽車/碰碰車"
+    "賽車"
   ]) {
     assert.equal(titles.has(expected), true, `missing discovery title: ${expected}`);
   }
@@ -100,6 +100,41 @@ test("discovery catalog surfaces approved upcoming games and exact hub card stat
   assert.equal(sokoban.route, "/games/sokoban");
   assert.equal(sokoban.launchMode, "direct");
   assert.equal(sokoban.supportsShareLink, false);
+
+  const pickred = families
+    .find((family) => family.familyKey === "card")
+    .items.find((item) => item.gameKey === "pickred");
+  assert.equal(pickred.state, "playable");
+  assert.equal(pickred.route, "/games/pickred");
+  assert.equal(pickred.supportsShareLink, true);
+
+  const bigtwo = families
+    .find((family) => family.familyKey === "card")
+    .items.find((item) => item.gameKey === "bigtwo");
+  assert.equal(bigtwo.state, "playable");
+  assert.equal(bigtwo.route, "/games/bigtwo");
+  assert.equal(bigtwo.supportsShareLink, true);
+
+  const mahjong = families
+    .find((family) => family.familyKey === "card")
+    .items.find((item) => item.gameKey === "mahjong");
+  assert.equal(mahjong.state, "playable");
+  assert.equal(mahjong.route, "/games/mahjong");
+  assert.equal(mahjong.supportsShareLink, true);
+
+  const racing = families
+    .find((family) => family.familyKey === "light-3d")
+    .items.find((item) => item.gameKey === "racing");
+  assert.equal(racing.state, "playable");
+  assert.equal(racing.route, "/games/racing");
+  assert.equal(racing.supportsShareLink, true);
+
+  const fighting = families
+    .find((family) => family.familyKey === "light-3d")
+    .items.find((item) => item.gameKey === "fighting");
+  assert.equal(fighting.state, "playable");
+  assert.equal(fighting.route, "/games/fighting");
+  assert.equal(fighting.supportsShareLink, true);
 });
 
 test("admin capability responses include family discovery metadata", async () => {
@@ -1387,7 +1422,7 @@ test("/api/hub returns unified family discovery payload without hiding paused li
 
   assert.equal(response.jsonBody.universalEntry.heading, "遊戲入口");
   assert.equal(response.jsonBody.universalEntry.modes[0].label, "房號加入");
-  assert.equal(response.jsonBody.capabilitySummary.counts["coming-soon"], 5);
+  assert.equal(response.jsonBody.capabilitySummary.counts["coming-soon"], 2);
 });
 
 function resetLiveRoomState() {
