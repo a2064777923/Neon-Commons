@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
-status: planning
-stopped_at: Phase 22 planning complete
-last_updated: "2026-05-06T13:13:37.418Z"
-last_activity: 2026-05-06 -- Phase 22 planning complete (3 plans)
+status: executing
+stopped_at: Phase 22 Plan 02 complete
+last_updated: "2026-05-06T13:27:33Z"
+last_activity: 2026-05-06 -- Phase 22 Plan 02 UI Smoke Tests complete
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 20
-  completed_plans: 17
-  percent: 85
+  completed_plans: 18
+  percent: 90
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-04)
 
 ## Current Position
 
-Phase: 22 (Release Verification) — PLANNING COMPLETE
-Plan: 0 of 3
-Status: Planning complete
-Last activity: 2026-05-06 -- Phase 22 planning complete (3 plans)
+Phase: 22 (Release Verification) — EXECUTING
+Plan: 2 of 3
+Status: Plan 02 complete
+Last activity: 2026-05-06 -- Phase 22 Plan 02 UI Smoke Tests complete
 
 Progress: [██████████] 100%
 
@@ -78,6 +78,7 @@ Recent decisions affecting current work:
 - [19-02]: 3-second claim window with auto-pass on timeout (per D-05)
 - Used CSS/HTML tiles per D-06 from 19-CONTEXT.md
 - Single tile selection for discard (not multi-select)
+- [22-02]: Removed hub card tests for pickred/bigtwo/fighting: all have isShipped=false, not visible on hub page
 
 ### Pending Todos
 
@@ -105,9 +106,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: --stopped-at
-Stopped at: Phase 22 planning complete
-Resume file: --resume-file
+Last session: 2026-05-06T13:27:33Z
+Stopped at: Phase 22 Plan 02 complete
+Resume file: .planning/phases/22-release-verification/22-02-SUMMARY.md
 
 **Last completed milestone:** v1.2 大跃进 — 6 phases, 17 plans — 2026-05-04
 
