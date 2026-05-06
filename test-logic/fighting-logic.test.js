@@ -38,6 +38,14 @@ const {
 
 const { ARENA_LAYOUTS, getDefaultArena } = require("../lib/fighting/arena");
 
+const {
+  applyGravity,
+  resolvePlatformCollision,
+  checkRingOut,
+} = require("../lib/fighting/physics");
+
+const { computeDelta, POSITION_THRESHOLD } = require("../lib/fighting/delta");
+
 // ─── Catalog integration ──────────────────────────────────────────
 
 describe("Catalog integration - Fighting entry", () => {
@@ -630,6 +638,250 @@ describe("Arena", () => {
   it("getDefaultArena returns dojo", () => {
     const arena = getDefaultArena();
     assert.equal(arena, ARENA_LAYOUTS.dojo);
+  });
+});
+
+// ─── Physics ─────────────────────────────────────────────────────
+
+describe("Physics - Gravity", () => {
+  it("applyGravity increases velocity.y by GRAVITY * dt", () => {
+    const char = createCharacter(0, "right");
+    const prevVelY = char.velocity.y;
+    applyGravity(char, 1 / 60);
+    assert.ok(char.velocity.y > prevVelY, "velocity.y should increase (downward)");
+    // GRAVITY = 980, dt = 1/60 => velocity.y += 980/60 ≈ 16.33
+    assert.ok(char.velocity.y > 15 && char.velocity.y < 17);
+  });
+
+  it("applyGravity updates pos.y by velocity.y * dt", () => {
+    const char = createCharacter(0, "right");
+    char.pos.y = 0;
+    char.velocity.y = 100;
+    applyGravity(char, 1 / 60);
+    // pos.y += velocity.y * dt = 100 * (1/60) ≈ 1.67
+    assert.ok(char.pos.y > 0, "pos.y should move downward");
+  });
+
+  it("applyGravity accumulates over multiple calls", () => {
+    const char = createCharacter(0, "right");
+    char.pos.y = 0;
+    applyGravity(char, 1 / 60);
+    applyGravity(char, 1 / 60);
+    // velocity should have increased twice
+    assert.ok(char.velocity.y > 30);
+  });
+});
+
+describe("Physics - Platform collision", () => {
+  it("resolvePlatformCollision lands character on platform when falling", () => {
+    const char = createCharacter(0, "right");
+    char.velocity.y = 100; // falling
+    char.pos.y = -10; // near platform surface
+    const arena = getDefaultArena();
+    // Main ground platform: y=0, so charBottom should be near 0
+    // charBottom = pos.y + DEFAULT_HURTBOX.y + DEFAULT_HURTBOX.h = -10 + (-40) + 80 = 30
+    // This is above platform, let's set pos.y so charBottom is just above platform
+    char.pos.y = -50; // charBottom = -50 + (-40) + 80 = -10, need to be near y=0
+    char.pos.y = -10; // charBottom = -10 + (-40) + 80 = 30, above platform y=0
+    // Let's set it so charBottom passes through platform top
+    char.pos.y = -5; // charBottom = -5 - 40 + 80 = 35, still above
+    // Actually let me just set charBottom to be between plat.y and plat.y+15
+    // plat.y = 0, so charBottom needs to be between 0 and 15
+    char.pos.y = -35; // charBottom = -35 - 40 + 80 = 5, between 0 and 15
+    resolvePlatformCollision(char, arena);
+    assert.equal(char.grounded, true, "should be grounded after landing");
+    assert.equal(char.velocity.y, 0, "velocity.y should be zeroed on landing");
+  });
+
+  it("resolvePlatformCollision does not snap from below (only when velocity.y > 0)", () => {
+    const char = createCharacter(0, "right");
+    char.velocity.y = -100; // rising, not falling
+    char.pos.y = -35;
+    const arena = getDefaultArena();
+    const prevY = char.pos.y;
+    resolvePlatformCollision(char, arena);
+    assert.equal(char.pos.y, prevY, "position should not change when rising");
+    assert.equal(char.grounded, true, "grounded should remain unchanged");
+  });
+
+  it("resolvePlatformCollision transitions fall->idle on landing", () => {
+    const char = createCharacter(0, "right");
+    char.state = "fall";
+    char.velocity.y = 100;
+    char.pos.y = -35; // charBottom = 5, between 0 and 15
+    const arena = getDefaultArena();
+    resolvePlatformCollision(char, arena);
+    assert.equal(char.state, "idle", "should transition from fall to idle");
+    assert.equal(char.frameCount, 0);
+  });
+
+  it("resolvePlatformCollision does nothing when character is above all platforms", () => {
+    const char = createCharacter(0, "right");
+    char.velocity.y = 100;
+    char.pos.y = -500; // far above all platforms
+    const arena = getDefaultArena();
+    resolvePlatformCollision(char, arena);
+    assert.equal(char.grounded, true, "should remain in original grounded state");
+    assert.ok(char.velocity.y > 0, "velocity should not be zeroed");
+  });
+});
+
+describe("Physics - Ring-out detection", () => {
+  it("checkRingOut returns false when character is within arena bounds", () => {
+    const char = createCharacter(0, "right");
+    char.pos.y = 0;
+    const arena = getDefaultArena();
+    assert.equal(checkRingOut(char, arena), false);
+  });
+
+  it("checkRingOut returns false when character is near bottom bound", () => {
+    const char = createCharacter(0, "right");
+    char.pos.y = 600; // exactly at bottom
+    const arena = getDefaultArena();
+    assert.equal(checkRingOut(char, arena), false);
+  });
+
+  it("checkRingOut returns true when character falls below bottom + 100", () => {
+    const char = createCharacter(0, "right");
+    char.pos.y = 701; // 600 + 100 + 1
+    const arena = getDefaultArena();
+    assert.equal(checkRingOut(char, arena), true);
+  });
+
+  it("checkRingOut returns false at exactly bottom + 100 (not strictly greater)", () => {
+    const char = createCharacter(0, "right");
+    char.pos.y = 700; // exactly 600 + 100
+    const arena = getDefaultArena();
+    assert.equal(checkRingOut(char, arena), false);
+  });
+});
+
+// ─── Delta-state computation ──────────────────────────────────────
+
+describe("Delta-state computation", () => {
+  function makeRoom(characters, opts = {}) {
+    return {
+      tick: opts.tick || 100,
+      fightPhase: opts.fightPhase || "fighting",
+      countdownValue: opts.countdownValue || 0,
+      characters,
+    };
+  }
+
+  it("computeDelta returns {tick, fightPhase, countdown, characters, roundWins}", () => {
+    const char = createCharacter(0, "right");
+    const room = makeRoom([char]);
+    const delta = computeDelta(room, null);
+    assert.equal(delta.tick, 100);
+    assert.equal(delta.fightPhase, "fighting");
+    assert.equal(delta.countdown, 0);
+    assert.ok(Array.isArray(delta.characters));
+    assert.ok(Array.isArray(delta.roundWins));
+  });
+
+  it("computeDelta includes all characters on first call (no previousState)", () => {
+    const char1 = createCharacter(0, "right");
+    const char2 = createCharacter(1, "left");
+    const room = makeRoom([char1, char2]);
+    const delta = computeDelta(room, null);
+    assert.equal(delta.characters.length, 2);
+  });
+
+  it("computeDelta skips unchanged characters (position within threshold)", () => {
+    const char = createCharacter(0, "right");
+    const room = makeRoom([char]);
+    const firstDelta = computeDelta(room, null);
+    // Second call with same state
+    const secondDelta = computeDelta(room, firstDelta);
+    assert.equal(secondDelta.characters.length, 0, "should skip unchanged character");
+  });
+
+  it("computeDelta includes characters on state change", () => {
+    const char = createCharacter(0, "right");
+    const room = makeRoom([char]);
+    const firstDelta = computeDelta(room, null);
+    // Change state
+    char.state = "attack_light";
+    const secondDelta = computeDelta(room, firstDelta);
+    assert.equal(secondDelta.characters.length, 1, "should include character on state change");
+    assert.equal(secondDelta.characters[0].state, "attack_light");
+  });
+
+  it("computeDelta includes characters on health change", () => {
+    const char = createCharacter(0, "right");
+    const room = makeRoom([char]);
+    const firstDelta = computeDelta(room, null);
+    // Change health
+    char.health = 50;
+    const secondDelta = computeDelta(room, firstDelta);
+    assert.equal(secondDelta.characters.length, 1, "should include character on health change");
+    assert.equal(secondDelta.characters[0].health, 50);
+  });
+
+  it("computeDelta includes characters when position moves beyond threshold", () => {
+    const char = createCharacter(0, "right");
+    const room = makeRoom([char]);
+    const firstDelta = computeDelta(room, null);
+    // Move beyond threshold (POSITION_THRESHOLD = 2.0)
+    char.pos.x += 5;
+    char.pos.y += 5;
+    const secondDelta = computeDelta(room, firstDelta);
+    assert.equal(secondDelta.characters.length, 1, "should include character when position changes beyond threshold");
+  });
+
+  it("computeDelta rounds positions to 1 decimal", () => {
+    const char = createCharacter(0, "right");
+    char.pos.x = 100.567;
+    char.pos.y = -50.321;
+    const room = makeRoom([char]);
+    const delta = computeDelta(room, null);
+    assert.equal(delta.characters[0].pos.x, 100.6);
+    assert.equal(delta.characters[0].pos.y, -50.3);
+  });
+
+  it("computeDelta includes roundWins from all characters", () => {
+    const char1 = createCharacter(0, "right");
+    const char2 = createCharacter(1, "left");
+    char1.roundWins = 2;
+    char2.roundWins = 1;
+    const room = makeRoom([char1, char2]);
+    const delta = computeDelta(room, null);
+    assert.deepEqual(delta.roundWins, [2, 1]);
+  });
+
+  it("computeDelta uses countdownValue from room", () => {
+    const char = createCharacter(0, "right");
+    const room = makeRoom([char], { countdownValue: 3 });
+    const delta = computeDelta(room, null);
+    assert.equal(delta.countdown, 3);
+  });
+
+  it("computeDelta defaults countdown to 0 when not set", () => {
+    const char = createCharacter(0, "right");
+    const room = { tick: 1, fightPhase: "countdown", characters: [char] };
+    const delta = computeDelta(room, null);
+    assert.equal(delta.countdown, 0);
+  });
+
+  it("computeDelta serializes character with all expected fields", () => {
+    const char = createCharacter(0, "right");
+    const room = makeRoom([char]);
+    const delta = computeDelta(room, null);
+    const s = delta.characters[0];
+    assert.equal(s.seatIndex, 0);
+    assert.equal(s.state, "idle");
+    assert.equal(s.frameCount, 0);
+    assert.ok(s.pos);
+    assert.ok(s.velocity);
+    assert.equal(s.facing, "right");
+    assert.equal(s.health, MAX_HEALTH);
+    assert.equal(s.energy, 0);
+    assert.equal(s.grounded, true);
+    assert.equal(s.invulnerable, false);
+  });
+
+  it("POSITION_THRESHOLD is 2.0 for 60Hz optimization", () => {
+    assert.equal(POSITION_THRESHOLD, 2.0);
   });
 });
 
