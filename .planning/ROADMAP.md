@@ -94,7 +94,7 @@ Plans:
   5. Fighting appears in the hub and admin can manage its rooms; reconnection recovers character state; spectators can watch
 **Plans**: 5 plans
 Plans:
-- [ ] 21-01-PLAN.md — Risk spike: install pixi.js + @pixi/react, add network contract + catalog entries, socket handler stubs
+- [x] 21-01-PLAN.md — Risk spike: install pixi.js + @pixi/react, add network contract + catalog entries, socket handler stubs (completed 2026-05-06)
 - [ ] 21-02-PLAN.md — Backend game logic: character state machine, hitbox combat, platform physics, delta-state
 - [ ] 21-03-PLAN.md — Backend room manager: FightingRoomManager with 60Hz loop, API handlers, socket wiring
 - [ ] 21-04-PLAN.md — Frontend: PixiJS scene, sprite rendering, HUD, touch controls, room page
@@ -121,5 +121,5 @@ Phases execute in numeric order: 17 -> 18 -> 19 -> 20 -> 21 -> 22
 | 18. Big Two | 0/TBD | Not started | - |
 | 19. Mahjong | 0/TBD | Not started | - |
 | 20. Racing | 0/4 | Planning complete | - |
-| 21. Fighting | 0/5 | Planning complete | - |
+| 21. Fighting | 1/5 | Executing | - |
 | 22. Release Verification | 0/TBD | Not started | - |

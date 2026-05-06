@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
 status: executing
 stopped_at: null
-last_updated: "2026-05-06T00:35:00.000Z"
-last_activity: 2026-05-06 -- Phase 21 Fighting planning complete (5 plans)
+last_updated: "2026-05-06T05:38:00.000Z"
+last_activity: 2026-05-06 -- Phase 21 Fighting execution started
 progress:
   total_phases: 6
   completed_phases: 3
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-04)
 
 **Core value:** Players can jump from the hub into stable real-time social game rooms with as little friction as possible.
-**Current focus:** Phase 21 — Fighting (planning complete, 5 plans ready for execution)
+**Current focus:** Phase 21 — Fighting (executing, 5 plans)
 
 ## Current Position
 
-Phase: 21 (Fighting) — Planning complete
+Phase: 21 (Fighting) — EXECUTING
 Plan: 0 of 5
-Status: Ready for execution
-Last activity: 2026-05-06 -- Phase 21 Fighting planning complete (5 plans)
+Status: Executing Wave 1
+Last activity: 2026-05-06 -- Phase 21 Fighting execution started
 
 Progress: [██████████] 100%
 
