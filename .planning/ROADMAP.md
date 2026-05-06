@@ -111,7 +111,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [ ] 22-01-PLAN.md — Logic smoke tests: full-round + reconnection for all 5 games
-- [ ] 22-02-PLAN.md — UI smoke tests: Playwright page load specs for all 5 games
+- [x] 22-02-PLAN.md — UI smoke tests: Playwright page load specs for all 5 games (completed 2026-05-06)
 - [ ] 22-03-PLAN.md — Catalog flip: rollout state to live + hub test assertion updates
 
 ## Progress
@@ -126,4 +126,4 @@ Phases execute in numeric order: 17 -> 18 -> 19 -> 20 -> 21 -> 22
 | 19. Mahjong | 0/TBD | Not started | - |
 | 20. Racing | 0/4 | Planning complete | - |
 | 21. Fighting | 5/5 | Complete | 2026-05-06 |
-| 22. Release Verification | 0/3 | Planning complete | - |
+| 22. Release Verification | 1/3 | Executing | - |

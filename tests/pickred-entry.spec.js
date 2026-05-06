@@ -2,23 +2,7 @@ const { test, expect } = require("playwright/test");
 
 const FRONTEND_BASE_URL = String(process.env.FRONTEND_BASE_URL || "http://127.0.0.1:3100").replace(/\/+$/, "");
 
-test("mahjong room page loads without crash", async ({ page }) => {
-  page.setDefaultTimeout(15000);
-
-  const response = await page.goto(`${FRONTEND_BASE_URL}/games/mahjong`);
-  expect(response.status()).toBeLessThan(500);
-  await expect(page).toHaveURL(/mahjong/);
-});
-
-test("mahjong game card is visible on hub page", async ({ page }) => {
-  page.setDefaultTimeout(15000);
-
-  await page.goto(`${FRONTEND_BASE_URL}/`);
-  const mahjongCard = page.getByText("麻將").first();
-  await expect(mahjongCard).toBeVisible({ timeout: 10000 });
-});
-
-test("mahjong room page loads without crash with mocked room API", async ({ page }) => {
+test("pickred room page loads without crashing", async ({ page }) => {
   test.slow();
   page.setDefaultTimeout(30000);
 
@@ -33,18 +17,18 @@ test("mahjong room page loads without crash with mocked room API", async ({ page
     });
   });
 
-  // Mock mahjong room detail API
-  await page.route("**/api/mahjong/rooms/*", async (route) => {
+  // Mock pickred room detail API
+  await page.route("**/api/pickred/rooms/*", async (route) => {
     if (route.request().method() === "GET") {
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           room: {
             roomNo: "test-room",
-            gameKey: "mahjong",
+            gameKey: "pickred",
             familyKey: "card",
             state: "waiting",
-            config: { maxPlayers: 4 },
+            config: { maxPlayers: 2 },
             players: [
               { userId: "test-user-1", seatIndex: 0, displayName: "TestPlayer", ready: false }
             ],
@@ -57,7 +41,7 @@ test("mahjong room page loads without crash with mocked room API", async ({ page
     }
   });
 
-  await page.goto(`${FRONTEND_BASE_URL}/games/mahjong`);
+  await page.goto(`${FRONTEND_BASE_URL}/pickred/test-room`);
   await page.waitForLoadState("networkidle");
 
   // Page should not show a crash error
@@ -65,3 +49,5 @@ test("mahjong room page loads without crash with mocked room API", async ({ page
   expect(body).not.toMatch(/application error/i);
   expect(body).not.toMatch(/500/i);
 });
+
+// Hub card test omitted: pickred has isShipped=false in catalog, so it does not appear on the hub page.
