@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: Wave 3 遊戲擴充
 status: executing
 stopped_at: null
-last_updated: "2026-05-05T09:14:00.000Z"
-last_activity: 2026-05-05 -- Phase 20 Racing all 4 plans complete (20-03 frontend delivered)
+last_updated: "2026-05-06T00:35:00.000Z"
+last_activity: 2026-05-06 -- Phase 21 Fighting context gathered
 progress:
   total_phases: 6
   completed_phases: 3
