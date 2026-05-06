@@ -22,12 +22,14 @@
     "verify:release": "node scripts/verify-release.js"
   },
   "dependencies": {
+    "@pixi/react": "^8.0.5",
     "bcryptjs": "2.4.3",
     "cannon-es": "^0.20.0",
     "cookie": "0.7.2",
     "jsonwebtoken": "9.0.2",
     "next": "15.5.15",
     "pg": "8.16.3",
+    "pixi.js": "^8.18.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "socket.io": "4.8.1",
