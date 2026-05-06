@@ -1,0 +1,429 @@
+.gameShell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0a0e1a;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 10;
+}
+
+.hudLeft,
+.hudRight,
+.hudCenter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hudCenter {
+  align-items: center;
+}
+
+.hudRight {
+  align-items: flex-end;
+}
+
+.badge {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #f7f0dd;
+  font-size: 14px;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 232, 180, 0.1);
+}
+
+.healthBar {
+  width: 200px;
+  height: 20px;
+  border: 2px solid rgba(255, 232, 180, 0.3);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.healthFill {
+  height: 100%;
+  transition: width 0.15s ease;
+  border-radius: 2px;
+}
+
+.healthFill.p1 {
+  background: linear-gradient(180deg, #4ade80, #22c55e);
+}
+
+.healthFill.p2 {
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
+}
+
+.healthSegment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.energyBar {
+  width: 200px;
+  height: 10px;
+  border: 1px solid rgba(255, 232, 180, 0.2);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.energyFill {
+  height: 100%;
+  transition: width 0.15s ease;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #67e8f9, #06b6d4);
+}
+
+.energyReady {
+  animation: energyPulse 0.6s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+}
+
+@keyframes energyPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.roundBadge {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffe39a;
+  text-shadow: 0 0 8px rgba(255, 227, 154, 0.3);
+}
+
+.roundWins {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffe39a;
+  text-shadow: 0 0 12px rgba(255, 227, 154, 0.4);
+}
+
+.countdown {
+  font-size: 72px;
+  font-weight: 800;
+  color: #ffe39a;
+  text-shadow: 0 0 20px rgba(255, 227, 154, 0.6);
+  animation: countdownPulse 1s ease-in-out infinite;
+}
+
+@keyframes countdownPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.roundEndText {
+  font-size: 36px;
+  font-weight: 800;
+  color: #ffe39a;
+  text-shadow: 0 0 16px rgba(255, 227, 154, 0.5);
+}
+
+.touchControls {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 20px;
+  z-index: 10;
+}
+
+.joystick {
+  pointer-events: auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  position: relative;
+  touch-action: none;
+  user-select: none;
+}
+
+.joystickKnob {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: none;
+}
+
+.actionButtons {
+  pointer-events: auto;
+  display: grid;
+  grid-template-areas:
+    ". jump ."
+    "heavy dodge attack"
+    ". block .";
+  grid-template-columns: 56px 56px 56px;
+  grid-template-rows: 56px 56px 56px;
+  gap: 6px;
+  touch-action: none;
+  user-select: none;
+}
+
+.actionBtn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7f0dd;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s ease;
+}
+
+.actionBtn:active,
+.actionBtn.pressed {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.jumpBtn {
+  grid-area: jump;
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.jumpBtn:active,
+.jumpBtn.pressed {
+  background: rgba(34, 197, 94, 0.5);
+}
+
+.attackBtn {
+  grid-area: attack;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.attackBtn:active,
+.attackBtn.pressed {
+  background: rgba(239, 68, 68, 0.5);
+}
+
+.heavyBtn {
+  grid-area: heavy;
+  background: rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.4);
+}
+
+.heavyBtn:active,
+.heavyBtn.pressed {
+  background: rgba(249, 115, 22, 0.5);
+}
+
+.blockBtn {
+  grid-area: block;
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.blockBtn:active,
+.blockBtn.pressed {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+.dodgeBtn {
+  grid-area: dodge;
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.dodgeBtn:active,
+.dodgeBtn.pressed {
+  background: rgba(168, 85, 247, 0.5);
+}
+
+.readyOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 20;
+}
+
+.readyCard {
+  background: rgba(20, 20, 30, 0.95);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  color: #f7f0dd;
+  border: 1px solid rgba(255, 232, 180, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.readyCard h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.readyCard p {
+  margin: 0 0 16px;
+  opacity: 0.7;
+}
+
+.readyBtn {
+  padding: 12px 32px;
+  border-radius: 8px;
+  border: none;
+  background: #ffe39a;
+  color: #1a1a2e;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.readyBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 227, 154, 0.3);
+}
+
+.resultOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 20;
+}
+
+.resultCard {
+  background: rgba(20, 20, 30, 0.95);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  color: #f7f0dd;
+  border: 1px solid rgba(255, 232, 180, 0.1);
+  backdrop-filter: blur(10px);
+  min-width: 280px;
+}
+
+.resultCard h2 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  color: #ffe39a;
+}
+
+.resultCard p {
+  margin: 0 0 20px;
+  opacity: 0.7;
+}
+
+.winnerPose {
+  animation: winnerGlow 1s ease-in-out infinite;
+}
+
+@keyframes winnerGlow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+.backBtn {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f7f0dd;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.backBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.hitEffect {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #f7f0dd;
+  font-size: 18px;
+  background: #0a0e1a;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #ef4444;
+  font-size: 18px;
+  background: #0a0e1a;
+}
+
+.toast {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #f7f0dd;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 30;
+  pointer-events: none;
+  animation: toastFade 2.6s ease forwards;
+}
+
+@keyframes toastFade {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
