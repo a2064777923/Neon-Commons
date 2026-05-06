@@ -94,7 +94,7 @@ Plans:
   5. Fighting appears in the hub and admin can manage its rooms; reconnection recovers character state; spectators can watch
 **Plans**: 5 plans
 Plans:
-- [ ] 21-01-PLAN.md — Risk spike: install pixi.js, add network contract + catalog entries, socket handler stubs
+- [ ] 21-01-PLAN.md — Risk spike: install pixi.js + @pixi/react, add network contract + catalog entries, socket handler stubs
 - [ ] 21-02-PLAN.md — Backend game logic: character state machine, hitbox combat, platform physics, delta-state
 - [ ] 21-03-PLAN.md — Backend room manager: FightingRoomManager with 60Hz loop, API handlers, socket wiring
 - [ ] 21-04-PLAN.md — Frontend: PixiJS scene, sprite rendering, HUD, touch controls, room page
