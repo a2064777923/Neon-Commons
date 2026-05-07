@@ -669,15 +669,15 @@ function findDiscoveryItem(hubData, gameKey) {
 }
 
 const CARD_ROOM_ROUTES = {
-  pickred: () => API_ROUTES.pickredRooms.list,
-  bigtwo: () => API_ROUTES.bigtwoRooms.list,
-  mahjong: () => API_ROUTES.mahjongRooms.list,
-  doudezhu: () => API_ROUTES.rooms.list
+  pickred: () => API_ROUTES.pickredRooms.list(),
+  bigtwo: () => API_ROUTES.bigtwoRooms.list(),
+  mahjong: () => API_ROUTES.mahjongRooms.list(),
+  doudezhu: () => API_ROUTES.rooms.list()
 };
 
 const LIGHT3D_ROOM_ROUTES = {
-  racing: () => API_ROUTES.racingRooms.list,
-  fighting: () => API_ROUTES.fightingRooms.list
+  racing: () => API_ROUTES.racingRooms.list(),
+  fighting: () => API_ROUTES.fightingRooms.list()
 };
 
 function getRoomsRoute(gameMode, gameKey) {
