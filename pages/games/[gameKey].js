@@ -10,6 +10,8 @@ import styles from "../../styles/GameLobby.module.css";
 const {
   PARTY_GAME_KEYS,
   BOARD_GAME_KEYS,
+  CARD_GAME_KEYS,
+  LIGHT3D_GAME_KEYS,
   getGameMeta,
   getGameMode,
   getPartyDefaultConfig,
@@ -70,9 +72,7 @@ export default function GameLobbyPage() {
   }, [gameKey, gameMode]);
 
   useEffect(() => {
-    if (!gameKey || !["party", "board"].includes(gameMode)) {
-      return;
-    }
+    if (!gameKey) return;
 
     loadData(gameKey, gameMode).catch(() => setError("读取房间列表失败"));
     const timer = setInterval(() => {
@@ -131,13 +131,8 @@ export default function GameLobbyPage() {
       return;
     }
 
-    router.push(
-      getRoomDetailRoute(
-        meta,
-        data.room.roomNo,
-        gameMode === "party" ? "/party" : "/board"
-      )
-    );
+    const fallbackPrefix = gameMode === "party" ? "/party" : gameMode === "board" ? "/board" : `/${gameKey}`;
+    router.push(getRoomDetailRoute(meta, data.room.roomNo, fallbackPrefix));
   }
 
   function joinRoom(roomNo) {
@@ -172,10 +167,18 @@ export default function GameLobbyPage() {
     }
   }
 
-  if (!meta || ![...PARTY_GAME_KEYS, ...BOARD_GAME_KEYS].includes(gameKey)) {
+  if (gameKey && meta && ![...PARTY_GAME_KEYS, ...BOARD_GAME_KEYS, ...CARD_GAME_KEYS, ...LIGHT3D_GAME_KEYS].includes(gameKey)) {
     return (
       <SiteLayout>
         <section className={styles.invalidState}>未找到对应的游戏入口。</section>
+      </SiteLayout>
+    );
+  }
+
+  if (!meta) {
+    return (
+      <SiteLayout>
+        <section className={styles.invalidState}>加载中…</section>
       </SiteLayout>
     );
   }
@@ -665,10 +668,24 @@ function findDiscoveryItem(hubData, gameKey) {
   return null;
 }
 
+const CARD_ROOM_ROUTES = {
+  pickred: () => API_ROUTES.pickredRooms.list,
+  bigtwo: () => API_ROUTES.bigtwoRooms.list,
+  mahjong: () => API_ROUTES.mahjongRooms.list,
+  doudezhu: () => API_ROUTES.rooms.list
+};
+
+const LIGHT3D_ROOM_ROUTES = {
+  racing: () => API_ROUTES.racingRooms.list,
+  fighting: () => API_ROUTES.fightingRooms.list
+};
+
 function getRoomsRoute(gameMode, gameKey) {
-  return gameMode === "party"
-    ? API_ROUTES.partyRooms.list(gameKey)
-    : API_ROUTES.boardRooms.list(gameKey);
+  if (gameMode === "party") return API_ROUTES.partyRooms.list(gameKey);
+  if (gameMode === "board") return API_ROUTES.boardRooms.list(gameKey);
+  if (gameMode === "card") return CARD_ROOM_ROUTES[gameKey]?.() || `/api/${gameKey}/rooms`;
+  if (gameMode === "light-3d") return LIGHT3D_ROOM_ROUTES[gameKey]?.() || `/api/${gameKey}/rooms`;
+  return `/api/${gameKey}/rooms`;
 }
 
 function getRealtimeCopy(gameKey) {
