@@ -1,22 +1,28 @@
 {
   "version": "1.0",
-  "timestamp": "2026-05-05T15:10:00Z",
-  "phase": "21",
-  "phase_name": "Fighting",
-  "phase_dir": ".planning/phases/21-fighting",
-  "plan": 0,
-  "task": 0,
-  "total_tasks": 0,
-  "status": "paused",
-  "completed_tasks": [],
+  "timestamp": "2026-05-07T09:04:27.799Z",
+  "phase": "22",
+  "phase_name": "release-verification",
+  "phase_dir": ".planning/phases/22-release-verification",
+  "plan": 3,
+  "task": 2,
+  "total_tasks": 2,
+  "status": "complete",
+  "completed_tasks": [
+    {"id": "22-01", "name": "Logic Smoke Tests", "status": "done", "commit": "fb0e0ef, abb4d37, a5e874f"},
+    {"id": "22-02", "name": "UI Smoke Tests", "status": "done", "commit": "d2caadc, df97c5e, e4f5b11, 8b4c180"},
+    {"id": "22-03", "name": "Catalog Flip", "status": "done", "commit": "3506c60, 8c574af"}
+  ],
   "remaining_tasks": [],
   "blockers": [],
   "human_actions_pending": [],
   "decisions": [
-    {"decision": "Phase 20 Racing complete with all 4 plans", "rationale": "All backend, frontend, integration delivered; 26 tests passing", "phase": "20"},
-    {"decision": "Phase 21 Fighting is next", "rationale": "Roadmap order: Pick Red -> Big Two -> Mahjong -> Racing -> Fighting", "phase": "21"}
+    {"decision": "Flipped all 4 remaining games to live with isShipped: true", "rationale": "D-04 all at once; D-05 all 5 games isShipped true", "phase": "22"},
+    {"decision": "Added CARD_GAME_KEYS and LIGHT3D_GAME_KEYS to catalog exports", "rationale": "Lobby page rejected new game families", "phase": "22"},
+    {"decision": "Fixed API route function calls in lobby page", "rationale": "API_ROUTES.fightingRooms.list is a function needs () to get URL string", "phase": "22"},
+    {"decision": "Added --legacy-peer-deps to Dockerfile npm install", "rationale": "@pixi/react requires React 19 but project uses React 18", "phase": "22"}
   ],
   "uncommitted_files": [],
-  "next_action": "Run /gsd-discuss-phase 21 to start interactive discussion about Fighting game implementation",
-  "context_notes": "Phase 20 complete. Context at ~80%. Good stopping point before starting Phase 21 discussion which requires interactive questioning."
+  "next_action": "Phase 22 is complete. v1.3 milestone ready to ship. Next: /gsd-verify-work 22 or /gsd-plan-phase 23",
+  "context_notes": "Phase 22 fully executed: 3 plans, 6 tasks, all smoke tests pass, catalog flipped, lobby pages fixed, Docker redeployed. Post-execution fixes: lobby page guard clause rejected new game families, API route functions not called with (), Dockerfile peer dependency conflict."
 }
