@@ -9,3 +9,5 @@ npm-debug.log*
 docker-data
 playwright-report
 test-results
+logs
+ecosystem.config.js

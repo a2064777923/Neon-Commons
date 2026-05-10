@@ -8,6 +8,14 @@ const { loadSystemConfigCache, getRoomExpiryMs } = require("../lib/system-config
 const { registerSocketHandlers } = require("../lib/socket-server");
 const { createRouter } = require("./router");
 
+const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET"];
+for (const key of REQUIRED_ENV) {
+  if (!process.env[key]) {
+    console.error(`Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
+
 const port = Number(process.env.PORT || process.env.BACKEND_PORT || 3101);
 const frontendPort = Number(process.env.FRONTEND_PORT || 3100);
 const frontendOrigin =
@@ -60,8 +68,8 @@ function applyCors(req, res) {
 
   res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
   res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
 }
 
 async function initializeDatabaseWithRetry() {

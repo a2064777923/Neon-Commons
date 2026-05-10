@@ -7,6 +7,13 @@
 - 在線阿瓦隆：5-10 人開房、擴展角色池、補 AI、組隊表決與刺殺梅林
 - 在線五子棋：2 人房、15 路棋盤、補 AI、實時落子
 - 在線跳棋：2 / 4 / 6 人中國跳棋星盤、補 AI、連跳走位
+- 在線黑白棋：2 人房、8×8 棋盤、補 AI、實時翻轉
+- 在線麻將：4 人房、補 AI、自動結算
+- 在線飛行棋：2-4 人房、環形棋盤
+- 誰是臥底：4-8 人房、語音描述、投票出局
+- 賽車：3D 物理引擎、多人競速
+- 格鬥：3D 物理引擎、雙人對戰
+- 推箱子：單人益智、多關卡
 - 帳號註冊登入
 - 房間號建房與加入
 - 房內 WebRTC 語音通話
@@ -85,6 +92,22 @@ docker compose up -d --build
 - `/socket.io` -> `3101`
 
 基礎反代配置可參考 `nginx/doudezhu.conf`。
+
+## PM2 生產部署
+
+```bash
+cp .env.example .env
+# 編輯 .env 設置正確的公網 IP、端口、數據庫連接和 JWT_SECRET
+
+npm install
+npm run build
+npm install -g pm2
+
+# 創建 ecosystem.config.js（參考項目根目錄的範例）
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+```
 
 ## 合約與 Smoke 驗證
 
